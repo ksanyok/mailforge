@@ -7,7 +7,16 @@ export class TrackingService {
 
   constructor(private readonly prisma: PrismaService) {}
 
+  private isBot(userAgent: string): boolean {
+    return /bot|crawler|spider|scanner|preview|prefetch|fetch|curl|wget|python|java|go-http|okhttp|axios|node-fetch|google|yahoo|baidu|bing|slurp|msnbot|teoma|ia_archiver|duckduckbot|exabot|facebot|bingpreview|googleimageproxy|google-apps-script/i.test(userAgent);
+  }
+
   async handleOpen(token: string, userAgent: string, ipAddress: string) {
+    if (this.isBot(userAgent)) {
+      this.logger.debug(`Ignoring open from bot UA: ${userAgent.slice(0, 80)}`);
+      return;
+    }
+
     const trackingToken = await this.prisma.trackingToken.findUnique({
       where: { token },
     });

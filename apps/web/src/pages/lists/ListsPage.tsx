@@ -19,7 +19,7 @@ export function ListsPage() {
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
   const { data } = useQuery({ queryKey: ['lists'], queryFn: () => listsApi.findAll() });
-  const lists = (data as { items?: ContactList[] })?.items ?? (data as ContactList[]) ?? [];
+  const lists = ((data as any)?.data ?? []) as ContactList[];
 
   const { register, handleSubmit, reset } = useForm<{ name: string; description: string }>();
 

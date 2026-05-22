@@ -21,7 +21,7 @@ export function ImportsPage() {
   const [isDragging, setIsDragging] = useState(false);
 
   const { data } = useQuery({ queryKey: ['imports', page], queryFn: () => importsApi.findAll({ page, limit: 20 }) });
-  const result = data as { items: Import[]; total: number } | undefined;
+  const result = data as { data: Import[]; total: number } | undefined;
 
   const upload = useMutation({
     mutationFn: (file: File) => { const fd = new FormData(); fd.append('file', file); return importsApi.upload(fd); },
@@ -79,7 +79,7 @@ export function ImportsPage() {
         <p className="text-xs text-muted-foreground mt-2">CSV, XLSX, JSON, TXT — max 50MB</p>
         <input ref={fileRef} type="file" accept=".csv,.xlsx,.json,.txt" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); }} />
       </div>
-      <DataTable data={result?.items ?? []} columns={columns} total={result?.total ?? 0} page={page} pageSize={20} onPageChange={setPage} />
+      <DataTable data={result?.data ?? []} columns={columns} total={result?.total ?? 0} page={page} pageSize={20} onPageChange={setPage} />
     </div>
   );
 }

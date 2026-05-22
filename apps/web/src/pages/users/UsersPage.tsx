@@ -14,7 +14,7 @@ export function UsersPage() {
   const qc = useQueryClient();
   const [page, setPage] = useState(1);
   const { data, isLoading } = useQuery({ queryKey: ['users', page], queryFn: () => usersApi.findAll({ page, limit: 20 }) });
-  const result = data as { items: User[]; total: number } | undefined;
+  const result = data as { data: User[]; total: number } | undefined;
 
   const toggle = useMutation({
     mutationFn: (id: string) => usersApi.toggleActive(id),
@@ -59,5 +59,5 @@ export function UsersPage() {
     },
   ];
 
-  return <DataTable data={result?.items ?? []} columns={columns} total={result?.total ?? 0} page={page} pageSize={20} onPageChange={setPage} isLoading={isLoading} />;
+  return <DataTable data={result?.data ?? []} columns={columns} total={result?.total ?? 0} page={page} pageSize={20} onPageChange={setPage} isLoading={isLoading} />;
 }

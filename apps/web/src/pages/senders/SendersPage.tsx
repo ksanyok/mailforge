@@ -21,7 +21,7 @@ export function SendersPage() {
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
   const { data } = useQuery({ queryKey: ['senders'], queryFn: () => sendersApi.findAll() });
-  const senders = (data as Sender[]) ?? [];
+  const senders = ((data as any)?.data ?? []) as Sender[];
 
   const { register, handleSubmit, setValue, reset } = useForm<{
     name: string; fromName: string; fromEmail: string; smtpHost: string;

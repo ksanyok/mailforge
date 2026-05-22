@@ -33,9 +33,8 @@ export function CampaignBuilderPage() {
   const { data: senders } = useQuery({ queryKey: ['senders'], queryFn: () => sendersApi.findAll() });
   const { data: listsData } = useQuery({ queryKey: ['lists'], queryFn: () => listsApi.findAll() });
 
-  const sendersArr = senders as { id: string; name: string; fromEmail: string }[] | undefined;
-  const listsArr = (listsData as { items?: { id: string; name: string; contactCount: number }[] })?.items ??
-    (listsData as { id: string; name: string; contactCount: number }[]) ?? [];
+  const sendersArr = ((senders as any)?.data ?? []) as { id: string; name: string; fromEmail: string }[];
+  const listsArr = ((listsData as any)?.data ?? []) as { id: string; name: string; contactCount: number }[];
 
   const save = useMutation({
     mutationFn: (data: BuilderForm & { listIds: string[] }) =>

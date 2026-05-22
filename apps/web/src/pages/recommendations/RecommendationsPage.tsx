@@ -11,7 +11,7 @@ interface Rec { id: string; severity: string; title: string; message: string; ac
 export function RecommendationsPage() {
   const qc = useQueryClient();
   const { data } = useQuery({ queryKey: ['recommendations', 'all'], queryFn: () => recommendationsApi.findAll({ limit: 50 }) });
-  const recs = ((data as { items?: Rec[] })?.items ?? (data as Rec[])) ?? [];
+  const recs = ((data as any)?.data ?? []) as Rec[];
 
   const dismiss = useMutation({
     mutationFn: (id: string) => recommendationsApi.dismiss(id),

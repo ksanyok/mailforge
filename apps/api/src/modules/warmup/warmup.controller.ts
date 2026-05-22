@@ -10,6 +10,11 @@ import { WarmupService } from './warmup.service';
 export class WarmupController {
   constructor(private readonly warmupService: WarmupService) {}
 
+  @Get()
+  findAll() {
+    return this.warmupService.findAll();
+  }
+
   @Get(':senderId/rule')
   getRule(@Param('senderId') senderId: string) {
     return this.warmupService.getRule(senderId);

@@ -21,7 +21,7 @@ export function ListDetailPage() {
   const { data: members } = useQuery({ queryKey: ['list-members', id, page], queryFn: () => listsApi.members(id!, { page, limit: 20 }), enabled: !!id });
 
   const l = list as Record<string, unknown> | undefined;
-  const m = members as { items: Member[]; total: number } | undefined;
+  const m = members as { data: Member[]; total: number } | undefined;
 
   const columns: ColumnDef<Member>[] = [
     { accessorKey: 'contact.email', header: 'Email' },
@@ -47,7 +47,7 @@ export function ListDetailPage() {
           </CardContent>
         </Card>
       )}
-      <DataTable data={m?.items ?? []} columns={columns} total={m?.total ?? 0} page={page} pageSize={20} onPageChange={setPage} />
+      <DataTable data={m?.data ?? []} columns={columns} total={m?.total ?? 0} page={page} pageSize={20} onPageChange={setPage} />
     </div>
   );
 }

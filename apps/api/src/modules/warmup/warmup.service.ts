@@ -8,6 +8,23 @@ export class WarmupService {
 
   constructor(private readonly prisma: PrismaService) {}
 
+  async findAll() {
+    const senders = await this.prisma.senderAccount.findMany({
+      where: { warmupEnabled: true },
+      include: { warmupRule: true },
+      orderBy: { createdAt: 'desc' },
+    });
+    return senders.map((s) => ({
+      senderId: s.id,
+      sender: { name: s.name, fromEmail: s.fromEmail },
+      warmupRule: s.warmupRule,
+      warmupCurrentDailyLimit: s.warmupCurrentDailyLimit,
+      warmupStage: s.warmupStage,
+      status: s.status,
+      dailyLimit: s.dailyLimit,
+    }));
+  }
+
   async getRule(senderId: string) {
     return this.prisma.warmupRule.findUnique({ where: { senderId } });
   }

@@ -21,7 +21,7 @@ export function CampaignsPage() {
   const qc = useQueryClient();
   const [page, setPage] = useState(1);
   const { data, isLoading } = useQuery({ queryKey: ['campaigns', page], queryFn: () => campaignsApi.findAll({ page, limit: 20 }) });
-  const result = data as { items: Campaign[]; total: number } | undefined;
+  const result = data as { data: Campaign[]; total: number } | undefined;
 
   const dispatch = useMutation({
     mutationFn: (id: string) => campaignsApi.dispatch(id),
@@ -86,7 +86,7 @@ export function CampaignsPage() {
       <div className="flex justify-end">
         <Button onClick={() => navigate('/campaigns/new')}><Plus className="h-4 w-4 mr-2" />New Campaign</Button>
       </div>
-      <DataTable data={result?.items ?? []} columns={columns} total={result?.total ?? 0} page={page} pageSize={20} onPageChange={setPage} isLoading={isLoading} />
+      <DataTable data={result?.data ?? []} columns={columns} total={result?.total ?? 0} page={page} pageSize={20} onPageChange={setPage} isLoading={isLoading} />
     </div>
   );
 }

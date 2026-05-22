@@ -14,7 +14,7 @@ interface WarmupEntry { senderId: string; sender: { name: string; fromEmail: str
 export function WarmupPage() {
   const qc = useQueryClient();
   const { data } = useQuery({ queryKey: ['warmup'], queryFn: () => warmupApi.findAll() });
-  const entries = (data as WarmupEntry[]) ?? [];
+  const entries = (Array.isArray(data) ? data : ((data as any)?.data ?? [])) as WarmupEntry[];
   const [selectedSender, setSelectedSender] = useState<string | null>(null);
 
   const { data: logs } = useQuery({
@@ -23,7 +23,7 @@ export function WarmupPage() {
     enabled: !!selectedSender,
   });
 
-  const logsData = (logs as { date: string; targetVolume: number; actualVolume: number; openRate: number; bounceRate: number }[]) ?? [];
+  const logsData = (Array.isArray(logs) ? logs : ((logs as any)?.data ?? [])) as { date: string; targetVolume: number; actualVolume: number; openRate: number; bounceRate: number }[];
 
   const { register, handleSubmit } = useForm<{
     initialDailyVolume: number; dailyIncreasePercent: number; maxDailyLimit: number;

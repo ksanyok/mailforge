@@ -18,27 +18,27 @@ export function DashboardPage() {
   const { data: daily } = useQuery({ queryKey: ['daily-metrics'], queryFn: () => analyticsApi.dailyMetrics(30) });
   const { data: recs } = useQuery({ queryKey: ['recommendations'], queryFn: () => recommendationsApi.findAll({ limit: 5 }) });
 
-  const s = stats as Record<string, number> | undefined;
-  const dailyData = (daily as { date: string; sent: number; opened: number; clicked: number; bounced: number }[]) ?? [];
-  const recsData = (recs as { items: { id: string; severity: string; title: string; message: string }[] })?.items ?? [];
+  const s = stats as { contacts?: Record<string, number>; campaigns?: Record<string, number>; sending?: Record<string, number>; senders?: Record<string, unknown> } | undefined;
+  const dailyData = (Array.isArray(daily) ? daily : ((daily as any)?.data ?? [])) as { date: string; sent: number; opened: number; clicked: number; bounced: number }[];
+  const recsData = ((recs as any)?.data ?? []) as { id: string; severity: string; title: string; message: string }[];
 
   const kpiCards = [
-    { label: 'Total Contacts', value: s?.totalContacts ?? 0, icon: Users, color: 'text-blue-600' },
-    { label: 'Subscribed', value: s?.subscribed ?? 0, icon: UserCheck, color: 'text-green-600' },
-    { label: 'Bounced', value: s?.bounced ?? 0, icon: UserX, color: 'text-red-600' },
-    { label: 'Unsubscribed', value: s?.unsubscribed ?? 0, icon: UserX, color: 'text-gray-600' },
-    { label: 'Suppressed', value: s?.suppressed ?? 0, icon: Ban, color: 'text-purple-600' },
-    { label: 'Total Campaigns', value: s?.totalCampaigns ?? 0, icon: Mail, color: 'text-indigo-600' },
-    { label: 'Sent Today', value: s?.sentToday ?? 0, icon: Send, color: 'text-cyan-600' },
-    { label: 'Avg Open Rate', value: `${(s?.avgOpenRate ?? 0).toFixed(1)}%`, icon: TrendingUp, color: 'text-emerald-600', raw: true },
+    { label: 'Total Contacts', value: s?.contacts?.total ?? 0, icon: Users, color: 'text-blue-600' },
+    { label: 'Subscribed', value: s?.contacts?.subscribed ?? 0, icon: UserCheck, color: 'text-green-600' },
+    { label: 'Bounced', value: s?.contacts?.bounced ?? 0, icon: UserX, color: 'text-red-600' },
+    { label: 'Unsubscribed', value: s?.contacts?.unsubscribed ?? 0, icon: UserX, color: 'text-gray-600' },
+    { label: 'Suppressed', value: s?.contacts?.suppressed ?? 0, icon: Ban, color: 'text-purple-600' },
+    { label: 'Total Campaigns', value: s?.campaigns?.total ?? 0, icon: Mail, color: 'text-indigo-600' },
+    { label: 'Sent Today', value: s?.sending?.sentToday ?? 0, icon: Send, color: 'text-cyan-600' },
+    { label: 'Avg Open Rate', value: `${(s?.sending?.openRate ?? 0).toFixed(1)}%`, icon: TrendingUp, color: 'text-emerald-600', raw: true },
   ];
 
   const pieData = [
-    { name: 'Subscribed', value: s?.subscribed ?? 0 },
-    { name: 'Unsubscribed', value: s?.unsubscribed ?? 0 },
-    { name: 'Bounced', value: s?.bounced ?? 0 },
-    { name: 'Complained', value: s?.complained ?? 0 },
-    { name: 'Suppressed', value: s?.suppressed ?? 0 },
+    { name: 'Subscribed', value: s?.contacts?.subscribed ?? 0 },
+    { name: 'Unsubscribed', value: s?.contacts?.unsubscribed ?? 0 },
+    { name: 'Bounced', value: s?.contacts?.bounced ?? 0 },
+    { name: 'Complained', value: s?.contacts?.complained ?? 0 },
+    { name: 'Suppressed', value: s?.contacts?.suppressed ?? 0 },
   ];
 
   return (
@@ -126,21 +126,14 @@ export function DashboardPage() {
       </div>
 
       {/* Sender health */}
-      {s && (s as Record<string, unknown>).senderHealth && (
+      {s?.senders && (
         <Card>
           <CardHeader>
             <CardTitle className="text-sm">Sender Health</CardTitle>
           </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={160}>
-              <BarChart data={(s as Record<string, unknown>).senderHealth as { name: string; score: number }[]}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" tick={{ fontSize: 11 }} />
-                <YAxis domain={[0, 100]} tick={{ fontSize: 11 }} />
-                <Tooltip />
-                <Bar dataKey="score" fill="#6366f1" name="Health Score" />
-              </BarChart>
-            </ResponsiveContainer>
+          <CardContent className="text-sm">
+            <p className="text-muted-foreground">Active senders: <span className="font-semibold text-foreground">{s.senders.active as number ?? 0}</span> / {s.senders.total as number ?? 0}</p>
+            <p className="text-muted-foreground mt-1">Avg health score: <span className="font-semibold text-foreground">{s.senders.averageHealthScore as number ?? 0}</span></p>
           </CardContent>
         </Card>
       )}

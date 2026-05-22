@@ -21,7 +21,7 @@ export function SuppressionsPage() {
   const [open, setOpen] = useState(false);
   const [page, setPage] = useState(1);
   const { data, isLoading } = useQuery({ queryKey: ['suppressions', page], queryFn: () => suppressionsApi.findAll({ page, limit: 20 }) });
-  const result = data as { items: Suppression[]; total: number } | undefined;
+  const result = data as { data: Suppression[]; total: number } | undefined;
   const { register, handleSubmit, setValue, reset } = useForm<{ email: string; reason: string; notes: string }>();
 
   const create = useMutation({
@@ -75,7 +75,7 @@ export function SuppressionsPage() {
           </DialogContent>
         </Dialog>
       </div>
-      <DataTable data={result?.items ?? []} columns={columns} total={result?.total ?? 0} page={page} pageSize={20} onPageChange={setPage} isLoading={isLoading} />
+      <DataTable data={result?.data ?? []} columns={columns} total={result?.total ?? 0} page={page} pageSize={20} onPageChange={setPage} isLoading={isLoading} />
     </div>
   );
 }

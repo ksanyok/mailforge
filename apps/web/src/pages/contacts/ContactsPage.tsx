@@ -31,7 +31,7 @@ export function ContactsPage() {
     queryFn: () => contactsApi.findAll({ page, limit: 20, search }),
   });
 
-  const result = data as { items: Contact[]; total: number } | undefined;
+  const result = data as { data: Contact[]; total: number } | undefined;
 
   const columns: ColumnDef<Contact>[] = [
     {
@@ -98,7 +98,7 @@ export function ContactsPage() {
         </Button>
       </div>
       <DataTable
-        data={result?.items ?? []}
+        data={result?.data ?? []}
         columns={columns}
         total={result?.total ?? 0}
         page={page}

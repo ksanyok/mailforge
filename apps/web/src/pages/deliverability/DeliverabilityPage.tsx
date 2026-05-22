@@ -15,7 +15,7 @@ export function DeliverabilityPage() {
   const qc = useQueryClient();
   const [selectedSender, setSelectedSender] = useState<string | null>(null);
   const { data: senders } = useQuery({ queryKey: ['senders'], queryFn: () => sendersApi.findAll() });
-  const sendersArr = (senders as Sender[]) ?? [];
+  const sendersArr = ((senders as any)?.data ?? []) as Sender[];
 
   const { data: checks } = useQuery({
     queryKey: ['deliverability', selectedSender],
@@ -23,7 +23,7 @@ export function DeliverabilityPage() {
     enabled: !!selectedSender,
   });
 
-  const checksArr = (checks as Check[]) ?? [];
+  const checksArr = ((checks as any)?.data ?? (Array.isArray(checks) ? checks : [])) as Check[];
 
   const runChecks = useMutation({
     mutationFn: () => deliverabilityApi.runChecks(selectedSender!),

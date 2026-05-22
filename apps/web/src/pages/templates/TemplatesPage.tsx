@@ -19,7 +19,7 @@ export function TemplatesPage() {
   const [open, setOpen] = useState(false);
   const [preview, setPreview] = useState<Template | null>(null);
   const { data } = useQuery({ queryKey: ['templates'], queryFn: () => templatesApi.findAll() });
-  const templates = (data as { items?: Template[] })?.items ?? (data as Template[]) ?? [];
+  const templates = ((data as any)?.data ?? []) as Template[];
   const { register, handleSubmit, reset } = useForm<{ name: string; category: string; htmlContent: string; textContent: string }>();
 
   const create = useMutation({

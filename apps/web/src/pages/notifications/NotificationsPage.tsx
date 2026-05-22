@@ -11,7 +11,7 @@ interface Notification { id: string; type: string; title: string; message: strin
 export function NotificationsPage() {
   const qc = useQueryClient();
   const { data } = useQuery({ queryKey: ['notifications'], queryFn: () => notificationsApi.findAll({ limit: 50 }) });
-  const notifs = ((data as { items?: Notification[] })?.items ?? (data as Notification[])) ?? [];
+  const notifs = ((data as any)?.data ?? []) as Notification[];
 
   const markRead = useMutation({
     mutationFn: (id: string) => notificationsApi.markRead(id),

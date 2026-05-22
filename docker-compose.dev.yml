@@ -1,0 +1,48 @@
+version: '3.9'
+
+# Development overrides — use with:
+# docker compose -f docker-compose.yml -f docker-compose.dev.yml up
+
+services:
+  db:
+    ports:
+      - '3306:3306'
+
+  redis:
+    ports:
+      - '6379:6379'
+
+  api:
+    build:
+      context: .
+      dockerfile: docker/api/Dockerfile.dev
+    volumes:
+      - ./apps/api/src:/app/apps/api/src
+      - ./apps/api/prisma:/app/apps/api/prisma
+      - ./packages:/app/packages
+      - uploads:/app/uploads
+    environment:
+      NODE_ENV: development
+      DATABASE_URL: mysql://mailforge:secret@db:3306/mailforge
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: dev-jwt-secret-change-in-production
+      JWT_REFRESH_SECRET: dev-refresh-secret-change-in-production
+      ENCRYPTION_KEY: dev-encryption-key-change-inprod
+      APP_URL: http://localhost:3001
+      FRONTEND_URL: http://localhost:3000
+      PORT: 3001
+      UPLOAD_DIR: /app/uploads
+    command: pnpm --filter @mailforge/api dev
+
+  web:
+    build:
+      context: .
+      dockerfile: docker/web/Dockerfile.dev
+    volumes:
+      - ./apps/web/src:/app/apps/web/src
+      - ./packages:/app/packages
+    environment:
+      VITE_API_URL: http://localhost:3001
+    ports:
+      - '3000:3000'
+    command: pnpm --filter @mailforge/web dev --host

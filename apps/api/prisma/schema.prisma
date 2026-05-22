@@ -1,0 +1,645 @@
+// ============================================================
+// MailForge — Prisma Schema
+// ============================================================
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// ─── Enums ───────────────────────────────────────────────────────────────────
+
+enum Role {
+  ADMIN
+  MANAGER
+  VIEWER
+}
+
+enum ContactStatus {
+  SUBSCRIBED
+  UNSUBSCRIBED
+  BOUNCED
+  COMPLAINED
+  SUPPRESSED
+}
+
+enum BounceType {
+  HARD
+  SOFT
+}
+
+enum ValidationStatus {
+  VALID
+  INVALID
+  RISKY
+  ROLE_BASED
+  DISPOSABLE
+  UNKNOWN
+}
+
+enum ImportStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+enum DedupeRule {
+  SKIP
+  UPDATE
+}
+
+enum SmtpEncryption {
+  NONE
+  TLS
+  STARTTLS
+}
+
+enum SenderStatus {
+  ACTIVE
+  PAUSED
+  ERROR
+}
+
+enum CampaignStatus {
+  DRAFT
+  SCHEDULED
+  SENDING
+  SENT
+  PAUSED
+  CANCELLED
+}
+
+enum RotationMode {
+  SINGLE
+  ROUND_ROBIN
+  WEIGHTED
+  HEALTH_BASED
+}
+
+enum RecipientStatus {
+  PENDING
+  QUEUED
+  SENT
+  DELIVERED
+  OPENED
+  CLICKED
+  BOUNCED
+  COMPLAINED
+  UNSUBSCRIBED
+  SKIPPED
+  FAILED
+}
+
+enum EventType {
+  SENT
+  DELIVERED
+  OPENED
+  CLICKED
+  BOUNCED_SOFT
+  BOUNCED_HARD
+  COMPLAINED
+  UNSUBSCRIBED
+  FAILED
+  SKIPPED
+}
+
+enum TokenType {
+  OPEN
+  CLICK
+  UNSUBSCRIBE
+}
+
+enum SuppressionReason {
+  MANUAL
+  BOUNCE_HARD
+  COMPLAINT
+  ADMIN
+}
+
+enum CheckType {
+  SPF
+  DKIM
+  DMARC
+  MX
+  RDNS
+  BLACKLIST
+  SMTP
+}
+
+enum CheckStatus {
+  PASS
+  FAIL
+  WARNING
+  UNKNOWN
+}
+
+enum RecommendationSeverity {
+  INFO
+  WARNING
+  CRITICAL
+}
+
+enum NotificationType {
+  SMTP_FAILURE
+  BOUNCE_RATE_HIGH
+  COMPLAINT_RATE_HIGH
+  OPEN_RATE_LOW
+  WARMUP_PAUSED
+  DNS_ISSUE
+  BLACKLIST_WARNING
+  CAMPAIGN_COMPLETED
+  IMPORT_COMPLETED
+  RISKY_CAMPAIGN
+  LIMIT_REACHED
+}
+
+// ─── Users & Auth ─────────────────────────────────────────────────────────────
+
+model User {
+  id               String    @id @default(cuid())
+  email            String    @unique
+  passwordHash     String
+  name             String
+  role             Role      @default(VIEWER)
+  isActive         Boolean   @default(true)
+  twoFactorEnabled Boolean   @default(false)
+  twoFactorSecret  String?
+  refreshToken     String?   @db.Text
+  lastLoginAt      DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  campaigns    Campaign[]
+  notifications Notification[]
+  activityLogs ActivityLog[]
+
+  @@map("users")
+}
+
+model Setting {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  value       String   @db.Text
+  description String?
+  updatedAt   DateTime @updatedAt
+
+  @@map("settings")
+}
+
+model ActivityLog {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id])
+  action       String
+  resourceType String
+  resourceId   String?
+  changes      Json?
+  ipAddress    String?
+  userAgent    String?
+  createdAt    DateTime @default(now())
+
+  @@index([userId])
+  @@index([createdAt])
+  @@map("activity_logs")
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  user      User             @relation(fields: [userId], references: [id])
+  type      NotificationType
+  title     String
+  message   String           @db.Text
+  isRead    Boolean          @default(false)
+  metadata  Json?
+  createdAt DateTime         @default(now())
+
+  @@index([userId, isRead])
+  @@map("notifications")
+}
+
+// ─── Contacts ─────────────────────────────────────────────────────────────────
+
+model Contact {
+  id               String           @id @default(cuid())
+  email            String           @unique
+  firstName        String?
+  lastName         String?
+  phone            String?
+  company          String?
+  status           ContactStatus    @default(SUBSCRIBED)
+  engagementScore  Int              @default(50)
+  riskScore        Int              @default(0)
+  validationStatus ValidationStatus @default(UNKNOWN)
+  sourceType       String?
+  sourceId         String?
+  customFields     Json             @default("{}")
+  unsubscribeToken String           @unique
+  unsubscribedAt   DateTime?
+  bouncedAt        DateTime?
+  bounceType       BounceType?
+  complainedAt     DateTime?
+  totalSent        Int              @default(0)
+  totalOpened      Int              @default(0)
+  totalClicked     Int              @default(0)
+  totalBounced     Int              @default(0)
+  lastSentAt       DateTime?
+  lastOpenedAt     DateTime?
+  lastClickedAt    DateTime?
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  listMembers    ContactListMember[]
+  contactTags    ContactTag[]
+  notes          ContactNote[]
+  recipients     CampaignRecipient[]
+  events         CampaignEvent[]
+  trackingTokens TrackingToken[]
+
+  @@index([status])
+  @@index([lastOpenedAt])
+  @@index([engagementScore])
+  @@index([validationStatus])
+  @@map("contacts")
+}
+
+model ContactList {
+  id           String   @id @default(cuid())
+  name         String
+  description  String?
+  contactCount Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  members   ContactListMember[]
+  campaigns CampaignList[]
+  imports   Import[]
+
+  @@map("contact_lists")
+}
+
+model ContactListMember {
+  contactId String
+  listId    String
+  addedAt   DateTime @default(now())
+
+  contact Contact     @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  list    ContactList @relation(fields: [listId], references: [id], onDelete: Cascade)
+
+  @@id([contactId, listId])
+  @@map("contact_list_members")
+}
+
+model Tag {
+  id       String       @id @default(cuid())
+  name     String       @unique
+  color    String       @default("#6366f1")
+  contacts ContactTag[]
+
+  @@map("tags")
+}
+
+model ContactTag {
+  contactId String
+  tagId     String
+
+  contact Contact @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  tag     Tag     @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([contactId, tagId])
+  @@map("contact_tags")
+}
+
+model ContactNote {
+  id        String   @id @default(cuid())
+  contactId String
+  contact   Contact  @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  content   String   @db.Text
+  createdAt DateTime @default(now())
+
+  @@index([contactId])
+  @@map("contact_notes")
+}
+
+// ─── Imports ──────────────────────────────────────────────────────────────────
+
+model Import {
+  id            String      @id @default(cuid())
+  filename      String
+  fileType      String
+  status        ImportStatus @default(PENDING)
+  totalRows     Int         @default(0)
+  processedRows Int         @default(0)
+  successRows   Int         @default(0)
+  errorRows     Int         @default(0)
+  listId        String?
+  list          ContactList? @relation(fields: [listId], references: [id])
+  columnMapping Json        @default("{}")
+  dedupeRule    DedupeRule  @default(SKIP)
+  createdBy     String
+  createdAt     DateTime    @default(now())
+  completedAt   DateTime?
+
+  errors ImportError[]
+
+  @@index([status])
+  @@map("imports")
+}
+
+model ImportError {
+  id        String  @id @default(cuid())
+  importId  String
+  import    Import  @relation(fields: [importId], references: [id], onDelete: Cascade)
+  rowNumber Int
+  email     String?
+  error     String
+  rawData   Json?
+
+  @@index([importId])
+  @@map("import_errors")
+}
+
+// ─── Sender Accounts ──────────────────────────────────────────────────────────
+
+model SenderAccount {
+  id                    String         @id @default(cuid())
+  name                  String
+  fromName              String
+  fromEmail             String
+  replyTo               String?
+  smtpHost              String
+  smtpPort              Int
+  smtpEncryption        SmtpEncryption @default(TLS)
+  smtpUser              String
+  smtpPasswordEncrypted String         @db.Text
+  dailyLimit            Int            @default(500)
+  hourlyLimit           Int            @default(100)
+  perMinuteLimit        Int            @default(10)
+  warmupEnabled         Boolean        @default(true)
+  warmupStage           Int            @default(0)
+  warmupCurrentDailyLimit Int          @default(20)
+  rotationPriority      Int            @default(1)
+  rotationWeight        Int            @default(1)
+  status                SenderStatus   @default(ACTIVE)
+  healthScore           Int            @default(100)
+  lastSuccessAt         DateTime?
+  lastErrorAt           DateTime?
+  lastError             String?        @db.Text
+  totalSent             Int            @default(0)
+  totalBounced          Int            @default(0)
+  totalComplaints       Int            @default(0)
+  createdAt             DateTime       @default(now())
+  updatedAt             DateTime       @updatedAt
+
+  warmupRule   WarmupRule?
+  healthLogs   SenderHealthLog[]
+  campaigns    Campaign[]
+  recipients   CampaignRecipient[]
+  delivChecks  DeliverabilityCheck[]
+
+  @@map("sender_accounts")
+}
+
+// ─── Warmup ───────────────────────────────────────────────────────────────────
+
+model WarmupRule {
+  id                   String        @id @default(cuid())
+  senderId             String        @unique
+  sender               SenderAccount @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  initialDailyVolume   Int           @default(20)
+  dailyIncreasePercent Int           @default(20)
+  maxDailyLimit        Int           @default(500)
+  minOpenRate          Float         @default(0.20)
+  maxBounceRate        Float         @default(0.03)
+  maxComplaintRate     Float         @default(0.001)
+  cooldownDays         Int           @default(3)
+  autoPauseOnCritical  Boolean       @default(true)
+  createdAt            DateTime      @default(now())
+  updatedAt            DateTime      @updatedAt
+
+  @@map("warmup_rules")
+}
+
+model SenderHealthLog {
+  id              String        @id @default(cuid())
+  senderId        String
+  sender          SenderAccount @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  healthScore     Int
+  sentToday       Int
+  bouncesToday    Int
+  complaintsToday Int
+  opensToday      Int
+  notes           String?
+  createdAt       DateTime      @default(now())
+
+  @@index([senderId, createdAt])
+  @@map("sender_health_logs")
+}
+
+model WarmupLog {
+  id            String   @id @default(cuid())
+  senderId      String
+  date          DateTime @db.Date
+  targetVolume  Int
+  actualVolume  Int
+  bounceRate    Float
+  openRate      Float
+  complaintRate Float
+  stageAdvanced Boolean  @default(false)
+  notes         String?
+
+  @@index([senderId, date])
+  @@map("warmup_logs")
+}
+
+// ─── Campaigns ────────────────────────────────────────────────────────────────
+
+model Campaign {
+  id               String         @id @default(cuid())
+  name             String
+  subject          String
+  preheader        String?
+  htmlContent      String         @db.LongText
+  textContent      String?        @db.LongText
+  status           CampaignStatus @default(DRAFT)
+  senderId         String?
+  sender           SenderAccount? @relation(fields: [senderId], references: [id])
+  scheduledAt      DateTime?
+  startedAt        DateTime?
+  completedAt      DateTime?
+  totalRecipients  Int            @default(0)
+  sentCount        Int            @default(0)
+  deliveredCount   Int            @default(0)
+  openCount        Int            @default(0)
+  uniqueOpenCount  Int            @default(0)
+  clickCount       Int            @default(0)
+  uniqueClickCount Int            @default(0)
+  bounceCount      Int            @default(0)
+  complaintCount   Int            @default(0)
+  unsubscribeCount Int            @default(0)
+  skipCount        Int            @default(0)
+  throttlePerMinute Int           @default(60)
+  rotationMode     RotationMode   @default(SINGLE)
+  trackOpens       Boolean        @default(true)
+  trackClicks      Boolean        @default(true)
+  utmSource        String?
+  utmMedium        String?
+  utmCampaign      String?
+  createdBy        String
+  createdByUser    User           @relation(fields: [createdBy], references: [id])
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  lists          CampaignList[]
+  recipients     CampaignRecipient[]
+  events         CampaignEvent[]
+  trackingTokens TrackingToken[]
+
+  @@index([status])
+  @@index([scheduledAt])
+  @@map("campaigns")
+}
+
+model CampaignList {
+  campaignId String
+  listId     String
+
+  campaign Campaign    @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  list     ContactList @relation(fields: [listId], references: [id])
+
+  @@id([campaignId, listId])
+  @@map("campaign_lists")
+}
+
+model CampaignRecipient {
+  id            String          @id @default(cuid())
+  campaignId    String
+  campaign      Campaign        @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  contactId     String
+  contact       Contact         @relation(fields: [contactId], references: [id])
+  senderId      String?
+  sender        SenderAccount?  @relation(fields: [senderId], references: [id])
+  status        RecipientStatus @default(PENDING)
+  queuedAt      DateTime?
+  sentAt        DateTime?
+  deliveredAt   DateTime?
+  failureReason String?
+  skipReason    String?
+
+  @@unique([campaignId, contactId])
+  @@index([campaignId, status])
+  @@map("campaign_recipients")
+}
+
+model CampaignEvent {
+  id         String    @id @default(cuid())
+  campaignId String
+  campaign   Campaign  @relation(fields: [campaignId], references: [id])
+  contactId  String
+  contact    Contact   @relation(fields: [contactId], references: [id])
+  senderId   String?
+  eventType  EventType
+  url        String?   @db.Text
+  urlHost    String?
+  userAgent  String?
+  ipAddress  String?
+  country    String?
+  deviceType String?
+  createdAt  DateTime  @default(now())
+
+  @@index([campaignId, eventType])
+  @@index([contactId])
+  @@index([createdAt])
+  @@map("campaign_events")
+}
+
+// ─── Templates ────────────────────────────────────────────────────────────────
+
+model EmailTemplate {
+  id          String   @id @default(cuid())
+  name        String
+  category    String?
+  htmlContent String   @db.LongText
+  textContent String?  @db.LongText
+  isSystem    Boolean  @default(false)
+  variables   Json     @default("[]")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("email_templates")
+}
+
+// ─── Tracking ─────────────────────────────────────────────────────────────────
+
+model TrackingToken {
+  id          String    @id @default(cuid())
+  campaignId  String
+  campaign    Campaign  @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  contactId   String
+  contact     Contact   @relation(fields: [contactId], references: [id])
+  recipientId String?
+  tokenType   TokenType
+  token       String    @unique
+  targetUrl   String?   @db.Text
+  clickCount  Int       @default(0)
+  firstClickAt DateTime?
+  lastClickAt  DateTime?
+  createdAt    DateTime @default(now())
+
+  @@index([token])
+  @@index([campaignId, contactId])
+  @@map("tracking_tokens")
+}
+
+// ─── Suppression ──────────────────────────────────────────────────────────────
+
+model Suppression {
+  id        String            @id @default(cuid())
+  email     String            @unique
+  reason    SuppressionReason
+  sourceId  String?
+  notes     String?
+  createdAt DateTime          @default(now())
+
+  @@map("suppressions")
+}
+
+// ─── Deliverability ───────────────────────────────────────────────────────────
+
+model DeliverabilityCheck {
+  id             String        @id @default(cuid())
+  senderId       String
+  sender         SenderAccount @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  checkType      CheckType
+  status         CheckStatus
+  value          String?       @db.Text
+  recommendation String?       @db.Text
+  checkedAt      DateTime      @default(now())
+
+  @@index([senderId, checkType])
+  @@map("deliverability_checks")
+}
+
+// ─── Recommendations ──────────────────────────────────────────────────────────
+
+model Recommendation {
+  id           String                 @id @default(cuid())
+  type         String
+  severity     RecommendationSeverity
+  title        String
+  message      String                 @db.Text
+  actionText   String?
+  resourceType String?
+  resourceId   String?
+  isRead       Boolean                @default(false)
+  isDismissed  Boolean                @default(false)
+  createdAt    DateTime               @default(now())
+
+  @@index([isDismissed, isRead])
+  @@map("recommendations")
+}

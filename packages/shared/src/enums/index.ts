@@ -1,0 +1,144 @@
+export enum Role {
+  ADMIN = 'ADMIN',
+  MANAGER = 'MANAGER',
+  VIEWER = 'VIEWER',
+}
+
+export enum ContactStatus {
+  SUBSCRIBED = 'SUBSCRIBED',
+  UNSUBSCRIBED = 'UNSUBSCRIBED',
+  BOUNCED = 'BOUNCED',
+  COMPLAINED = 'COMPLAINED',
+  SUPPRESSED = 'SUPPRESSED',
+}
+
+export enum BounceType {
+  HARD = 'HARD',
+  SOFT = 'SOFT',
+}
+
+export enum ValidationStatus {
+  VALID = 'VALID',
+  INVALID = 'INVALID',
+  RISKY = 'RISKY',
+  ROLE_BASED = 'ROLE_BASED',
+  DISPOSABLE = 'DISPOSABLE',
+  UNKNOWN = 'UNKNOWN',
+}
+
+export enum ImportStatus {
+  PENDING = 'PENDING',
+  PROCESSING = 'PROCESSING',
+  COMPLETED = 'COMPLETED',
+  FAILED = 'FAILED',
+}
+
+export enum DedupeRule {
+  SKIP = 'SKIP',
+  UPDATE = 'UPDATE',
+}
+
+export enum SmtpEncryption {
+  NONE = 'NONE',
+  TLS = 'TLS',
+  STARTTLS = 'STARTTLS',
+}
+
+export enum SenderStatus {
+  ACTIVE = 'ACTIVE',
+  PAUSED = 'PAUSED',
+  ERROR = 'ERROR',
+}
+
+export enum CampaignStatus {
+  DRAFT = 'DRAFT',
+  SCHEDULED = 'SCHEDULED',
+  SENDING = 'SENDING',
+  SENT = 'SENT',
+  PAUSED = 'PAUSED',
+  CANCELLED = 'CANCELLED',
+}
+
+export enum RotationMode {
+  SINGLE = 'SINGLE',
+  ROUND_ROBIN = 'ROUND_ROBIN',
+  WEIGHTED = 'WEIGHTED',
+  HEALTH_BASED = 'HEALTH_BASED',
+}
+
+export enum RecipientStatus {
+  PENDING = 'PENDING',
+  QUEUED = 'QUEUED',
+  SENT = 'SENT',
+  DELIVERED = 'DELIVERED',
+  OPENED = 'OPENED',
+  CLICKED = 'CLICKED',
+  BOUNCED = 'BOUNCED',
+  COMPLAINED = 'COMPLAINED',
+  UNSUBSCRIBED = 'UNSUBSCRIBED',
+  SKIPPED = 'SKIPPED',
+  FAILED = 'FAILED',
+}
+
+export enum EventType {
+  SENT = 'SENT',
+  DELIVERED = 'DELIVERED',
+  OPENED = 'OPENED',
+  CLICKED = 'CLICKED',
+  BOUNCED_SOFT = 'BOUNCED_SOFT',
+  BOUNCED_HARD = 'BOUNCED_HARD',
+  COMPLAINED = 'COMPLAINED',
+  UNSUBSCRIBED = 'UNSUBSCRIBED',
+  FAILED = 'FAILED',
+  SKIPPED = 'SKIPPED',
+}
+
+export enum TokenType {
+  OPEN = 'OPEN',
+  CLICK = 'CLICK',
+  UNSUBSCRIBE = 'UNSUBSCRIBE',
+}
+
+export enum SuppressionReason {
+  MANUAL = 'MANUAL',
+  BOUNCE_HARD = 'BOUNCE_HARD',
+  COMPLAINT = 'COMPLAINT',
+  ADMIN = 'ADMIN',
+}
+
+export enum CheckType {
+  SPF = 'SPF',
+  DKIM = 'DKIM',
+  DMARC = 'DMARC',
+  MX = 'MX',
+  RDNS = 'RDNS',
+  BLACKLIST = 'BLACKLIST',
+  SMTP = 'SMTP',
+}
+
+export enum CheckStatus {
+  PASS = 'PASS',
+  FAIL = 'FAIL',
+  WARNING = 'WARNING',
+  UNKNOWN = 'UNKNOWN',
+}
+
+export enum RecommendationSeverity {
+  INFO = 'INFO',
+  WARNING = 'WARNING',
+  CRITICAL = 'CRITICAL',
+}
+
+export enum NotificationType {
+  SMTP_FAILURE = 'SMTP_FAILURE',
+  BOUNCE_RATE_HIGH = 'BOUNCE_RATE_HIGH',
+  COMPLAINT_RATE_HIGH = 'COMPLAINT_RATE_HIGH',
+  OPEN_RATE_LOW = 'OPEN_RATE_LOW',
+  WARMUP_PAUSED = 'WARMUP_PAUSED',
+  DNS_ISSUE = 'DNS_ISSUE',
+  BLACKLIST_WARNING = 'BLACKLIST_WARNING',
+  CAMPAIGN_COMPLETED = 'CAMPAIGN_COMPLETED',
+  IMPORT_COMPLETED = 'IMPORT_COMPLETED',
+  RISKY_CAMPAIGN = 'RISKY_CAMPAIGN',
+  LIMIT_REACHED = 'LIMIT_REACHED',
+}

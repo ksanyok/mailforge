@@ -36,6 +36,43 @@ export class ListsService {
     await this.prisma.contactList.delete({ where: { id } });
   }
 
+  async addMembers(listId: string, contactIds: string[]) {
+    await this.findOne(listId);
+    const existing = await this.prisma.contactListMember.findMany({
+      where: { listId, contactId: { in: contactIds } },
+      select: { contactId: true },
+    });
+    const existingSet = new Set(existing.map((m) => m.contactId));
+    const newIds = contactIds.filter((id) => !existingSet.has(id));
+    if (newIds.length > 0) {
+      await this.prisma.contactListMember.createMany({
+        data: newIds.map((contactId) => ({ listId, contactId })),
+        skipDuplicates: true,
+      });
+      await this.prisma.contactList.update({
+        where: { id: listId },
+        data: { contactCount: { increment: newIds.length } },
+      });
+    }
+    return { added: newIds.length };
+  }
+
+  async getMembers(listId: string, query: { page?: number; limit?: number }) {
+    await this.findOne(listId);
+    const { skip, take, page, limit } = getPaginationParams(query);
+    const [members, total] = await Promise.all([
+      this.prisma.contactListMember.findMany({
+        where: { listId },
+        skip,
+        take,
+        include: { contact: { select: { id: true, email: true, firstName: true, lastName: true, status: true } } },
+        orderBy: { addedAt: 'desc' },
+      }),
+      this.prisma.contactListMember.count({ where: { listId } }),
+    ]);
+    return buildPaginatedResponse(members, total, page, limit);
+  }
+
   async getContacts(listId: string, query: { page?: number; limit?: number }) {
     await this.findOne(listId);
     const { skip, take, page, limit } = getPaginationParams(query);
@@ -50,6 +87,17 @@ export class ListsService {
       this.prisma.contactListMember.count({ where: { listId } }),
     ]);
     return buildPaginatedResponse(members.map((m) => m.contact), total, page, limit);
+  }
+
+  async removeMembers(listId: string, contactIds: string[]) {
+    await this.prisma.contactListMember.deleteMany({
+      where: { listId, contactId: { in: contactIds } },
+    });
+    await this.prisma.contactList.update({
+      where: { id: listId },
+      data: { contactCount: { decrement: contactIds.length } },
+    });
+    return { removed: contactIds.length };
   }
 
   async removeContact(listId: string, contactId: string) {

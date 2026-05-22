@@ -20,6 +20,16 @@ export class ListsController {
     return this.listsService.findOne(id);
   }
 
+  @Get(':id/members')
+  getMembers(@Param('id') id: string, @Query() query: { page?: number; limit?: number }) {
+    return this.listsService.getMembers(id, query);
+  }
+
+  @Post(':id/members')
+  addMembers(@Param('id') id: string, @Body('contactIds') contactIds: string[]) {
+    return this.listsService.addMembers(id, contactIds);
+  }
+
   @Get(':id/contacts')
   getContacts(@Param('id') id: string, @Query() query: { page?: number; limit?: number }) {
     return this.listsService.getContacts(id, query);
@@ -39,6 +49,12 @@ export class ListsController {
   @HttpCode(HttpStatus.NO_CONTENT)
   remove(@Param('id') id: string) {
     return this.listsService.remove(id);
+  }
+
+  @Delete(':id/members')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  removeMembers(@Param('id') id: string, @Body('contactIds') contactIds: string[]) {
+    return this.listsService.removeMembers(id, contactIds);
   }
 
   @Delete(':id/contacts/:contactId')

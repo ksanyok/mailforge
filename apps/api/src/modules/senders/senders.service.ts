@@ -99,7 +99,7 @@ export class SendersService {
     await this.prisma.senderAccount.delete({ where: { id } });
   }
 
-  async testConnection(id: string, testTo: string) {
+  async testConnection(id: string, testTo?: string) {
     const sender = await this.prisma.senderAccount.findUniqueOrThrow({ where: { id } });
     const encryptionKey = this.config.getOrThrow('ENCRYPTION_KEY');
     const password = decrypt(sender.smtpPasswordEncrypted, encryptionKey);
@@ -118,7 +118,7 @@ export class SendersService {
 
       await transporter.sendMail({
         from: `"${sender.fromName}" <${sender.fromEmail}>`,
-        to: testTo,
+        to: testTo || sender.fromEmail,
         subject: '✅ MailForge SMTP Test',
         text: 'This is a test email from MailForge. Your SMTP connection is working correctly.',
         html: '<p>This is a test email from <strong>MailForge</strong>. Your SMTP connection is working correctly.</p>',

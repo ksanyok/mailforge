@@ -29,7 +29,7 @@ export const importsApi = {
   findAll: (params?: Record<string, unknown>) => api.get('/imports', { params }).then(extractData),
   findOne: (id: string) => api.get(`/imports/${id}`).then(extractData),
   upload: (formData: FormData) =>
-    api.post('/imports/upload', formData, { headers: { 'Content-Type': 'multipart/form-data' } }).then(extractData),
+    api.post('/imports', formData, { headers: { 'Content-Type': 'multipart/form-data' } }).then(extractData),
   errors: (id: string) => api.get(`/imports/${id}/errors`).then(extractData),
 };
 

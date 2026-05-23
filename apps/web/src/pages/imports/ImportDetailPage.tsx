@@ -1,57 +1,159 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, CheckCircle, XCircle, Clock, Loader2, FileText, List } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
+import { Badge } from '@/components/ui/badge';
 import { importsApi } from '@/api/index';
-import { formatDate, STATUS_COLORS } from '@/utils/format';
-import { cn } from '@/utils/cn';
+import { formatDate } from '@/utils/format';
+
+const STATUS_ICON: Record<string, React.ReactNode> = {
+  COMPLETED: <CheckCircle className="h-4 w-4 text-green-600" />,
+  FAILED:    <XCircle    className="h-4 w-4 text-red-600" />,
+  PROCESSING:<Loader2   className="h-4 w-4 text-blue-600 animate-spin" />,
+  PENDING:   <Clock      className="h-4 w-4 text-gray-400" />,
+};
+
+const STATUS_VARIANT: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
+  COMPLETED: 'default',
+  FAILED: 'destructive',
+  PROCESSING: 'secondary',
+  PENDING: 'outline',
+};
 
 export function ImportDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { data: imp } = useQuery({ queryKey: ['import', id], queryFn: () => importsApi.findOne(id!), enabled: !!id });
-  const { data: errors } = useQuery({ queryKey: ['import-errors', id], queryFn: () => importsApi.errors(id!), enabled: !!id });
+
+  const { data: imp } = useQuery({
+    queryKey: ['import', id],
+    queryFn: () => importsApi.findOne(id!),
+    enabled: !!id,
+    refetchInterval: (data) => {
+      const status = (data as any)?.status;
+      return status === 'PROCESSING' || status === 'PENDING' ? 2000 : false;
+    },
+  });
+
+  const { data: errorsResp } = useQuery({
+    queryKey: ['import-errors', id],
+    queryFn: () => importsApi.errors(id!),
+    enabled: !!id,
+  });
 
   const i = imp as Record<string, unknown> | undefined;
-  const errs = errors as { rowNumber: number; email?: string; error: string }[] | undefined;
+  const errs = ((errorsResp as any)?.data ?? (Array.isArray(errorsResp) ? errorsResp : [])) as { rowNumber: number; email?: string; error: string }[];
+
+  const totalRows = (i?.totalRows as number) ?? 0;
+  const processedRows = (i?.processedRows as number) ?? 0;
+  const successRows = (i?.successRows as number) ?? 0;
+  const errorRows = (i?.errorRows as number) ?? 0;
+  const pct = totalRows > 0 ? (processedRows / totalRows) * 100 : 0;
+  const status = (i?.status as string) ?? '';
 
   return (
     <div className="space-y-4 max-w-2xl">
-      <Button variant="ghost" size="sm" onClick={() => navigate(-1)}><ArrowLeft className="h-4 w-4 mr-2" />Back</Button>
+      <Button variant="ghost" size="sm" onClick={() => navigate(-1)}>
+        <ArrowLeft className="h-4 w-4 mr-2" />Back to Imports
+      </Button>
+
       {i && (
         <Card>
           <CardHeader>
-            <CardTitle>{i.filename as string}</CardTitle>
-            <span className={cn('w-fit px-2 py-0.5 rounded-full text-xs font-medium', STATUS_COLORS[i.status as string] ?? 'bg-gray-100')}>{i.status as string}</span>
+            <div className="flex items-start justify-between">
+              <div className="flex items-center gap-2">
+                <FileText className="h-5 w-5 text-muted-foreground" />
+                <div>
+                  <CardTitle className="text-base">{i.filename as string}</CardTitle>
+                  <p className="text-xs text-muted-foreground mt-0.5">Started {formatDate(i.createdAt as string)}</p>
+                </div>
+              </div>
+              <Badge variant={STATUS_VARIANT[status] ?? 'outline'} className="flex items-center gap-1">
+                {STATUS_ICON[status]}
+                {status}
+              </Badge>
+            </div>
           </CardHeader>
           <CardContent className="space-y-4">
-            <Progress value={i.totalRows as number > 0 ? ((i.processedRows as number) / (i.totalRows as number)) * 100 : 0} />
-            <div className="grid grid-cols-3 gap-4 text-sm">
-              <div><p className="text-muted-foreground">Total</p><p className="font-medium">{i.totalRows as number}</p></div>
-              <div><p className="text-muted-foreground">Success</p><p className="font-medium text-green-600">{i.successRows as number}</p></div>
-              <div><p className="text-muted-foreground">Errors</p><p className="font-medium text-red-600">{i.errorRows as number}</p></div>
+            <div>
+              <div className="flex justify-between text-xs text-muted-foreground mb-1">
+                <span>Progress</span>
+                <span>{processedRows} / {totalRows} rows</span>
+              </div>
+              <Progress value={pct} className="h-2" />
             </div>
-            <p className="text-xs text-muted-foreground">Started {formatDate(i.createdAt as string)}</p>
+
+            <div className="grid grid-cols-3 gap-3">
+              <div className="rounded-lg border p-3 text-center">
+                <p className="text-2xl font-bold">{totalRows}</p>
+                <p className="text-xs text-muted-foreground">Total rows</p>
+              </div>
+              <div className="rounded-lg border p-3 text-center">
+                <p className="text-2xl font-bold text-green-600">{successRows}</p>
+                <p className="text-xs text-muted-foreground">Imported</p>
+              </div>
+              <div className="rounded-lg border p-3 text-center">
+                <p className="text-2xl font-bold text-red-600">{errorRows}</p>
+                <p className="text-xs text-muted-foreground">Errors</p>
+              </div>
+            </div>
+
+            {i.list && (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <List className="h-4 w-4" />
+                Added to list: <span className="font-medium text-foreground">{(i.list as any).name}</span>
+              </div>
+            )}
+
+            {i.completedAt && (
+              <p className="text-xs text-muted-foreground">Completed {formatDate(i.completedAt as string)}</p>
+            )}
           </CardContent>
         </Card>
       )}
-      {errs && errs.length > 0 && (
+
+      {errs.length > 0 && (
         <Card>
-          <CardHeader><CardTitle className="text-sm">Import Errors ({errs.length})</CardTitle></CardHeader>
+          <CardHeader>
+            <CardTitle className="text-sm flex items-center gap-2">
+              <XCircle className="h-4 w-4 text-red-600" />
+              Import Errors ({errs.length})
+            </CardTitle>
+          </CardHeader>
           <CardContent>
-            <div className="space-y-2 text-xs">
-              {errs.slice(0, 50).map((e, i) => (
-                <div key={i} className="flex gap-3 border-b pb-2">
-                  <span className="text-muted-foreground w-16">Row {e.rowNumber}</span>
-                  {e.email && <span className="text-muted-foreground w-48">{e.email}</span>}
-                  <span className="text-red-600">{e.error}</span>
-                </div>
-              ))}
+            <div className="rounded-md border overflow-hidden">
+              <table className="w-full text-xs">
+                <thead className="bg-muted/50">
+                  <tr>
+                    <th className="text-left px-3 py-2 text-muted-foreground font-medium">Row</th>
+                    <th className="text-left px-3 py-2 text-muted-foreground font-medium">Email</th>
+                    <th className="text-left px-3 py-2 text-muted-foreground font-medium">Error</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {errs.slice(0, 100).map((e, idx) => (
+                    <tr key={idx} className="border-t">
+                      <td className="px-3 py-2 text-muted-foreground">{e.rowNumber}</td>
+                      <td className="px-3 py-2">{e.email ?? '—'}</td>
+                      <td className="px-3 py-2 text-red-600">{e.error}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
+            {errs.length > 100 && (
+              <p className="text-xs text-muted-foreground mt-2">Showing first 100 of {errs.length} errors.</p>
+            )}
           </CardContent>
         </Card>
+      )}
+
+      {i && status === 'COMPLETED' && errs.length === 0 && (
+        <div className="flex items-center gap-2 p-4 rounded-lg bg-green-50 border border-green-200 text-green-700 text-sm">
+          <CheckCircle className="h-5 w-5 shrink-0" />
+          <span>All {successRows} contacts imported successfully with no errors.</span>
+        </div>
       )}
     </div>
   );

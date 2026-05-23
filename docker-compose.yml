@@ -11,7 +11,7 @@ services:
       MYSQL_USER: mailforge
       MYSQL_PASSWORD: ${DB_PASSWORD:-secret}
     ports:
-      - '3306:3306'
+      - '127.0.0.1:3306:3306'
     volumes:
       - db_data:/var/lib/mysql
     healthcheck:
@@ -25,7 +25,7 @@ services:
     container_name: mailforge_redis
     restart: unless-stopped
     ports:
-      - '6379:6379'
+      - '127.0.0.1:6379:6379'
     volumes:
       - redis_data:/data
     healthcheck:
@@ -76,7 +76,7 @@ services:
       PORT: 3001
       UPLOAD_DIR: /app/uploads
     ports:
-      - '3001:3001'
+      - '127.0.0.1:3001:3001'
     volumes:
       - uploads:/app/uploads
 
@@ -91,10 +91,35 @@ services:
     depends_on:
       - api
     ports:
-      - '3000:80'
+      - '127.0.0.1:3000:80'
+
+  webmail:
+    image: roundcube/roundcubemail:latest
+    container_name: mailforge_webmail
+    restart: unless-stopped
+    extra_hosts:
+      - "host.docker.internal:172.18.0.1"
+    environment:
+      ROUNDCUBEMAIL_DEFAULT_HOST: tls://host.docker.internal
+      ROUNDCUBEMAIL_DEFAULT_PORT: 993
+      ROUNDCUBEMAIL_SMTP_SERVER: tls://host.docker.internal
+      ROUNDCUBEMAIL_SMTP_PORT: 587
+      ROUNDCUBEMAIL_SMTP_USER: '%u'
+      ROUNDCUBEMAIL_SMTP_PASS: '%p'
+      ROUNDCUBEMAIL_DB_TYPE: sqlite
+      ROUNDCUBEMAIL_SKIN: elastic
+      ROUNDCUBEMAIL_PLUGINS: archive,zipdownload,markasjunk
+      ROUNDCUBEMAIL_UPLOAD_MAX_FILESIZE: 25M
+    volumes:
+      - webmail_data:/var/roundcube/db
+      - webmail_config:/var/roundcube/config
+    ports:
+      - '127.0.0.1:8025:80'
 
 volumes:
   db_data:
   redis_data:
   minio_data:
   uploads:
+  webmail_data:
+  webmail_config:

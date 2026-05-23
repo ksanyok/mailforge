@@ -100,12 +100,13 @@ services:
     extra_hosts:
       - "host.docker.internal:172.18.0.1"
     environment:
-      ROUNDCUBEMAIL_DEFAULT_HOST: tls://host.docker.internal
-      ROUNDCUBEMAIL_DEFAULT_PORT: 993
-      ROUNDCUBEMAIL_SMTP_SERVER: tls://host.docker.internal
+      ROUNDCUBEMAIL_DEFAULT_HOST: host.docker.internal
+      ROUNDCUBEMAIL_DEFAULT_PORT: 143
+      ROUNDCUBEMAIL_SMTP_SERVER: host.docker.internal
       ROUNDCUBEMAIL_SMTP_PORT: 587
       ROUNDCUBEMAIL_SMTP_USER: '%u'
       ROUNDCUBEMAIL_SMTP_PASS: '%p'
+      ROUNDCUBEMAIL_SMTP_AUTH_TYPE: LOGIN
       ROUNDCUBEMAIL_DB_TYPE: sqlite
       ROUNDCUBEMAIL_SKIN: elastic
       ROUNDCUBEMAIL_PLUGINS: archive,zipdownload,markasjunk

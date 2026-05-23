@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bull';
 import { Queue } from 'bull';
 import { PrismaService } from '../../core/database/prisma.service';
@@ -48,6 +48,11 @@ export class ImportsService {
     const importsDir = path.join(uploadDir, 'imports');
     if (!fs.existsSync(importsDir)) {
       fs.mkdirSync(importsDir, { recursive: true });
+    }
+
+    if (dto.listId) {
+      const list = await this.prisma.contactList.findUnique({ where: { id: dto.listId } });
+      if (!list) throw new BadRequestException(`List with id "${dto.listId}" not found`);
     }
 
     const ext = path.extname(file.originalname).toLowerCase().replace('.', '');

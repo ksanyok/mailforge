@@ -25,7 +25,7 @@ export function ListDetailPage() {
 
   const columns: ColumnDef<Member>[] = [
     { accessorKey: 'contact.email', header: 'Email' },
-    { id: 'name', header: 'Name', cell: ({ row }) => [row.original.contact.firstName, row.original.contact.lastName].filter(Boolean).join(' ') || '—' },
+    { id: 'name', header: 'Name', cell: ({ row }) => [row.original.contact?.firstName, row.original.contact?.lastName].filter(Boolean).join(' ') || '—' },
     {
       accessorKey: 'contact.status', header: 'Status',
       cell: ({ getValue }) => <span className={cn('px-2 py-0.5 rounded-full text-xs font-medium', STATUS_COLORS[getValue() as string] ?? 'bg-gray-100')}>{getValue() as string}</span>,

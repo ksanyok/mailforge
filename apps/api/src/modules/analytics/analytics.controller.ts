@@ -18,6 +18,11 @@ export class AnalyticsController {
     return this.analyticsService.getDailyMetrics(days ? +days : 30);
   }
 
+  @Get('senders')
+  getSenderComparison() {
+    return this.analyticsService.getSenderComparison();
+  }
+
   @Get('campaigns/comparison')
   getCampaignComparison(@Query('limit') limit?: number) {
     return this.analyticsService.getCampaignComparison(limit ? +limit : 10);

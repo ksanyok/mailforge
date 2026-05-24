@@ -125,6 +125,35 @@ export class AnalyticsService {
     return result;
   }
 
+  async getSenderComparison() {
+    const senders = await this.prisma.senderAccount.findMany({
+      select: { id: true, name: true, fromEmail: true, totalSent: true, totalBounced: true, healthScore: true },
+    });
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const result = await Promise.all(
+      senders.map(async (s) => {
+        const [opened, sent] = await Promise.all([
+          this.prisma.campaignEvent.count({
+            where: { senderId: s.id, eventType: 'OPENED', createdAt: { gte: thirtyDaysAgo } },
+          }),
+          this.prisma.campaignEvent.count({
+            where: { senderId: s.id, eventType: 'SENT', createdAt: { gte: thirtyDaysAgo } },
+          }),
+        ]);
+        return {
+          id: s.id,
+          name: s.name,
+          email: s.fromEmail,
+          sent: s.totalSent,
+          openRate: sent > 0 ? Math.round((opened / sent) * 10000) / 100 : 0,
+          bounceRate: s.totalSent > 0 ? Math.round((s.totalBounced / s.totalSent) * 10000) / 100 : 0,
+          healthScore: s.healthScore,
+        };
+      }),
+    );
+    return result;
+  }
+
   async getCampaignComparison(limit = 10) {
     const campaigns = await this.prisma.campaign.findMany({
       where: { status: { in: ['SENT', 'SENDING'] } },

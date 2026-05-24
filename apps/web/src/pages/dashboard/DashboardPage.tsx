@@ -20,7 +20,8 @@ export function DashboardPage() {
 
   const s = stats as { contacts?: Record<string, number>; campaigns?: Record<string, number>; sending?: Record<string, number>; senders?: Record<string, unknown> } | undefined;
   const dailyData = (Array.isArray(daily) ? daily : ((daily as any)?.data ?? [])) as { date: string; sent: number; opened: number; clicked: number; bounced: number }[];
-  const recsData = ((recs as any)?.data ?? []) as { id: string; severity: string; title: string; message: string }[];
+  const recsRaw = (recs as any)?.data;
+  const recsData = (Array.isArray(recsRaw) ? recsRaw : []) as { id: string; severity: string; title: string; message: string }[];
 
   const kpiCards = [
     { label: 'Total Contacts', value: s?.contacts?.total ?? 0, icon: Users, color: 'text-blue-600' },

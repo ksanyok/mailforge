@@ -15,7 +15,8 @@ export function SenderDetailPage() {
   const { data: healthLogs } = useQuery({ queryKey: ['sender-health', id], queryFn: () => sendersApi.healthLogs(id!), enabled: !!id });
 
   const s = sender as Record<string, unknown> | undefined;
-  const logs = healthLogs as { createdAt: string; healthScore: number; sentToday: number; bouncesToday: number }[] | undefined;
+  const logsRaw = Array.isArray(healthLogs) ? healthLogs : ((healthLogs as any)?.data ?? []);
+  const logs = (Array.isArray(logsRaw) ? logsRaw : []) as { createdAt: string; healthScore: number; sentToday: number; bouncesToday: number }[];
 
   if (!s) return <div className="text-muted-foreground">Loading...</div>;
 

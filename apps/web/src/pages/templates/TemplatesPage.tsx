@@ -100,8 +100,12 @@ export function TemplatesPage() {
     return matchSearch && matchCat;
   });
 
-  const vars = (t: Template) => {
-    if (Array.isArray(t.variables)) return t.variables as string[];
+  const vars = (t: Template): string[] => {
+    const v = t.variables;
+    if (Array.isArray(v)) return v.filter((x) => typeof x === 'string') as string[];
+    if (typeof v === 'string') {
+      try { const parsed = JSON.parse(v); return Array.isArray(parsed) ? parsed : []; } catch { return []; }
+    }
     return [];
   };
 

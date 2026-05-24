@@ -28,19 +28,19 @@ interface BuilderForm {
 }
 
 const STEPS = [
-  { label: 'Тема',       icon: FileText,   hint: 'Название, тема, прехедер' },
-  { label: 'Отправитель',icon: Mail,        hint: 'Откуда придёт письмо' },
-  { label: 'Получатели', icon: Users,       hint: 'Списки контактов' },
-  { label: 'Письмо',     icon: Code2,       hint: 'HTML-редактор + превью' },
-  { label: 'Настройки',  icon: Settings2,   hint: 'Скорость, трекинг' },
-  { label: 'Проверка',   icon: CheckCircle, hint: 'Финальный чеклист' },
+  { label: 'Basics',    icon: FileText,   hint: 'Campaign name, subject, preheader' },
+  { label: 'Sender',    icon: Mail,        hint: 'SMTP account and from-name' },
+  { label: 'Recipients',icon: Users,       hint: 'Contact lists' },
+  { label: 'Content',   icon: Code2,       hint: 'HTML editor + live preview' },
+  { label: 'Settings',  icon: Settings2,   hint: 'Send speed and tracking' },
+  { label: 'Review',    icon: CheckCircle, hint: 'Final checklist before sending' },
 ];
 
 const VARIABLES = [
-  { v: '{{firstName}}',    label: 'Имя' },
-  { v: '{{lastName}}',     label: 'Фамилия' },
+  { v: '{{firstName}}',    label: 'First Name' },
+  { v: '{{lastName}}',     label: 'Last Name' },
   { v: '{{email}}',        label: 'Email' },
-  { v: '{{unsubscribeUrl}}', label: 'Отписка ⚠️', required: true },
+  { v: '{{unsubscribeUrl}}', label: 'Unsubscribe ⚠️', required: true },
 ];
 
 export function CampaignBuilderPage() {
@@ -67,7 +67,7 @@ export function CampaignBuilderPage() {
   const savedTemplates = ((tplData as any)?.data ?? []) as { id: string; name: string; htmlContent: string }[];
 
   const allTemplates = [
-    ...DEMO_TEMPLATES.map((d) => ({ id: d.id, name: `${d.name} (демо)`, htmlContent: d.htmlContent })),
+    ...DEMO_TEMPLATES.map((d) => ({ id: d.id, name: `${d.name} (demo)`, htmlContent: d.htmlContent })),
     ...savedTemplates,
   ];
 
@@ -80,24 +80,24 @@ export function CampaignBuilderPage() {
     mutationFn: (data: BuilderForm & { listIds: string[] }) =>
       id ? campaignsApi.update(id, data) : campaignsApi.create(data),
     onSuccess: (result) => {
-      toast({ title: 'Кампания сохранена' });
+      toast({ title: 'Campaign saved' });
       navigate(`/campaigns/${(result as any).id}`);
     },
     onError: (err: any) => {
-      toast({ title: err?.response?.data?.message ?? 'Ошибка сохранения', variant: 'destructive' });
+      toast({ title: err?.response?.data?.message ?? 'Failed to save campaign', variant: 'destructive' });
     },
   });
 
   const onSubmit = (data: BuilderForm) => {
-    if (selectedLists.length === 0) { toast({ title: 'Выбери хотя бы один список', variant: 'destructive' }); setStep(2); return; }
+    if (selectedLists.length === 0) { toast({ title: 'Select at least one list', variant: 'destructive' }); setStep(2); return; }
     save.mutate({ ...data, listIds: selectedLists });
   };
 
   const goNext = () => {
-    if (step === 0 && !watch('name')) { toast({ title: 'Введи название кампании', variant: 'destructive' }); return; }
-    if (step === 0 && !watch('subject')) { toast({ title: 'Введи тему письма', variant: 'destructive' }); return; }
-    if (step === 1 && !senderId) { toast({ title: 'Выбери отправителя', variant: 'destructive' }); return; }
-    if (step === 2 && selectedLists.length === 0) { toast({ title: 'Выбери хотя бы один список', variant: 'destructive' }); return; }
+    if (step === 0 && !watch('name')) { toast({ title: 'Enter a campaign name', variant: 'destructive' }); return; }
+    if (step === 0 && !watch('subject')) { toast({ title: 'Enter an email subject', variant: 'destructive' }); return; }
+    if (step === 1 && !senderId) { toast({ title: 'Select a sender', variant: 'destructive' }); return; }
+    if (step === 2 && selectedLists.length === 0) { toast({ title: 'Select at least one list', variant: 'destructive' }); return; }
     setStep((s) => s + 1);
   };
 
@@ -123,10 +123,10 @@ export function CampaignBuilderPage() {
       {/* Header */}
       <div className="flex items-center gap-3">
         <Button variant="ghost" size="sm" onClick={() => navigate(-1)}>
-          <ArrowLeft className="h-4 w-4 mr-1" />Назад
+          <ArrowLeft className="h-4 w-4 mr-1" />Back
         </Button>
         <div className="flex-1">
-          <h1 className="text-xl font-bold">{id ? 'Редактировать кампанию' : 'Новая кампания'}</h1>
+          <h1 className="text-xl font-bold">{id ? 'Edit Campaign' : 'New Campaign'}</h1>
         </div>
       </div>
 
@@ -158,29 +158,29 @@ export function CampaignBuilderPage() {
         {step === 0 && (
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-base"><FileText className="h-4 w-4 text-primary" />Основная информация</CardTitle>
-              <CardDescription>Придумай название, тему и прехедер</CardDescription>
+              <CardTitle className="flex items-center gap-2 text-base"><FileText className="h-4 w-4 text-primary" />Basic Info</CardTitle>
+              <CardDescription>Set the campaign name, subject line, and preheader</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-1.5">
-                <Label>Название кампании <span className="text-red-500">*</span></Label>
-                <Input {...register('name', { required: true })} placeholder="Майский дайджест, Чёрная пятница…" />
-                <p className="text-xs text-muted-foreground">Внутреннее название — получатели его не видят</p>
+                <Label>Campaign Name <span className="text-red-500">*</span></Label>
+                <Input {...register('name', { required: true })} placeholder="e.g. May Digest, Black Friday…" />
+                <p className="text-xs text-muted-foreground">Internal name — recipients won't see this</p>
               </div>
               <div className="space-y-1.5">
-                <Label>Тема письма (subject) <span className="text-red-500">*</span></Label>
-                <Input {...register('subject', { required: true })} placeholder="Например: 🚀 Новые функции которые изменят твою работу" />
+                <Label>Subject Line <span className="text-red-500">*</span></Label>
+                <Input {...register('subject', { required: true })} placeholder="e.g. 🚀 New features that will change how you work" />
                 <div className="flex items-center justify-between">
-                  <p className="text-xs text-muted-foreground">Это то, что видит получатель в папке Входящие. 40–60 символов — оптимально.</p>
+                  <p className="text-xs text-muted-foreground">What recipients see in their inbox. 40–60 characters is optimal.</p>
                   <span className={cn('text-xs font-medium', subject.length > 70 ? 'text-red-500' : subject.length > 50 ? 'text-yellow-500' : 'text-green-600')}>
-                    {subject.length} симв.
+                    {subject.length} chars
                   </span>
                 </div>
               </div>
               <div className="space-y-1.5">
-                <Label>Прехедер (preheader)</Label>
-                <Input {...register('preheader')} placeholder="Текст предпросмотра после темы письма, 80–100 символов" />
-                <p className="text-xs text-muted-foreground">Краткий анонс, виден рядом с темой в большинстве почтовых клиентов</p>
+                <Label>Preheader</Label>
+                <Input {...register('preheader')} placeholder="Preview text shown after the subject line, 80–100 characters" />
+                <p className="text-xs text-muted-foreground">Short teaser visible next to the subject in most email clients</p>
               </div>
             </CardContent>
           </Card>
@@ -190,15 +190,15 @@ export function CampaignBuilderPage() {
         {step === 1 && (
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-base"><Mail className="h-4 w-4 text-primary" />Отправитель</CardTitle>
-              <CardDescription>Выбери SMTP-аккаунт и при необходимости переопредели имя отправителя</CardDescription>
+              <CardTitle className="flex items-center gap-2 text-base"><Mail className="h-4 w-4 text-primary" />Sender</CardTitle>
+              <CardDescription>Choose an SMTP account and optionally override the from-name</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               {sendersArr.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground text-sm">
                   <Mail className="h-8 w-8 mx-auto mb-2 opacity-30" />
-                  Нет настроенных SMTP-аккаунтов.{' '}
-                  <button type="button" className="text-primary underline" onClick={() => navigate('/senders')}>Добавить →</button>
+                  No SMTP accounts configured.{' '}
+                  <button type="button" className="text-primary underline" onClick={() => navigate('/senders')}>Add one →</button>
                 </div>
               ) : (
                 <div className="space-y-2">
@@ -217,7 +217,7 @@ export function CampaignBuilderPage() {
                         <p className="text-xs text-muted-foreground">{s.fromName} &lt;{s.fromEmail}&gt;</p>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="text-xs text-muted-foreground">Рейтинг: <span className={cn('font-bold', s.healthScore >= 70 ? 'text-green-600' : s.healthScore >= 40 ? 'text-yellow-600' : 'text-red-600')}>{s.healthScore}</span></span>
+                        <span className="text-xs text-muted-foreground">Score: <span className={cn('font-bold', s.healthScore >= 70 ? 'text-green-600' : s.healthScore >= 40 ? 'text-yellow-600' : 'text-red-600')}>{s.healthScore}</span></span>
                         <span className={cn('text-xs px-2 py-0.5 rounded-full font-medium',
                           s.status === 'ACTIVE' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
                         )}>{s.status}</span>
@@ -229,13 +229,13 @@ export function CampaignBuilderPage() {
 
               {senderId && (
                 <div className="space-y-1.5 pt-2 border-t">
-                  <Label>Переопределить имя отправителя (необязательно)</Label>
+                  <Label>Override From Name (optional)</Label>
                   <Input
                     {...register('fromNameOverride')}
-                    placeholder={`По умолчанию: ${selectedSender?.fromName ?? ''}`}
+                    placeholder={`Default: ${selectedSender?.fromName ?? ''}`}
                   />
                   <p className="text-xs text-muted-foreground">
-                    Если указать — в поле «От:» будет это имя вместо имени SMTP-аккаунта
+                    If set, this name will appear in the "From:" field instead of the SMTP account name
                   </p>
                 </div>
               )}
@@ -247,15 +247,15 @@ export function CampaignBuilderPage() {
         {step === 2 && (
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-base"><Users className="h-4 w-4 text-primary" />Получатели</CardTitle>
-              <CardDescription>Выбери один или несколько списков контактов</CardDescription>
+              <CardTitle className="flex items-center gap-2 text-base"><Users className="h-4 w-4 text-primary" />Recipients</CardTitle>
+              <CardDescription>Select one or more contact lists</CardDescription>
             </CardHeader>
             <CardContent className="space-y-2">
               {listsArr.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground text-sm">
                   <Users className="h-8 w-8 mx-auto mb-2 opacity-30" />
-                  Нет списков контактов.{' '}
-                  <button type="button" className="text-primary underline" onClick={() => navigate('/lists')}>Создать список →</button>
+                  No contact lists found.{' '}
+                  <button type="button" className="text-primary underline" onClick={() => navigate('/lists')}>Create one →</button>
                 </div>
               ) : listsArr.map((list) => (
                 <label key={list.id} className={cn(
@@ -273,13 +273,13 @@ export function CampaignBuilderPage() {
                   <div className="flex-1">
                     <p className="font-medium text-sm">{list.name}</p>
                   </div>
-                  <span className="text-xs font-medium bg-muted px-2 py-1 rounded-lg">{list.contactCount.toLocaleString()} контактов</span>
+                  <span className="text-xs font-medium bg-muted px-2 py-1 rounded-lg">{list.contactCount.toLocaleString()} contacts</span>
                 </label>
               ))}
               {selectedLists.length > 0 && (
                 <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-700 flex items-center gap-2">
                   <Info className="h-4 w-4 shrink-0" />
-                  Итого ~{totalContacts.toLocaleString()} контактов (до дедупликации и фильтра отписавшихся)
+                  ~{totalContacts.toLocaleString()} contacts total (before deduplication and unsubscribe filtering)
                 </div>
               )}
             </CardContent>
@@ -291,19 +291,19 @@ export function CampaignBuilderPage() {
           <div className="space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-base"><Code2 className="h-4 w-4 text-primary" />Содержимое письма</CardTitle>
-                <CardDescription>Редактируй HTML или смотри превью вживую</CardDescription>
+                <CardTitle className="flex items-center gap-2 text-base"><Code2 className="h-4 w-4 text-primary" />Email Content</CardTitle>
+                <CardDescription>Edit the HTML or view a live preview</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 {/* Template picker */}
                 <div className="space-y-1.5">
-                  <Label className="flex items-center gap-1.5"><Sparkles className="h-3.5 w-3.5 text-primary" />Загрузить готовый шаблон</Label>
+                  <Label className="flex items-center gap-1.5"><Sparkles className="h-3.5 w-3.5 text-primary" />Load a preset template</Label>
                   <Select onValueChange={(tplId) => {
                     const tpl = allTemplates.find((t) => t.id === tplId);
                     if (tpl) setValue('htmlContent', tpl.htmlContent);
                   }}>
                     <SelectTrigger>
-                      <SelectValue placeholder="— Выбери шаблон —" />
+                      <SelectValue placeholder="— Choose a template —" />
                     </SelectTrigger>
                     <SelectContent>
                       {allTemplates.map((t) => (
@@ -315,7 +315,7 @@ export function CampaignBuilderPage() {
 
                 {/* Variable buttons */}
                 <div className="space-y-1.5">
-                  <Label>Вставить переменную</Label>
+                  <Label>Insert Variable</Label>
                   <div className="flex flex-wrap gap-2">
                     {VARIABLES.map(({ v, label, required }) => (
                       <button
@@ -326,20 +326,20 @@ export function CampaignBuilderPage() {
                           'text-xs px-2.5 py-1.5 rounded-lg font-mono border transition-colors hover:bg-primary/10 hover:border-primary hover:text-primary',
                           required && 'border-orange-300 bg-orange-50 text-orange-700',
                         )}
-                        title={required ? 'Обязательна для соответствия требованиям закона' : undefined}
+                        title={required ? 'Required for legal compliance (CAN-SPAM / GDPR)' : undefined}
                       >
                         {v} <span className="text-muted-foreground font-sans">({label})</span>
                       </button>
                     ))}
                   </div>
-                  <p className="text-xs text-muted-foreground">Клик — вставка в позицию курсора</p>
+                  <p className="text-xs text-muted-foreground">Click to insert at cursor position</p>
                 </div>
 
                 {/* Editor / Preview tabs */}
                 <Tabs value={contentTab} onValueChange={(v) => setContentTab(v as any)}>
                   <TabsList className="mb-2">
-                    <TabsTrigger value="code" className="gap-1.5"><Code2 className="h-3.5 w-3.5" />HTML-код</TabsTrigger>
-                    <TabsTrigger value="preview" className="gap-1.5"><Eye className="h-3.5 w-3.5" />Превью</TabsTrigger>
+                    <TabsTrigger value="code" className="gap-1.5"><Code2 className="h-3.5 w-3.5" />HTML Code</TabsTrigger>
+                    <TabsTrigger value="preview" className="gap-1.5"><Eye className="h-3.5 w-3.5" />Preview</TabsTrigger>
                   </TabsList>
                   <TabsContent value="code">
                     <Textarea
@@ -347,7 +347,7 @@ export function CampaignBuilderPage() {
                       {...register('htmlContent', { required: true })}
                       rows={20}
                       className="font-mono text-xs resize-y leading-relaxed"
-                      placeholder="Вставь или напиши HTML-код письма, или выбери шаблон выше…"
+                      placeholder="Paste or write your HTML email code, or choose a template above…"
                     />
                   </TabsContent>
                   <TabsContent value="preview">
@@ -355,14 +355,14 @@ export function CampaignBuilderPage() {
                       {htmlContent.trim() ? (
                         <iframe
                           srcDoc={htmlContent}
-                          title="Превью письма"
+                          title="Email preview"
                           className="w-full h-full"
                           sandbox="allow-same-origin"
                         />
                       ) : (
                         <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
                           <Eye className="h-10 w-10 mb-3 opacity-20" />
-                          <p className="text-sm">Добавь HTML-код чтобы увидеть превью</p>
+                          <p className="text-sm">Add HTML content to see the preview</p>
                         </div>
                       )}
                     </div>
@@ -386,10 +386,10 @@ export function CampaignBuilderPage() {
                     {spam.level === 'good'
                       ? <ShieldCheck className="h-4 w-4" />
                       : <ShieldAlert className="h-4 w-4" />}
-                    Вероятность попасть в спам:{' '}
+                    Spam probability:{' '}
                     <span className="font-bold text-base">{spam.score}%</span>
                     <span className="ml-auto text-xs font-normal">
-                      {spam.level === 'good' ? '✅ Хорошо' : spam.level === 'warning' ? '⚠️ Есть замечания' : '🚫 Высокий риск'}
+                      {spam.level === 'good' ? '✅ Good' : spam.level === 'warning' ? '⚠️ Needs attention' : '🚫 High risk'}
                     </span>
                   </CardTitle>
                 </CardHeader>
@@ -415,14 +415,14 @@ export function CampaignBuilderPage() {
 
             <Card>
               <CardHeader>
-                <CardTitle className="text-sm">Текстовая версия (необязательно)</CardTitle>
-                <CardDescription>Для клиентов которые не отображают HTML. Если пусто — генерируется автоматически.</CardDescription>
+                <CardTitle className="text-sm">Plain Text Version (optional)</CardTitle>
+                <CardDescription>For clients that don't render HTML. Leave empty to auto-generate.</CardDescription>
               </CardHeader>
               <CardContent>
                 <Textarea
                   {...register('textContent')}
                   rows={5}
-                  placeholder={`Привет, {{firstName}}!\n\nТекст письма здесь...\n\nОтписаться: {{unsubscribeUrl}}`}
+                  placeholder={`Hi {{firstName}}!\n\nYour message here...\n\nUnsubscribe: {{unsubscribeUrl}}`}
                 />
               </CardContent>
             </Card>
@@ -433,23 +433,23 @@ export function CampaignBuilderPage() {
         {step === 4 && (
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-base"><Settings2 className="h-4 w-4 text-primary" />Настройки отправки</CardTitle>
-              <CardDescription>Скорость рассылки и параметры трекинга</CardDescription>
+              <CardTitle className="flex items-center gap-2 text-base"><Settings2 className="h-4 w-4 text-primary" />Send Settings</CardTitle>
+              <CardDescription>Sending speed and tracking options</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="space-y-1.5">
-                <Label>Скорость отправки (писем в минуту)</Label>
+                <Label>Send Rate (emails per minute)</Label>
                 <Input type="number" min={1} max={500} {...register('throttlePerMinute', { valueAsNumber: true })} />
                 <div className="grid grid-cols-3 gap-2 mt-2">
-                  {[{ v: 20, label: 'Медленно', hint: 'Лучше репутация' },
-                    { v: 60, label: 'Стандарт',  hint: 'Рекомендуем' },
-                    { v: 200, label: 'Быстро', hint: 'Для больших баз' }].map(({ v, label, hint }) => (
+                  {[{ v: 20, label: 'Slow', hint: 'Better reputation' },
+                    { v: 60, label: 'Standard', hint: 'Recommended' },
+                    { v: 200, label: 'Fast', hint: 'For large lists' }].map(({ v, label, hint }) => (
                     <button key={v} type="button"
                       onClick={() => setValue('throttlePerMinute', v)}
                       className={cn('p-2 rounded-lg border text-xs text-center transition-colors',
                         watch('throttlePerMinute') === v ? 'border-primary bg-primary/5 text-primary' : 'hover:bg-muted/50',
                       )}>
-                      <p className="font-semibold">{v}/мин</p>
+                      <p className="font-semibold">{v}/min</p>
                       <p className="text-muted-foreground">{label}</p>
                       <p className="text-muted-foreground">{hint}</p>
                     </button>
@@ -458,10 +458,10 @@ export function CampaignBuilderPage() {
               </div>
 
               <div className="space-y-3">
-                <p className="text-sm font-semibold">Трекинг</p>
+                <p className="text-sm font-semibold">Tracking</p>
                 {[
-                  { field: 'trackOpens' as const, label: 'Отслеживать открытия', desc: 'Встраивает невидимый пиксель 1×1 для фиксации открытий письма' },
-                  { field: 'trackClicks' as const, label: 'Отслеживать клики', desc: 'Оборачивает ссылки — клики фиксируются до перехода на сайт' },
+                  { field: 'trackOpens' as const, label: 'Track Opens', desc: 'Embeds an invisible 1×1 pixel to record email opens' },
+                  { field: 'trackClicks' as const, label: 'Track Clicks', desc: 'Wraps links so clicks are recorded before the redirect' },
                 ].map(({ field, label, desc }) => (
                   <label key={field} className="flex items-start gap-3 p-3 rounded-xl border cursor-pointer hover:bg-muted/30 transition-colors">
                     <input type="checkbox" {...register(field)} className="accent-primary mt-0.5 h-4 w-4" />
@@ -481,18 +481,18 @@ export function CampaignBuilderPage() {
           <div className="space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-base"><CheckCircle className="h-4 w-4 text-primary" />Итоговая сводка</CardTitle>
+                <CardTitle className="flex items-center gap-2 text-base"><CheckCircle className="h-4 w-4 text-primary" />Campaign Summary</CardTitle>
               </CardHeader>
               <CardContent>
                 <dl className="space-y-3 text-sm">
                   {[
-                    ['Название',   watch('name')],
-                    ['Тема',       watch('subject')],
-                    ['Прехедер',   watch('preheader') || '—'],
-                    ['Отправитель', selectedSender ? `${watch('fromNameOverride') || selectedSender.fromName} <${selectedSender.fromEmail}>` : '—'],
-                    ['Списки',     `${selectedLists.length} список(ов) • ~${totalContacts.toLocaleString()} контактов`],
-                    ['Скорость',   `${watch('throttlePerMinute')} писем/мин`],
-                    ['Трекинг',    [watch('trackOpens') && 'открытия', watch('trackClicks') && 'клики'].filter(Boolean).join(', ') || 'отключён'],
+                    ['Name',      watch('name')],
+                    ['Subject',   watch('subject')],
+                    ['Preheader', watch('preheader') || '—'],
+                    ['Sender',    selectedSender ? `${watch('fromNameOverride') || selectedSender.fromName} <${selectedSender.fromEmail}>` : '—'],
+                    ['Lists',     `${selectedLists.length} list(s) • ~${totalContacts.toLocaleString()} contacts`],
+                    ['Send Rate', `${watch('throttlePerMinute')} emails/min`],
+                    ['Tracking',  [watch('trackOpens') && 'opens', watch('trackClicks') && 'clicks'].filter(Boolean).join(', ') || 'disabled'],
                   ].map(([label, value]) => (
                     <div key={label as string} className="flex justify-between border-b pb-2 last:border-0 last:pb-0 gap-4">
                       <dt className="text-muted-foreground shrink-0">{label}</dt>
@@ -513,7 +513,7 @@ export function CampaignBuilderPage() {
                 )}>
                   <span className="flex items-center gap-2">
                     {spam.level === 'good' ? <ShieldCheck className="h-4 w-4" /> : <ShieldAlert className="h-4 w-4" />}
-                    Спам-анализ: {spam.score}% риска
+                    Spam analysis: {spam.score}% risk
                   </span>
                 </CardTitle>
               </CardHeader>
@@ -530,7 +530,7 @@ export function CampaignBuilderPage() {
             {criticalFails > 0 && (
               <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm flex items-start gap-2">
                 <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
-                <span>Нельзя сохранить: исправь {criticalFails} обязательных пункта выше</span>
+                <span>Cannot save: fix {criticalFails} required item(s) above</span>
               </div>
             )}
           </div>
@@ -539,16 +539,16 @@ export function CampaignBuilderPage() {
         {/* Navigation */}
         <div className="flex justify-between pt-2">
           <Button type="button" variant="outline" onClick={() => setStep((s) => s - 1)} disabled={step === 0}>
-            <ArrowLeft className="h-4 w-4 mr-2" />Назад
+            <ArrowLeft className="h-4 w-4 mr-2" />Back
           </Button>
           {step < STEPS.length - 1 ? (
             <Button type="button" onClick={goNext} className="gap-2">
-              Далее<ArrowRight className="h-4 w-4" />
+              Next<ArrowRight className="h-4 w-4" />
             </Button>
           ) : (
             <Button type="submit" disabled={save.isPending || criticalFails > 0} className="gap-2">
               <Send className="h-4 w-4" />
-              {save.isPending ? 'Сохранение…' : 'Сохранить кампанию'}
+              {save.isPending ? 'Saving…' : 'Save Campaign'}
             </Button>
           )}
         </div>

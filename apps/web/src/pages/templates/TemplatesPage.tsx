@@ -20,7 +20,7 @@ interface Template {
   variables: unknown; htmlContent?: string; createdAt: string;
 }
 
-const CATEGORIES = ['Все', 'newsletter', 'promotional', 'transactional', 'announcement'];
+const CATEGORIES = ['All', 'newsletter', 'promotional', 'transactional', 'announcement'];
 
 const STARTER_HTML = `<!DOCTYPE html>
 <html><head><meta charset="utf-8"></head>
@@ -28,18 +28,18 @@ const STARTER_HTML = `<!DOCTYPE html>
 <table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="padding:40px 16px">
   <table width="600" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:8px;overflow:hidden">
     <tr><td style="background:#6366f1;padding:32px;text-align:center">
-      <h1 style="margin:0;color:#fff;font-size:24px">Заголовок письма</h1>
+      <h1 style="margin:0;color:#fff;font-size:24px">Email Subject</h1>
     </td></tr>
     <tr><td style="padding:32px">
-      <p style="color:#374151;font-size:16px;line-height:1.7">Привет, {{firstName}}!</p>
-      <p style="color:#374151;font-size:16px;line-height:1.7">Текст письма...</p>
+      <p style="color:#374151;font-size:16px;line-height:1.7">Hi {{firstName}}!</p>
+      <p style="color:#374151;font-size:16px;line-height:1.7">Your email body goes here...</p>
       <p style="text-align:center;margin:28px 0">
-        <a href="#" style="background:#6366f1;color:#fff;padding:14px 28px;border-radius:6px;text-decoration:none;font-weight:bold">Кнопка</a>
+        <a href="#" style="background:#6366f1;color:#fff;padding:14px 28px;border-radius:6px;text-decoration:none;font-weight:bold">Button</a>
       </p>
     </td></tr>
     <tr><td style="background:#f9fafb;padding:20px;text-align:center;border-top:1px solid #e5e7eb">
       <p style="margin:0;color:#9ca3af;font-size:12px">
-        <a href="{{unsubscribeUrl}}" style="color:#9ca3af">Отписаться</a>
+        <a href="{{unsubscribeUrl}}" style="color:#9ca3af">Unsubscribe</a>
       </p>
     </td></tr>
   </table>
@@ -51,7 +51,7 @@ export function TemplatesPage() {
   const [open, setOpen] = useState(false);
   const [previewTpl, setPreviewTpl] = useState<{ name: string; html: string } | null>(null);
   const [search, setSearch] = useState('');
-  const [category, setCategory] = useState('Все');
+  const [category, setCategory] = useState('All');
   const [editorMode, setEditorMode] = useState<'code' | 'preview'>('code');
 
   const { data } = useQuery({ queryKey: ['templates'], queryFn: () => templatesApi.findAll({ limit: 100 }) });
@@ -69,15 +69,15 @@ export function TemplatesPage() {
       qc.invalidateQueries({ queryKey: ['templates'] });
       setOpen(false);
       reset({ htmlContent: STARTER_HTML });
-      toast({ title: 'Шаблон создан' });
+      toast({ title: 'Template created' });
     },
-    onError: () => toast({ title: 'Ошибка при создании', variant: 'destructive' }),
+    onError: () => toast({ title: 'Failed to create template', variant: 'destructive' }),
   });
 
   const remove = useMutation({
     mutationFn: (id: string) => templatesApi.remove(id),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['templates'] }); toast({ title: 'Шаблон удалён' }); },
-    onError: () => toast({ title: 'Нельзя удалить системный шаблон', variant: 'destructive' }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['templates'] }); toast({ title: 'Template deleted' }); },
+    onError: () => toast({ title: 'Cannot delete a system template', variant: 'destructive' }),
   });
 
   const allTemplates = [
@@ -96,7 +96,7 @@ export function TemplatesPage() {
 
   const filtered = allTemplates.filter((t) => {
     const matchSearch = !search || t.name.toLowerCase().includes(search.toLowerCase());
-    const matchCat = category === 'Все' || t.category === category;
+    const matchCat = category === 'All' || t.category === category;
     return matchSearch && matchCat;
   });
 
@@ -113,32 +113,32 @@ export function TemplatesPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Шаблоны писем</h1>
-          <p className="text-sm text-muted-foreground mt-1">Готовые шаблоны для быстрого создания кампаний</p>
+          <h1 className="text-2xl font-bold">Email Templates</h1>
+          <p className="text-sm text-muted-foreground mt-1">Ready-made templates for quick campaign creation</p>
         </div>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
-            <Button className="gap-2"><Plus className="h-4 w-4" />Новый шаблон</Button>
+            <Button className="gap-2"><Plus className="h-4 w-4" />New Template</Button>
           </DialogTrigger>
           <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>Создать шаблон</DialogTitle>
+              <DialogTitle>Create Template</DialogTitle>
             </DialogHeader>
             <form onSubmit={handleSubmit((d) => create.mutate(d))} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <Label>Название *</Label>
-                  <Input {...register('name', { required: true })} placeholder="Например: Ежемесячный дайджест" />
+                  <Label>Name *</Label>
+                  <Input {...register('name', { required: true })} placeholder="e.g. Monthly Digest" />
                 </div>
                 <div className="space-y-1.5">
-                  <Label>Категория</Label>
+                  <Label>Category</Label>
                   <Input {...register('category')} placeholder="newsletter, promotional, transactional…" />
                 </div>
               </div>
 
               {/* Quick demo template picker */}
               <div className="space-y-1.5">
-                <Label>Начать с готового шаблона</Label>
+                <Label>Start from a preset template</Label>
                 <div className="flex gap-2 flex-wrap">
                   {DEMO_TEMPLATES.map((d) => (
                     <button
@@ -155,22 +155,22 @@ export function TemplatesPage() {
                     onClick={() => setValue('htmlContent', STARTER_HTML)}
                     className="text-xs px-3 py-1.5 rounded-full border border-dashed hover:border-primary hover:bg-primary/5 transition-colors"
                   >
-                    Чистый шаблон
+                    Blank template
                   </button>
                 </div>
               </div>
 
               <Tabs value={editorMode} onValueChange={(v) => setEditorMode(v as any)}>
                 <TabsList>
-                  <TabsTrigger value="code" className="gap-1.5"><Code2 className="h-3.5 w-3.5" />HTML-код</TabsTrigger>
-                  <TabsTrigger value="preview" className="gap-1.5"><Eye className="h-3.5 w-3.5" />Превью</TabsTrigger>
+                  <TabsTrigger value="code" className="gap-1.5"><Code2 className="h-3.5 w-3.5" />HTML Code</TabsTrigger>
+                  <TabsTrigger value="preview" className="gap-1.5"><Eye className="h-3.5 w-3.5" />Preview</TabsTrigger>
                 </TabsList>
                 <TabsContent value="code">
                   <Textarea
                     {...register('htmlContent', { required: true })}
                     rows={16}
                     className="font-mono text-xs resize-y"
-                    placeholder="HTML-код письма…"
+                    placeholder="Email HTML code…"
                   />
                 </TabsContent>
                 <TabsContent value="preview">
@@ -178,16 +178,16 @@ export function TemplatesPage() {
                     {htmlContent ? (
                       <iframe srcDoc={htmlContent} title="preview" className="w-full h-full" sandbox="allow-same-origin" />
                     ) : (
-                      <div className="flex items-center justify-center h-full text-muted-foreground text-sm">Нет контента для превью</div>
+                      <div className="flex items-center justify-center h-full text-muted-foreground text-sm">No content to preview</div>
                     )}
                   </div>
                 </TabsContent>
               </Tabs>
 
               <div className="flex justify-end gap-2">
-                <Button type="button" variant="outline" onClick={() => setOpen(false)}>Отмена</Button>
+                <Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
                 <Button type="submit" disabled={create.isPending}>
-                  {create.isPending ? 'Сохранение…' : 'Сохранить шаблон'}
+                  {create.isPending ? 'Saving…' : 'Save Template'}
                 </Button>
               </div>
             </form>
@@ -200,7 +200,7 @@ export function TemplatesPage() {
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Поиск шаблонов…"
+            placeholder="Search templates…"
             className="pl-9 w-60"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -237,11 +237,11 @@ export function TemplatesPage() {
                   sandbox="allow-same-origin"
                 />
               ) : (
-                <div className="flex items-center justify-center h-full text-muted-foreground text-xs">Нет превью</div>
+                <div className="flex items-center justify-center h-full text-muted-foreground text-xs">No preview</div>
               )}
               {t.isSystem && (
                 <div className="absolute top-2 left-2 bg-primary/90 text-primary-foreground text-xs px-2 py-0.5 rounded-full">
-                  Демо
+                  Demo
                 </div>
               )}
             </div>
@@ -256,7 +256,7 @@ export function TemplatesPage() {
               )}
               {vars(t).length > 0 && (
                 <p className="text-xs text-muted-foreground mt-1.5">
-                  Переменные: {vars(t).join(', ')}
+                  Variables: {vars(t).join(', ')}
                 </p>
               )}
               {t.createdAt && (
@@ -271,7 +271,7 @@ export function TemplatesPage() {
                 className="flex-1 gap-1"
                 onClick={() => setPreviewTpl({ name: t.name, html: t.htmlContent ?? '' })}
               >
-                <Eye className="h-3.5 w-3.5" />Открыть
+                <Eye className="h-3.5 w-3.5" />Preview
               </Button>
               {!t.isSystem && (
                 <Button
@@ -290,8 +290,8 @@ export function TemplatesPage() {
         {filtered.length === 0 && (
           <div className="col-span-3 text-center py-16 text-muted-foreground">
             <Code2 className="h-10 w-10 mx-auto mb-3 opacity-30" />
-            <p className="font-medium">Шаблоны не найдены</p>
-            <p className="text-sm mt-1">Измени фильтры или создай новый шаблон</p>
+            <p className="font-medium">No templates found</p>
+            <p className="text-sm mt-1">Change filters or create a new template</p>
           </div>
         )}
       </div>

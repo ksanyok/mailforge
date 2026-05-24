@@ -29,46 +29,46 @@ export function analyzeSpam(subject: string, html: string): SpamResult {
 
   const checks: SpamCheck[] = [
     {
-      label: 'Ссылка отписки',
-      pass: html.includes('{{unsubscribeUrl}}') || html.includes('unsubscribe'),
+      label: 'Unsubscribe link present',
+      pass: html.includes('{{unsubscribeUrl}}') || htmlLower.includes('unsubscribe'),
       weight: 25,
-      tip: 'Добавь {{unsubscribeUrl}} — без неё письмо почти точно в спам',
+      tip: 'Add {{unsubscribeUrl}} — emails without it almost always land in spam',
     },
     {
-      label: 'Нет слов-триггеров в теме',
+      label: 'No spam trigger words in subject',
       pass: !SPAM_WORDS.slice(0, 15).some((w) => subjectLower.includes(w)),
       weight: 20,
-      tip: 'Слова FREE, URGENT, WIN, PRIZE в теме — красный флаг для спам-фильтров',
+      tip: 'Words like FREE, URGENT, WIN, PRIZE in the subject are red flags for spam filters',
     },
     {
-      label: 'Тема без CAPS LOCK',
+      label: 'Subject not all-caps',
       pass: subject.replace(/[^A-Z]/g, '').length < subject.length * 0.4,
       weight: 10,
-      tip: 'Слишком много заглавных букв в теме выглядит как спам',
+      tip: 'Too many uppercase letters in the subject looks like spam',
     },
     {
-      label: 'Тема без избытка знаков',
+      label: 'No excessive punctuation in subject',
       pass: !/(!!|!!!|\$\$|\$\$\$)/.test(subject),
       weight: 10,
-      tip: 'Избегай !!!, $$$ и подобных символов в теме письма',
+      tip: 'Avoid !!!, $$$ and similar symbols in the subject line',
     },
     {
-      label: 'HTML-контент есть',
+      label: 'HTML content is not empty',
       pass: html.trim().length > 50,
       weight: 15,
-      tip: 'Письмо не может быть пустым',
+      tip: 'Email body cannot be empty',
     },
     {
-      label: 'Есть текстовый контент (не только изображения)',
+      label: 'Has text content (not images only)',
       pass: textContent.replace(/\s/g, '').length > 100,
       weight: 10,
-      tip: 'Письма только из картинок блокируются. Добавь достаточно текста.',
+      tip: 'Image-only emails get blocked. Add enough text content.',
     },
     {
-      label: 'Нет слов-триггеров в теле письма',
+      label: 'No spam trigger words in body',
       pass: SPAM_WORDS.filter((w) => textLower.includes(w)).length < 4,
       weight: 10,
-      tip: `Спам-слова в тексте письма: ${SPAM_WORDS.filter((w) => textLower.includes(w)).slice(0, 3).join(', ')}`,
+      tip: `Spam words found in body: ${SPAM_WORDS.filter((w) => textLower.includes(w)).slice(0, 3).join(', ')}`,
     },
   ];
 

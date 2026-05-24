@@ -7,8 +7,12 @@ export function ReportsPage() {
   const { data: daily } = useQuery({ queryKey: ['daily-metrics-90'], queryFn: () => analyticsApi.dailyMetrics(90) });
   const { data: senderComparison } = useQuery({ queryKey: ['sender-comparison'], queryFn: () => analyticsApi.senderComparison() });
 
-  const dailyData = (daily as { date: string; sent: number; opened: number; clicked: number; bounced: number; unsubscribed: number }[]) ?? [];
-  const senderData = (senderComparison as { name: string; sent: number; openRate: number; bounceRate: number }[]) ?? [];
+  const rawDaily = (Array.isArray(daily) ? daily : ((daily as any)?.data ?? [])) as { date: string; sent: number; opened: number; clicked: number; bounced: number; unsubscribed: number }[];
+  const dailyData = rawDaily.map((d) => ({
+    ...d,
+    openRate: d.sent > 0 ? +((d.opened / d.sent) * 100).toFixed(1) : 0,
+  }));
+  const senderData = (Array.isArray(senderComparison) ? senderComparison : ((senderComparison as any)?.data ?? [])) as { name: string; sent: number; openRate: number; bounceRate: number }[];
 
   return (
     <div className="space-y-6">

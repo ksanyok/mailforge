@@ -48,11 +48,11 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       this.logger.error(`Unhandled error: ${exception.message}`, exception.stack);
     }
 
+    const logLine = `${request.method} ${request.url} → ${status} | ${message}`;
     if (status >= 500) {
-      this.logger.error(
-        `${request.method} ${request.url} → ${status}`,
-        exception instanceof Error ? exception.stack : String(exception),
-      );
+      this.logger.error(logLine, exception instanceof Error ? exception.stack : String(exception));
+    } else if (status >= 400) {
+      this.logger.warn(logLine);
     }
 
     response.status(status).json({

@@ -33,6 +33,8 @@ export class ListsService {
 
   async remove(id: string) {
     await this.findOne(id);
+    await this.prisma.campaignList.deleteMany({ where: { listId: id } });
+    await this.prisma.import.updateMany({ where: { listId: id }, data: { listId: null } });
     await this.prisma.contactList.delete({ where: { id } });
   }
 

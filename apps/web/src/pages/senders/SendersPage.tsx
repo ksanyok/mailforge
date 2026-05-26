@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Wifi } from 'lucide-react';
+import { Plus, Wifi, RotateCcw } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -38,7 +38,16 @@ export function SendersPage() {
   const test = useMutation({
     mutationFn: (id: string) => sendersApi.testConnection(id),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['senders'] }); toast({ title: 'Connection successful' }); },
-    onError: () => toast({ title: 'Connection failed', variant: 'destructive' }),
+    onError: (err: any) => {
+      qc.invalidateQueries({ queryKey: ['senders'] });
+      const msg = err?.response?.data?.message || 'Connection failed';
+      toast({ title: msg, variant: 'destructive' });
+    },
+  });
+
+  const reset = useMutation({
+    mutationFn: (id: string) => sendersApi.resetStatus(id),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['senders'] }); toast({ title: 'Sender set to Active' }); },
   });
 
   return (
@@ -104,6 +113,17 @@ export function SendersPage() {
                 >
                   <Wifi className="h-3.5 w-3.5 mr-1" />Test
                 </Button>
+                {s.status === 'ERROR' && (
+                  <Button
+                    size="sm" variant="outline"
+                    className="text-yellow-700 border-yellow-300 hover:bg-yellow-50"
+                    onClick={(e) => { e.stopPropagation(); reset.mutate(s.id); }}
+                    disabled={reset.isPending}
+                    title="Reset status to Active"
+                  >
+                    <RotateCcw className="h-3.5 w-3.5" />
+                  </Button>
+                )}
               </div>
             </CardContent>
           </Card>

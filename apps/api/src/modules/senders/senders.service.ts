@@ -142,6 +142,15 @@ export class SendersService {
     }
   }
 
+  async resetStatus(id: string) {
+    await this.findOne(id);
+    return this.prisma.senderAccount.update({
+      where: { id },
+      data: { status: 'ACTIVE', lastError: null },
+      select: this.selectFields(),
+    });
+  }
+
   async updateHealthScore(id: string) {
     const sender = await this.prisma.senderAccount.findUnique({ where: { id } });
     if (!sender) return;

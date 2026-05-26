@@ -26,7 +26,10 @@ export function CampaignsPage() {
   const dispatch = useMutation({
     mutationFn: (id: string) => campaignsApi.dispatch(id),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['campaigns'] }); toast({ title: 'Campaign dispatched' }); },
-    onError: () => toast({ title: 'Dispatch failed', variant: 'destructive' }),
+    onError: (err: any) => {
+      const msg = err?.response?.data?.message || 'Dispatch failed';
+      toast({ title: msg, variant: 'destructive' });
+    },
   });
 
   const pause = useMutation({

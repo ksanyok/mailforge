@@ -48,6 +48,7 @@ export const sendersApi = {
   update: (id: string, data: unknown) => api.put(`/senders/${id}`, data).then(extractData),
   remove: (id: string) => api.delete(`/senders/${id}`).then(extractData),
   testConnection: (id: string) => api.post(`/senders/${id}/test`).then(extractData),
+  resetStatus: (id: string) => api.post(`/senders/${id}/reset-status`).then(extractData),
   healthLogs: (id: string) => api.get(`/senders/${id}/health-logs`).then(extractData),
 };
 

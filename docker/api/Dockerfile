@@ -23,6 +23,7 @@ COPY --from=build --chown=nestjs:nodejs /app/apps/api/dist ./dist
 COPY --from=build --chown=nestjs:nodejs /app/apps/api/package.json ./package.json
 COPY --from=build --chown=nestjs:nodejs /app/apps/api/prisma ./prisma
 COPY --from=deps --chown=nestjs:nodejs /app/apps/api/node_modules ./node_modules
+RUN mkdir -p /app/uploads/imports && chown -R nestjs:nodejs /app/uploads
 USER nestjs
 EXPOSE 3001
 CMD ["node", "dist/main"]

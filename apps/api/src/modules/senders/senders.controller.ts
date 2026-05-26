@@ -35,6 +35,11 @@ export class SendersController {
     return this.sendersService.testConnection(id, to);
   }
 
+  @Post(':id/reset-status')
+  resetStatus(@Param('id') id: string) {
+    return this.sendersService.resetStatus(id);
+  }
+
   @Post(':id/health')
   updateHealth(@Param('id') id: string) {
     return this.sendersService.updateHealthScore(id);

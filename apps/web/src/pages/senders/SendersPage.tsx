@@ -45,7 +45,7 @@ export function SendersPage() {
     },
   });
 
-  const reset = useMutation({
+  const resetStatus = useMutation({
     mutationFn: (id: string) => sendersApi.resetStatus(id),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['senders'] }); toast({ title: 'Sender set to Active' }); },
   });
@@ -117,8 +117,8 @@ export function SendersPage() {
                   <Button
                     size="sm" variant="outline"
                     className="text-yellow-700 border-yellow-300 hover:bg-yellow-50"
-                    onClick={(e) => { e.stopPropagation(); reset.mutate(s.id); }}
-                    disabled={reset.isPending}
+                    onClick={(e) => { e.stopPropagation(); resetStatus.mutate(s.id); }}
+                    disabled={resetStatus.isPending}
                     title="Reset status to Active"
                   >
                     <RotateCcw className="h-3.5 w-3.5" />

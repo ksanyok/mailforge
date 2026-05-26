@@ -8,7 +8,7 @@ export const listsApi = {
   findAll: (params?: Record<string, unknown>) => api.get('/lists', { params }).then(extractData),
   findOne: (id: string) => api.get(`/lists/${id}`).then(extractData),
   create: (data: unknown) => api.post('/lists', data).then(extractData),
-  update: (id: string, data: unknown) => api.put(`/lists/${id}`, data).then(extractData),
+  update: (id: string, data: unknown) => api.patch(`/lists/${id}`, data).then(extractData),
   remove: (id: string) => api.delete(`/lists/${id}`).then(extractData),
   members: (id: string, params?: Record<string, unknown>) =>
     api.get(`/lists/${id}/members`, { params }).then(extractData),
@@ -21,7 +21,7 @@ export const listsApi = {
 export const tagsApi = {
   findAll: () => api.get('/tags').then(extractData),
   create: (data: unknown) => api.post('/tags', data).then(extractData),
-  update: (id: string, data: unknown) => api.put(`/tags/${id}`, data).then(extractData),
+  update: (id: string, data: unknown) => api.patch(`/tags/${id}`, data).then(extractData),
   remove: (id: string) => api.delete(`/tags/${id}`).then(extractData),
 };
 
@@ -45,7 +45,7 @@ export const sendersApi = {
   findAll: () => api.get('/senders').then(extractData),
   findOne: (id: string) => api.get(`/senders/${id}`).then(extractData),
   create: (data: unknown) => api.post('/senders', data).then(extractData),
-  update: (id: string, data: unknown) => api.put(`/senders/${id}`, data).then(extractData),
+  update: (id: string, data: unknown) => api.patch(`/senders/${id}`, data).then(extractData),
   remove: (id: string) => api.delete(`/senders/${id}`).then(extractData),
   testConnection: (id: string) => api.post(`/senders/${id}/test`).then(extractData),
   resetStatus: (id: string) => api.post(`/senders/${id}/reset-status`).then(extractData),
@@ -66,7 +66,7 @@ export const templatesApi = {
     api.get('/templates', { params }).then(extractData),
   findOne: (id: string) => api.get(`/templates/${id}`).then(extractData),
   create: (data: unknown) => api.post('/templates', data).then(extractData),
-  update: (id: string, data: unknown) => api.put(`/templates/${id}`, data).then(extractData),
+  update: (id: string, data: unknown) => api.patch(`/templates/${id}`, data).then(extractData),
   remove: (id: string) => api.delete(`/templates/${id}`).then(extractData),
 };
 
@@ -75,7 +75,7 @@ export const campaignsApi = {
     api.get('/campaigns', { params }).then(extractData),
   findOne: (id: string) => api.get(`/campaigns/${id}`).then(extractData),
   create: (data: unknown) => api.post('/campaigns', data).then(extractData),
-  update: (id: string, data: unknown) => api.put(`/campaigns/${id}`, data).then(extractData),
+  update: (id: string, data: unknown) => api.patch(`/campaigns/${id}`, data).then(extractData),
   remove: (id: string) => api.delete(`/campaigns/${id}`).then(extractData),
   dispatch: (id: string) => api.post(`/campaigns/${id}/dispatch`).then(extractData),
   pause: (id: string) => api.post(`/campaigns/${id}/pause`).then(extractData),
@@ -132,7 +132,7 @@ export const activityApi = {
 export const usersApi = {
   findAll: (params?: Record<string, unknown>) => api.get('/users', { params }).then(extractData),
   findOne: (id: string) => api.get(`/users/${id}`).then(extractData),
-  update: (id: string, data: unknown) => api.put(`/users/${id}`, data).then(extractData),
+  update: (id: string, data: unknown) => api.patch(`/users/${id}`, data).then(extractData),
   remove: (id: string) => api.delete(`/users/${id}`).then(extractData),
   toggleActive: (id: string) => api.patch(`/users/${id}/toggle-active`).then(extractData),
 };

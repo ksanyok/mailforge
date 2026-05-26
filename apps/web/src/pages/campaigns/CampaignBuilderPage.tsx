@@ -90,7 +90,8 @@ export function CampaignBuilderPage() {
 
   const onSubmit = (data: BuilderForm) => {
     if (selectedLists.length === 0) { toast({ title: 'Select at least one list', variant: 'destructive' }); setStep(2); return; }
-    save.mutate({ ...data, listIds: selectedLists });
+    const { fromNameOverride, ...campaignData } = data;
+    save.mutate({ ...campaignData, listIds: selectedLists });
   };
 
   const goNext = () => {

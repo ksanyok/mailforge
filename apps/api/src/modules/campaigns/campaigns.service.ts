@@ -54,8 +54,20 @@ export class CampaignsService {
     return { ...campaign, listIds: campaign.lists.map((l) => l.listId) };
   }
 
+  private pickCampaignFields(data: any) {
+    const allowed = [
+      'name','subject','preheader','htmlContent','textContent','senderId',
+      'scheduledAt','throttlePerMinute','rotationMode','trackOpens','trackClicks',
+      'utmSource','utmMedium','utmCampaign','status',
+    ];
+    return Object.fromEntries(
+      Object.entries(data).filter(([k]) => allowed.includes(k)),
+    );
+  }
+
   async create(dto: any, userId: string) {
-    const { listIds, ...campaignData } = dto;
+    const { listIds, ...raw } = dto;
+    const campaignData = this.pickCampaignFields(raw);
     return this.prisma.campaign.create({
       data: {
         ...campaignData,
@@ -70,7 +82,8 @@ export class CampaignsService {
 
   async update(id: string, dto: any) {
     await this.findOne(id);
-    const { listIds, ...campaignData } = dto;
+    const { listIds, ...raw } = dto;
+    const campaignData = this.pickCampaignFields(raw);
 
     if (listIds !== undefined) {
       await this.prisma.campaignList.deleteMany({ where: { campaignId: id } });

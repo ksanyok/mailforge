@@ -101,19 +101,42 @@ export class SendingProcessor {
         html = await this.wrapClickLinks(html, campaignId, contactId, appUrl);
       }
 
+      // Generate plain-text fallback if not provided
+      const plainText = text || html
+        .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+        .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
+        .replace(/<[^>]+>/g, ' ')
+        .replace(/\s{2,}/g, ' ')
+        .trim();
+
+      // Unique message ID for deduplication
+      const msgId = `<${campaignId}.${contactId}.${Date.now()}@${sender.fromEmail.split('@')[1]}>`;
+
       // Send email
       const transporter = await this.getTransporter(sender);
       const info = await transporter.sendMail({
         from: `"${sender.fromName}" <${sender.fromEmail}>`,
         to: contact.email,
-        replyTo: sender.replyTo || undefined,
+        replyTo: sender.replyTo || sender.fromEmail,
         subject: interpolate(campaign.subject, variables),
         html,
-        text,
+        text: plainText,
+        messageId: msgId,
         headers: {
-          'X-Campaign-Id': campaignId,
-          'List-Unsubscribe': `<${variables.unsubscribeUrl}>`,
+          // Unsubscribe — required by Gmail/Yahoo bulk sender policy
+          'List-Unsubscribe': `<${variables.unsubscribeUrl}>, <mailto:${sender.fromEmail}?subject=unsubscribe>`,
           'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+          // Bulk mail markers — help inbox providers classify correctly
+          'Precedence': 'bulk',
+          'X-Mailer': 'MailForge',
+          // List identity — helps spam filters trust the sender
+          'List-ID': `${campaign.name} <campaign-${campaignId}.${sender.fromEmail.split('@')[1]}>`,
+          // Feedback-ID — enables Gmail Postmaster Tools engagement tracking
+          'Feedback-ID': `${campaignId}:${senderId}:mailforge`,
+          // Prevent duplicate detection across resends
+          'X-Entity-Ref-ID': msgId,
+          // Internal tracking
+          'X-Campaign-Id': campaignId,
         },
       });
 

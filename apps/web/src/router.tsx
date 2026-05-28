@@ -26,6 +26,7 @@ import { NotificationsPage } from '@/pages/notifications/NotificationsPage';
 import { ActivityPage } from '@/pages/activity/ActivityPage';
 import { UsersPage } from '@/pages/users/UsersPage';
 import { SettingsPage } from '@/pages/settings/SettingsPage';
+import { InboxPage } from '@/pages/inbox/InboxPage';
 
 export const router = createBrowserRouter([
   { path: '/login', element: <LoginPage /> },
@@ -62,6 +63,7 @@ export const router = createBrowserRouter([
       { path: 'activity', element: <ActivityPage /> },
       { path: 'users', element: <UsersPage /> },
       { path: 'settings', element: <SettingsPage /> },
+      { path: 'inbox', element: <InboxPage /> },
     ],
   },
 ]);

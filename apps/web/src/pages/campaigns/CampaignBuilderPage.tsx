@@ -24,7 +24,7 @@ interface BuilderForm {
   name: string; subject: string; preheader: string;
   senderId: string; fromNameOverride: string;
   htmlContent: string; textContent: string;
-  throttlePerMinute: number; trackOpens: boolean; trackClicks: boolean;
+  throttlePerHour: number; trackOpens: boolean; trackClicks: boolean;
 }
 
 const STEPS = [
@@ -51,7 +51,7 @@ export function CampaignBuilderPage() {
   const [contentTab, setContentTab] = useState<'code' | 'preview'>('code');
 
   const { register, handleSubmit, setValue, watch } = useForm<BuilderForm>({
-    defaultValues: { throttlePerMinute: 60, trackOpens: true, trackClicks: true },
+    defaultValues: { throttlePerHour: 1200, trackOpens: true, trackClicks: true },
   });
 
   const subject = watch('subject') ?? '';
@@ -90,8 +90,8 @@ export function CampaignBuilderPage() {
 
   const onSubmit = (data: BuilderForm) => {
     if (selectedLists.length === 0) { toast({ title: 'Select at least one list', variant: 'destructive' }); setStep(2); return; }
-    const { fromNameOverride, ...campaignData } = data;
-    save.mutate({ ...campaignData, listIds: selectedLists });
+    const { fromNameOverride, throttlePerHour, ...campaignData } = data;
+    save.mutate({ ...campaignData, throttlePerMinute: Math.max(1, Math.round(throttlePerHour / 60)), listIds: selectedLists });
   };
 
   const goNext = () => {
@@ -439,18 +439,19 @@ export function CampaignBuilderPage() {
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="space-y-1.5">
-                <Label>Send Rate (emails per minute)</Label>
-                <Input type="number" min={1} max={500} {...register('throttlePerMinute', { valueAsNumber: true })} />
+                <Label>Send Rate (emails per hour)</Label>
+                <Input type="number" min={60} max={36000} step={60} {...register('throttlePerHour', { valueAsNumber: true })} />
+                <p className="text-xs text-muted-foreground">Hourly rate reduces spam risk. Min 60/hr.</p>
                 <div className="grid grid-cols-3 gap-2 mt-2">
-                  {[{ v: 20, label: 'Slow', hint: 'Better reputation' },
-                    { v: 60, label: 'Standard', hint: 'Recommended' },
-                    { v: 200, label: 'Fast', hint: 'For large lists' }].map(({ v, label, hint }) => (
+                  {[{ v: 300,  label: 'Slow',     hint: 'Best reputation' },
+                    { v: 1200, label: 'Standard', hint: 'Recommended' },
+                    { v: 3600, label: 'Fast',     hint: 'Large lists' }].map(({ v, label, hint }) => (
                     <button key={v} type="button"
-                      onClick={() => setValue('throttlePerMinute', v)}
+                      onClick={() => setValue('throttlePerHour', v)}
                       className={cn('p-2 rounded-lg border text-xs text-center transition-colors',
-                        watch('throttlePerMinute') === v ? 'border-primary bg-primary/5 text-primary' : 'hover:bg-muted/50',
+                        watch('throttlePerHour') === v ? 'border-primary bg-primary/5 text-primary' : 'hover:bg-muted/50',
                       )}>
-                      <p className="font-semibold">{v}/min</p>
+                      <p className="font-semibold">{v}/hr</p>
                       <p className="text-muted-foreground">{label}</p>
                       <p className="text-muted-foreground">{hint}</p>
                     </button>
@@ -492,7 +493,7 @@ export function CampaignBuilderPage() {
                     ['Preheader', watch('preheader') || '—'],
                     ['Sender',    selectedSender ? `${watch('fromNameOverride') || selectedSender.fromName} <${selectedSender.fromEmail}>` : '—'],
                     ['Lists',     `${selectedLists.length} list(s) • ~${totalContacts.toLocaleString()} contacts`],
-                    ['Send Rate', `${watch('throttlePerMinute')} emails/min`],
+                    ['Send Rate', `${watch('throttlePerHour')} emails/hr`],
                     ['Tracking',  [watch('trackOpens') && 'opens', watch('trackClicks') && 'clicks'].filter(Boolean).join(', ') || 'disabled'],
                   ].map(([label, value]) => (
                     <div key={label as string} className="flex justify-between border-b pb-2 last:border-0 last:pb-0 gap-4">

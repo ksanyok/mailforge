@@ -2,7 +2,7 @@ import { NavLink } from 'react-router-dom';
 import {
   LayoutDashboard, Users, List, Upload, Send, FileText, Mail,
   Thermometer, Shield, BarChart2, Bell, Settings, Activity, AlertCircle,
-  UserCircle, Ban,
+  UserCircle, Ban, Inbox,
 } from 'lucide-react';
 import { cn } from '@/utils/cn';
 
@@ -14,6 +14,7 @@ const navItems = [
   { to: '/campaigns', label: 'Campaigns', icon: Send },
   { to: '/templates', label: 'Templates', icon: FileText },
   { to: '/senders', label: 'Senders', icon: Mail },
+  { to: '/inbox', label: 'Inbox', icon: Inbox },
   { to: '/warmup', label: 'Warmup', icon: Thermometer },
   { to: '/deliverability', label: 'Deliverability', icon: Shield },
   { to: '/suppressions', label: 'Suppressions', icon: Ban },

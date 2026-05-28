@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Wifi, RotateCcw } from 'lucide-react';
+import { Plus, Wifi, RotateCcw, Trash2 } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -43,6 +43,12 @@ export function SendersPage() {
       const msg = err?.response?.data?.message || 'Connection failed';
       toast({ title: msg, variant: 'destructive' });
     },
+  });
+
+  const remove = useMutation({
+    mutationFn: (id: string) => sendersApi.remove(id),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['senders'] }); toast({ title: 'Sender deleted' }); },
+    onError: () => toast({ title: 'Failed to delete sender', variant: 'destructive' }),
   });
 
   const resetStatus = useMutation({
@@ -124,6 +130,15 @@ export function SendersPage() {
                     <RotateCcw className="h-3.5 w-3.5" />
                   </Button>
                 )}
+                <Button
+                  size="sm" variant="ghost"
+                  className="text-destructive hover:bg-destructive/10"
+                  onClick={(e) => { e.stopPropagation(); if (confirm(`Delete sender "${s.name}"?`)) remove.mutate(s.id); }}
+                  disabled={remove.isPending}
+                  title="Delete sender"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </Button>
               </div>
             </CardContent>
           </Card>

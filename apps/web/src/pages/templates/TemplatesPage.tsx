@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Plus, Trash2, Eye, Code2, Search, Tag } from 'lucide-react';
+import { Plus, Trash2, Eye, Code2, Search, Tag, Edit } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -49,6 +49,8 @@ const STARTER_HTML = `<!DOCTYPE html>
 export function TemplatesPage() {
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
+  const [editTpl, setEditTpl] = useState<Template | null>(null);
+  const [editMode, setEditMode] = useState<'code' | 'preview'>('code');
   const [previewTpl, setPreviewTpl] = useState<{ name: string; html: string } | null>(null);
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('All');
@@ -61,7 +63,12 @@ export function TemplatesPage() {
     name: string; category: string; htmlContent: string;
   }>({ defaultValues: { htmlContent: STARTER_HTML } });
 
+  const { register: regEdit, handleSubmit: hsEdit, watch: wEdit, setValue: svEdit, reset: resetEdit } = useForm<{
+    name: string; category: string; htmlContent: string;
+  }>();
+
   const htmlContent = watch('htmlContent') ?? '';
+  const editHtml = wEdit('htmlContent') ?? '';
 
   const create = useMutation({
     mutationFn: (d: unknown) => templatesApi.create(d),
@@ -74,11 +81,26 @@ export function TemplatesPage() {
     onError: () => toast({ title: 'Failed to create template', variant: 'destructive' }),
   });
 
+  const update = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: unknown }) => templatesApi.update(id, data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['templates'] });
+      setEditTpl(null);
+      toast({ title: 'Template updated' });
+    },
+    onError: () => toast({ title: 'Failed to update template', variant: 'destructive' }),
+  });
+
   const remove = useMutation({
     mutationFn: (id: string) => templatesApi.remove(id),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['templates'] }); toast({ title: 'Template deleted' }); },
     onError: () => toast({ title: 'Cannot delete a system template', variant: 'destructive' }),
   });
+
+  const openEdit = (t: Template) => {
+    resetEdit({ name: t.name, category: t.category ?? '', htmlContent: t.htmlContent ?? '' });
+    setEditTpl(t);
+  };
 
   const allTemplates = [
     ...DEMO_TEMPLATES.map((d) => ({
@@ -274,14 +296,24 @@ export function TemplatesPage() {
                 <Eye className="h-3.5 w-3.5" />Preview
               </Button>
               {!t.isSystem && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-destructive hover:bg-destructive/10"
-                  onClick={() => remove.mutate(t.id)}
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                </Button>
+                <>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-1"
+                    onClick={() => openEdit(t)}
+                  >
+                    <Edit className="h-3.5 w-3.5" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-destructive hover:bg-destructive/10"
+                    onClick={() => remove.mutate(t.id)}
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
+                </>
               )}
             </CardFooter>
           </Card>
@@ -295,6 +327,49 @@ export function TemplatesPage() {
           </div>
         )}
       </div>
+
+      {/* Edit modal */}
+      <Dialog open={!!editTpl} onOpenChange={(o) => !o && setEditTpl(null)}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Edit Template</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={hsEdit((d) => update.mutate({ id: editTpl!.id, data: d }))} className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label>Name *</Label>
+                <Input {...regEdit('name', { required: true })} />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Category</Label>
+                <Input {...regEdit('category')} placeholder="newsletter, promotional…" />
+              </div>
+            </div>
+            <Tabs value={editMode} onValueChange={(v) => setEditMode(v as any)}>
+              <TabsList>
+                <TabsTrigger value="code" className="gap-1.5"><Code2 className="h-3.5 w-3.5" />HTML Code</TabsTrigger>
+                <TabsTrigger value="preview" className="gap-1.5"><Eye className="h-3.5 w-3.5" />Preview</TabsTrigger>
+              </TabsList>
+              <TabsContent value="code">
+                <Textarea {...regEdit('htmlContent', { required: true })} rows={16} className="font-mono text-xs resize-y" />
+              </TabsContent>
+              <TabsContent value="preview">
+                <div className="border rounded-md overflow-hidden" style={{ height: 420 }}>
+                  {editHtml ? (
+                    <iframe srcDoc={editHtml} title="edit-preview" className="w-full h-full" sandbox="allow-same-origin" />
+                  ) : (
+                    <div className="flex items-center justify-center h-full text-muted-foreground text-sm">No content to preview</div>
+                  )}
+                </div>
+              </TabsContent>
+            </Tabs>
+            <div className="flex justify-end gap-2">
+              <Button type="button" variant="outline" onClick={() => setEditTpl(null)}>Cancel</Button>
+              <Button type="submit" disabled={update.isPending}>{update.isPending ? 'Saving…' : 'Save Changes'}</Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       {/* Preview modal */}
       <Dialog open={!!previewTpl} onOpenChange={(o) => !o && setPreviewTpl(null)}>

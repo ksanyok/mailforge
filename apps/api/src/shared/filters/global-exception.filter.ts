@@ -7,7 +7,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import type { Response } from 'express';
-import { Prisma } from '@prisma/client';
+import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 
 @Catch()
 export class GlobalExceptionFilter implements ExceptionFilter {
@@ -33,7 +33,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
         error = (res.error as string) || error;
       }
     } else if (this.isPrismaError(exception)) {
-      const pe = exception as Prisma.PrismaClientKnownRequestError;
+      const pe = exception as PrismaClientKnownRequestError;
       if (pe.code === 'P2002') {
         status = HttpStatus.CONFLICT;
         message = 'A record with this value already exists';
@@ -66,7 +66,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     });
   }
 
-  private isPrismaError(e: unknown): e is Prisma.PrismaClientKnownRequestError {
+  private isPrismaError(e: unknown): e is PrismaClientKnownRequestError {
     return typeof e === 'object' && e !== null && 'code' in e && 'clientVersion' in e;
   }
 }

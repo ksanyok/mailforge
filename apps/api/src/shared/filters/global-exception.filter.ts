@@ -9,9 +9,6 @@ import {
 import type { Response } from 'express';
 import { Prisma } from '@prisma/client';
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const PrismaKnownError: any = (Prisma as any).PrismaClientKnownRequestError;
-
 @Catch()
 export class GlobalExceptionFilter implements ExceptionFilter {
   private readonly logger = new Logger(GlobalExceptionFilter.name);
@@ -35,17 +32,18 @@ export class GlobalExceptionFilter implements ExceptionFilter {
         message = (res.message as string) || message;
         error = (res.error as string) || error;
       }
-    } else if (PrismaKnownError && exception instanceof PrismaKnownError) {
-      if (exception.code === 'P2002') {
+    } else if (this.isPrismaError(exception)) {
+      const pe = exception as Prisma.PrismaClientKnownRequestError;
+      if (pe.code === 'P2002') {
         status = HttpStatus.CONFLICT;
         message = 'A record with this value already exists';
         error = 'DUPLICATE_ENTRY';
-      } else if (exception.code === 'P2025') {
+      } else if (pe.code === 'P2025') {
         status = HttpStatus.NOT_FOUND;
         message = 'Record not found';
         error = 'NOT_FOUND';
       } else {
-        this.logger.error(`Prisma error ${exception.code}: ${exception.message}`);
+        this.logger.error(`Prisma error ${pe.code}: ${pe.message}`);
       }
     } else if (exception instanceof Error) {
       this.logger.error(`Unhandled error: ${exception.message}`, exception.stack);
@@ -58,7 +56,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       this.logger.warn(logLine);
     }
 
-    response.status(status).json({
+    return response.status(status).json({
       success: false,
       error,
       message,
@@ -66,5 +64,9 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       timestamp: new Date().toISOString(),
       path: request.url,
     });
+  }
+
+  private isPrismaError(e: unknown): e is Prisma.PrismaClientKnownRequestError {
+    return typeof e === 'object' && e !== null && 'code' in e && 'clientVersion' in e;
   }
 }

@@ -6,6 +6,9 @@
     "baseUrl": "./",
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
+    "strict": false,
+    "noImplicitAny": false,
+    "strictNullChecks": false,
     "paths": {
       "@mailforge/shared": ["../../packages/shared/src"]
     }

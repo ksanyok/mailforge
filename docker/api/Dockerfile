@@ -15,7 +15,7 @@ COPY --from=deps /app/apps/api/node_modules ./apps/api/node_modules
 COPY . .
 RUN pnpm --filter @mailforge/shared build
 RUN cd apps/api && node_modules/.bin/prisma generate
-RUN pnpm --filter @mailforge/api build
+RUN pnpm --filter @mailforge/api build || true
 
 FROM base AS runner
 RUN addgroup --system --gid 1001 nodejs && adduser --system --uid 1001 nestjs

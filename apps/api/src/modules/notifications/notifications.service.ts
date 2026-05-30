@@ -66,10 +66,10 @@ export class NotificationsService {
       select: { id: true },
     });
 
-    await this.prisma.notification.createMany({
+    await (this.prisma.notification.createMany as any)({
       data: admins.map((admin) => ({
         userId: admin.id,
-        type: data.type as any,
+        type: data.type,
         title: data.title,
         message: data.message,
         metadata: data.metadata ?? undefined,

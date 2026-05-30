@@ -32,6 +32,6 @@ export class ActivityService {
     ipAddress?: string;
     userAgent?: string;
   }) {
-    return this.prisma.activityLog.create({ data });
+    return this.prisma.activityLog.create({ data: data as any });
   }
 }

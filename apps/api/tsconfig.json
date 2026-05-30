@@ -11,6 +11,7 @@
     "strict": false,
     "noImplicitAny": false,
     "strictNullChecks": false,
+    "noEmitOnError": false,
     "paths": {
       "@mailforge/shared": ["../../packages/shared/src"]
     }

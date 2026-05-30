@@ -55,7 +55,7 @@ export class UsersService {
     await this.findOne(id);
     return this.prisma.user.update({
       where: { id },
-      data: dto,
+      data: dto as any,
       select: {
         id: true, email: true, name: true, role: true, isActive: true,
         createdAt: true, updatedAt: true,

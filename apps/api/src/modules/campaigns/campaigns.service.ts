@@ -291,9 +291,9 @@ export class CampaignsService {
       (c) => !suppressedEmailSet.has(c.email.toLowerCase()),
     );
 
-    // Exclude already-sent recipients for this campaign
+    // Exclude only successfully SENT contacts (not FAILED — allow retry)
     const alreadySent = await this.prisma.campaignRecipient.findMany({
-      where: { campaignId, status: { notIn: ['PENDING', 'QUEUED'] } },
+      where: { campaignId, status: { in: ['SENT', 'DELIVERED', 'OPENED', 'CLICKED', 'UNSUBSCRIBED'] } },
       select: { contactId: true },
     });
     const sentIds = new Set(alreadySent.map((r) => r.contactId));

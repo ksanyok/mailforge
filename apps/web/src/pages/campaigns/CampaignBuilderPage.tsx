@@ -440,8 +440,8 @@ export function CampaignBuilderPage() {
             <CardContent className="space-y-6">
               <div className="space-y-1.5">
                 <Label>Send Rate (emails per hour)</Label>
-                <Input type="number" min={60} max={36000} step={60} {...register('throttlePerHour', { valueAsNumber: true })} />
-                <p className="text-xs text-muted-foreground">Hourly rate reduces spam risk. Min 60/hr.</p>
+                <Input type="number" min={1} max={36000} step={1} {...register('throttlePerHour', { valueAsNumber: true })} />
+                <p className="text-xs text-muted-foreground">Hourly rate reduces spam risk. 20/hr recommended for warmup.</p>
                 <div className="grid grid-cols-3 gap-2 mt-2">
                   {[{ v: 300,  label: 'Slow',     hint: 'Best reputation' },
                     { v: 1200, label: 'Standard', hint: 'Recommended' },

@@ -136,3 +136,11 @@ export const usersApi = {
   remove: (id: string) => api.delete(`/users/${id}`).then(extractData),
   toggleActive: (id: string) => api.patch(`/users/${id}/toggle-active`).then(extractData),
 };
+
+export const inboxApi = {
+  conversations: () => api.get('/inbox/conversations').then(extractData),
+  thread: (senderId: string, contactEmail: string) =>
+    api.get('/inbox/thread', { params: { senderId, contactEmail } }).then(extractData),
+  markRead: (senderId: string, uid: number) =>
+    api.post('/inbox/read', null, { params: { senderId, uid } }).then(extractData),
+};

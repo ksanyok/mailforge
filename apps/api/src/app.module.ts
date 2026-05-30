@@ -29,6 +29,7 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
 import { RecommendationsModule } from './modules/recommendations/recommendations.module';
 import { ActivityModule } from './modules/activity/activity.module';
 import { SettingsModule } from './modules/settings/settings.module';
+import { InboxModule } from './modules/inbox/inbox.module';
 
 @Module({
   imports: [
@@ -105,6 +106,7 @@ import { SettingsModule } from './modules/settings/settings.module';
     RecommendationsModule,
     ActivityModule,
     SettingsModule,
+    InboxModule,
   ],
   providers: [
     // Apply guards globally

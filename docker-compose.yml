@@ -59,6 +59,8 @@ services:
       dockerfile: docker/api/Dockerfile
     container_name: mailforge_api
     restart: unless-stopped
+    extra_hosts:
+      - "host.docker.internal:172.18.0.1"
     depends_on:
       db:
         condition: service_healthy

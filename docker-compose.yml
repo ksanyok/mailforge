@@ -109,11 +109,12 @@ services:
       ROUNDCUBEMAIL_SMTP_AUTH_TYPE: LOGIN
       ROUNDCUBEMAIL_DB_TYPE: sqlite
       ROUNDCUBEMAIL_SKIN: elastic
-      ROUNDCUBEMAIL_PLUGINS: archive,zipdownload,markasjunk
+      ROUNDCUBEMAIL_PLUGINS: archive,zipdownload,markasjunk,mailforge_style
       ROUNDCUBEMAIL_UPLOAD_MAX_FILESIZE: 25M
     volumes:
       - webmail_data:/var/roundcube/db
       - webmail_config:/var/roundcube/config
+      - ./docker/webmail/mailforge_style:/var/www/html/plugins/mailforge_style
     ports:
       - '127.0.0.1:8025:80'
 

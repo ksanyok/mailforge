@@ -1,8 +1,19 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { ImapFlow } from 'imapflow';
+import { ImapFlow, FetchMessageObject } from 'imapflow';
 import { PrismaService } from '../../core/database/prisma.service';
 import { decrypt } from '../../shared/utils/crypto.util';
+
+interface SenderRow {
+  id: string;
+  fromEmail: string;
+  fromName: string;
+  smtpHost: string;
+  smtpPort: number;
+  smtpUser: string;
+  smtpPasswordEncrypted: string;
+  smtpEncryption: string;
+}
 
 export interface InboxMessage {
   uid: number;
@@ -49,7 +60,7 @@ export class InboxService {
     const results: Conversation[] = [];
 
     await Promise.allSettled(
-      senders.map(async (sender) => {
+      senders.map(async (sender: SenderRow) => {
         try {
           const messages = await this.fetchInbox(sender, 50);
           const byContact = new Map<string, InboxMessage[]>();
@@ -132,7 +143,7 @@ export class InboxService {
 
   // ── private helpers ─────────────────────────────────────────────────
 
-  private async fetchInbox(sender: any, limit: number): Promise<InboxMessage[]> {
+  private async fetchInbox(sender: SenderRow, limit: number): Promise<InboxMessage[]> {
     const client = this.createClient(sender);
     const messages: InboxMessage[] = [];
 
@@ -148,11 +159,11 @@ export class InboxService {
         source: false,
       })) {
         try {
-          const full = await client.fetchOne(String(msg.uid), {
+          const full: FetchMessageObject | false = await client.fetchOne(String(msg.uid), {
             bodyParts: ['TEXT'],
           }, { uid: true });
 
-          const textPart = full?.bodyParts?.get('text') as Buffer | undefined;
+          const textPart = (full && full.bodyParts?.get('text')) as Buffer | undefined;
           const rawText = textPart?.toString('utf-8') ?? '';
 
           messages.push({
@@ -183,7 +194,7 @@ export class InboxService {
     return messages;
   }
 
-  private async fetchSent(sender: any, contactEmail: string): Promise<InboxMessage[]> {
+  private async fetchSent(sender: SenderRow, contactEmail: string): Promise<InboxMessage[]> {
     const client = this.createClient(sender);
     const messages: InboxMessage[] = [];
     const sentFolders = ['Sent', 'Sent Items', 'INBOX.Sent'];
@@ -210,11 +221,11 @@ export class InboxService {
         if (!toAddresses.includes(contactEmail.toLowerCase())) continue;
 
         try {
-          const full = await client.fetchOne(String(msg.uid), {
+          const full: FetchMessageObject | false = await client.fetchOne(String(msg.uid), {
             bodyParts: ['TEXT'],
           }, { uid: true });
 
-          const textPart = full?.bodyParts?.get('text') as Buffer | undefined;
+          const textPart = (full && full.bodyParts?.get('text')) as Buffer | undefined;
           const rawText = textPart?.toString('utf-8') ?? '';
 
           messages.push({
@@ -247,7 +258,7 @@ export class InboxService {
     return messages;
   }
 
-  private createClient(sender: any): ImapFlow {
+  private createClient(sender: SenderRow): ImapFlow {
     const encKey = this.config.getOrThrow('ENCRYPTION_KEY');
     const password = decrypt(sender.smtpPasswordEncrypted, encKey);
     const imapHost = sender.smtpHost === 'mail.senior-dev.cloud' || sender.smtpHost === 'localhost'

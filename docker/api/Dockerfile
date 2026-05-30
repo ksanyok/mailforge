@@ -19,7 +19,7 @@ RUN pnpm --filter @mailforge/api build
 FROM base AS runner
 RUN addgroup --system --gid 1001 nodejs && adduser --system --uid 1001 nestjs
 WORKDIR /app
-COPY --from=build --chown=nestjs:nodejs /app/dist ./dist
+COPY --from=build --chown=nestjs:nodejs /app/apps/api/dist ./dist
 COPY --from=build --chown=nestjs:nodejs /app/apps/api/package.json ./package.json
 COPY --from=build --chown=nestjs:nodejs /app/apps/api/prisma ./prisma
 COPY --from=deps --chown=nestjs:nodejs /app/apps/api/node_modules ./node_modules

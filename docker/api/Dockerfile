@@ -14,6 +14,7 @@ COPY --from=deps /app/packages/shared/node_modules ./packages/shared/node_module
 COPY --from=deps /app/apps/api/node_modules ./apps/api/node_modules
 COPY . .
 RUN pnpm --filter @mailforge/shared build
+RUN cd apps/api && node_modules/.bin/prisma generate
 RUN pnpm --filter @mailforge/api build
 
 FROM base AS runner

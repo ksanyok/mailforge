@@ -27,4 +27,4 @@ COPY --from=deps --chown=nestjs:nodejs /app/node_modules ./node_modules
 RUN mkdir -p /app/uploads/imports && chown -R nestjs:nodejs /app/uploads
 USER nestjs
 EXPOSE 3001
-CMD ["node", "dist/main"]
+CMD ["node", "dist/apps/api/src/main"]

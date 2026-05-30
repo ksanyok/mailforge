@@ -6,8 +6,11 @@ import {
   HttpStatus,
   Logger,
 } from '@nestjs/common';
-import { Response } from 'express';
+import type { Response } from 'express';
 import { Prisma } from '@prisma/client';
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const PrismaKnownError: any = (Prisma as any).PrismaClientKnownRequestError;
 
 @Catch()
 export class GlobalExceptionFilter implements ExceptionFilter {
@@ -32,7 +35,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
         message = (res.message as string) || message;
         error = (res.error as string) || error;
       }
-    } else if (exception instanceof Prisma.PrismaClientKnownRequestError) {
+    } else if (PrismaKnownError && exception instanceof PrismaKnownError) {
       if (exception.code === 'P2002') {
         status = HttpStatus.CONFLICT;
         message = 'A record with this value already exists';

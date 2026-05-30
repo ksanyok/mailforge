@@ -65,7 +65,7 @@ export class SendingProcessor {
     const canSend = await this.checkSenderLimit(senderId, sender.warmupEnabled, sender.warmupCurrentDailyLimit, sender.dailyLimit);
     if (!canSend) {
       this.logger.warn(`Sender ${senderId} daily limit reached, delaying job`);
-      await job.moveToDelayed(Date.now() + 60 * 60 * 1000); // retry in 1 hour
+      await (job as any).moveToDelayed(Date.now() + 60 * 60 * 1000); // retry in 1 hour
       return;
     }
 

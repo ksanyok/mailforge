@@ -246,25 +246,25 @@ export class ContactsService {
 
   private validateEmail(email: string): ValidationStatus {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) return 'INVALID';
+    if (!emailRegex.test(email)) return ValidationStatus.INVALID;
 
     const [localPart, domain] = email.toLowerCase().split('@');
 
-    if (DISPOSABLE_DOMAINS.includes(domain)) return 'DISPOSABLE';
+    if (DISPOSABLE_DOMAINS.includes(domain)) return ValidationStatus.DISPOSABLE;
 
     if (ROLE_BASED_PREFIXES.some((prefix) => localPart === prefix || localPart.startsWith(prefix + '.'))) {
-      return 'ROLE_BASED';
+      return ValidationStatus.ROLE_BASED;
     }
 
-    return 'VALID';
+    return ValidationStatus.VALID;
   }
 
   private calculateRiskScore(validationStatus: ValidationStatus): number {
     switch (validationStatus) {
-      case 'INVALID': return 90;
-      case 'DISPOSABLE': return 80;
-      case 'ROLE_BASED': return 50;
-      case 'RISKY': return 60;
+      case ValidationStatus.INVALID: return 90;
+      case ValidationStatus.DISPOSABLE: return 80;
+      case ValidationStatus.ROLE_BASED: return 50;
+      case ValidationStatus.RISKY: return 60;
       default: return 10;
     }
   }

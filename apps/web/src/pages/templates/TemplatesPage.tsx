@@ -23,27 +23,35 @@ interface Template {
 const CATEGORIES = ['All', 'newsletter', 'promotional', 'transactional', 'announcement'];
 
 const STARTER_HTML = `<!DOCTYPE html>
-<html><head><meta charset="utf-8"></head>
-<body style="margin:0;padding:0;font-family:Arial,sans-serif;background:#f4f4f5">
-<table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="padding:40px 16px">
-  <table width="600" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:8px;overflow:hidden">
-    <tr><td style="background:#6366f1;padding:32px;text-align:center">
-      <h1 style="margin:0;color:#fff;font-size:24px">Email Subject</h1>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#f1f5f9;font-family:'Segoe UI',Arial,sans-serif">
+<table width="100%" cellpadding="0" cellspacing="0">
+<tr><td align="center" style="padding:40px 16px">
+  <table width="580" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,0.07)">
+    <tr><td style="background:linear-gradient(90deg,#6366f1,#8b5cf6);height:4px;font-size:0;line-height:0">&nbsp;</td></tr>
+    <tr><td style="padding:40px 44px 32px">
+      <h1 style="margin:0 0 4px;color:#111827;font-size:22px;font-weight:700">Email Subject</h1>
     </td></tr>
-    <tr><td style="padding:32px">
-      <p style="color:#374151;font-size:16px;line-height:1.7">Hi {{firstName}}!</p>
-      <p style="color:#374151;font-size:16px;line-height:1.7">Your email body goes here...</p>
-      <p style="text-align:center;margin:28px 0">
-        <a href="#" style="background:#6366f1;color:#fff;padding:14px 28px;border-radius:6px;text-decoration:none;font-weight:bold">Button</a>
-      </p>
+    <tr><td style="padding:0 44px"><div style="height:1px;background:#e5e7eb"></div></td></tr>
+    <tr><td style="padding:28px 44px">
+      <p style="margin:0 0 16px;color:#374151;font-size:15px;line-height:1.8">Hi {{firstName}},</p>
+      <p style="margin:0 0 16px;color:#374151;font-size:15px;line-height:1.8">Your email body goes here. Keep it concise and personal.</p>
+      <p style="margin:0 0 28px;color:#374151;font-size:15px;line-height:1.8">Write your call to action below.</p>
+      <table cellpadding="0" cellspacing="0">
+        <tr><td>
+          <a href="#" style="display:inline-block;background:#6366f1;color:#ffffff;padding:13px 28px;border-radius:7px;text-decoration:none;font-weight:600;font-size:14px">Call to Action →</a>
+        </td></tr>
+      </table>
     </td></tr>
-    <tr><td style="background:#f9fafb;padding:20px;text-align:center;border-top:1px solid #e5e7eb">
-      <p style="margin:0;color:#9ca3af;font-size:12px">
-        <a href="{{unsubscribeUrl}}" style="color:#9ca3af">Unsubscribe</a>
+    <tr><td style="background:#f9fafb;border-top:1px solid #e5e7eb;padding:16px 44px;text-align:center">
+      <p style="margin:0;color:#9ca3af;font-size:11px">
+        <a href="{{unsubscribeUrl}}" style="color:#9ca3af;text-decoration:underline">Unsubscribe</a>
       </p>
     </td></tr>
   </table>
-</td></tr></table>
+</td></tr>
+</table>
 </body></html>`;
 
 export function TemplatesPage() {

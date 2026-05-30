@@ -27,11 +27,11 @@ export function AppShell() {
   const title = PAGE_TITLES[path] ?? 'MailForge';
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="h-screen overflow-hidden bg-background">
       <Sidebar />
       <div className="ml-56">
         <Header title={title} />
-        <main className="mt-14 p-6">
+        <main className="mt-14 p-6 h-[calc(100vh-56px)] overflow-y-auto">
           <Outlet />
         </main>
       </div>

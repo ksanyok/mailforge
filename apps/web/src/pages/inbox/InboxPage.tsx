@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useMutation } from '@tanstack/react-query';
 import {
   Search, RefreshCw, Mail, ChevronLeft, Send, Star,
-  ChevronDown, MailOpen, Inbox, CheckCheck, X, EyeOff,
+  ChevronDown, MailOpen, Inbox, CheckCheck, X, EyeOff, Trash2,
 } from 'lucide-react';
 import { inboxApi } from '@/api/index';
 import { cn } from '@/utils/cn';
@@ -95,7 +95,9 @@ function ReadTicks({ isRead }: { isRead: boolean }) {
 }
 
 /* ── Bubble message ─────────────────────────────────────────────────── */
-function MessageBubble({ msg, isSent, index }: { msg: Message; isSent: boolean; index: number }) {
+function MessageBubble({ msg, isSent, index, onDelete }: {
+  msg: Message; isSent: boolean; index: number; onDelete?: () => void;
+}) {
   const body = (msg.text || '').trim();
   const delay = Math.min(index * 0.04, 0.4);
 
@@ -115,29 +117,42 @@ function MessageBubble({ msg, isSent, index }: { msg: Message; isSent: boolean; 
         {initials(msg.from.name, msg.from.address)}
       </div>
 
-      <div className={cn(
-        'max-w-[72%] px-4 py-2.5 shadow-sm relative transition-shadow duration-200 group-hover:shadow-md',
-        isSent ? [
-          'bg-gradient-to-br from-indigo-500 to-violet-600 text-white',
-          'rounded-2xl rounded-tr-sm',
-        ] : [
-          'bg-white text-gray-800 border border-gray-100',
-          'rounded-2xl rounded-tl-sm',
-        ],
-      )}>
-        {msg.subject && msg.subject !== '(no subject)' && (
-          <p className={cn('text-[11px] font-semibold mb-1.5 truncate',
-            isSent ? 'text-indigo-200' : 'text-indigo-500')}>
-            {msg.subject}
-          </p>
+      <div className="relative flex items-end gap-1.5 max-w-[72%]">
+        {/* Delete button — received only, appears on hover */}
+        {!isSent && onDelete && (
+          <button
+            onClick={onDelete}
+            title="Delete message"
+            className="opacity-0 group-hover:opacity-100 transition-all duration-200 w-6 h-6 rounded-full bg-white border border-gray-200 flex items-center justify-center text-gray-400 hover:text-red-500 hover:border-red-200 hover:bg-red-50 shadow-sm mb-1 shrink-0 order-last"
+          >
+            <Trash2 className="h-3 w-3" />
+          </button>
         )}
-        <p className="text-[13.5px] leading-relaxed whitespace-pre-wrap break-words">
-          {body || '(empty)'}
-        </p>
-        <div className={cn('flex items-center gap-1.5 mt-1.5 justify-end',
-          isSent ? 'text-indigo-200' : 'text-gray-400')}>
-          <span className="text-[10px]">{formatTime(msg.date)}</span>
-          {isSent && <ReadTicks isRead={msg.isRead} />}
+
+        <div className={cn(
+          'px-4 py-2.5 shadow-sm relative transition-shadow duration-200 group-hover:shadow-md',
+          isSent ? [
+            'bg-gradient-to-br from-indigo-500 to-violet-600 text-white',
+            'rounded-2xl rounded-tr-sm',
+          ] : [
+            'bg-white text-gray-800 border border-gray-100',
+            'rounded-2xl rounded-tl-sm',
+          ],
+        )}>
+          {msg.subject && msg.subject !== '(no subject)' && (
+            <p className={cn('text-[11px] font-semibold mb-1.5 truncate',
+              isSent ? 'text-indigo-200' : 'text-indigo-500')}>
+              {msg.subject}
+            </p>
+          )}
+          <p className="text-[13.5px] leading-relaxed whitespace-pre-wrap break-words">
+            {body || '(empty)'}
+          </p>
+          <div className={cn('flex items-center gap-1.5 mt-1.5 justify-end',
+            isSent ? 'text-indigo-200' : 'text-gray-400')}>
+            <span className="text-[10px]">{formatTime(msg.date)}</span>
+            {isSent && <ReadTicks isRead={msg.isRead} />}
+          </div>
         </div>
       </div>
     </div>
@@ -165,13 +180,15 @@ export function InboxPage() {
   const [markAllConfirm, setMarkAllConfirm] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const prevConvsRef = useRef<Map<string, string>>(new Map());
+  const notifInitRef = useRef(false);
   const qc = useQueryClient();
 
   const { data: convRaw = [], isFetching: loadingConvs, refetch } = useQuery({
     queryKey: ['inbox-conversations'],
     queryFn: () => inboxApi.conversations() as Promise<Conversation[]>,
-    refetchInterval: 60_000,
-    staleTime: 30_000,
+    refetchInterval: 30_000,
+    staleTime: 15_000,
   });
 
   const { data: thread = [], isFetching: loadingThread } = useQuery({
@@ -217,16 +234,60 @@ export function InboxPage() {
   const markAllReadMutation = useMutation({
     mutationFn: () => inboxApi.markAllRead(),
     onSuccess: () => {
-      // Mark all conversations as read locally
       const allKeys = (convRaw as Conversation[]).map(c => convKey(c));
       setLocalRead(new Set(allKeys));
       setMarkAllConfirm(false);
-      // Refresh after IMAP operations complete
       setTimeout(() => qc.invalidateQueries({ queryKey: ['inbox-conversations'] }), 1500);
       toast({ title: '✓ All conversations marked as read' });
     },
     onError: () => toast({ title: 'Failed to mark all as read', variant: 'destructive' }),
   });
+
+  const deleteMessageMutation = useMutation({
+    mutationFn: ({ senderId, uid }: { senderId: string; uid: number }) =>
+      inboxApi.deleteMessage(senderId, uid),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['inbox-thread', active?.senderId, active?.contactEmail] });
+      qc.invalidateQueries({ queryKey: ['inbox-conversations'] });
+      toast({ title: '✓ Message deleted' });
+    },
+    onError: () => toast({ title: 'Failed to delete message', variant: 'destructive' }),
+  });
+
+  /* ── Browser notifications for new messages ──────────────────────── */
+  useEffect(() => {
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission();
+    }
+  }, []);
+
+  useEffect(() => {
+    const convs = convRaw as Conversation[];
+    if (!convs.length) return;
+
+    const current = new Map(convs.map(c => [convKey(c), c.lastMessageAt]));
+
+    if (notifInitRef.current) {
+      for (const [key, lastAt] of current) {
+        const prevLastAt = prevConvsRef.current.get(key);
+        const isNew = prevLastAt !== undefined && new Date(String(prevLastAt)) < new Date(String(lastAt));
+        if (isNew) {
+          const conv = convs.find(c => convKey(c) === key);
+          if (!conv) continue;
+          const title = `New message from ${conv.contactName || conv.contactEmail}`;
+          const body = (conv.lastMessage || '').slice(0, 80);
+          if ('Notification' in window && Notification.permission === 'granted' && document.visibilityState !== 'visible') {
+            new Notification(title, { body, icon: '/favicon.ico', tag: key });
+          } else {
+            toast({ title, description: body });
+          }
+        }
+      }
+    }
+
+    notifInitRef.current = true;
+    prevConvsRef.current = current;
+  }, [convRaw]);
 
   /* ── Mark as read: optimistic + IMAP background ─────────────────── */
   const markConversationRead = useCallback(async (conv: Conversation, msgs: Message[]) => {
@@ -681,7 +742,12 @@ export function InboxPage() {
                           {active.senderName || active.senderEmail}
                         </p>
                       )}
-                      <MessageBubble msg={msg} isSent={isSent} index={i} />
+                      <MessageBubble
+                        msg={msg}
+                        isSent={isSent}
+                        index={i}
+                        onDelete={!isSent ? () => deleteMessageMutation.mutate({ senderId: active.senderId, uid: msg.uid }) : undefined}
+                      />
                     </div>
                   );
                 })

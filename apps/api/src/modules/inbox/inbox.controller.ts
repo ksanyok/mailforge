@@ -49,4 +49,12 @@ export class InboxController {
   ) {
     return this.inboxService.markUnread(senderId, Number(uid));
   }
+
+  @Post('delete')
+  deleteMessage(
+    @Query('senderId') senderId: string,
+    @Query('uid') uid: string,
+  ) {
+    return this.inboxService.deleteMessage(senderId, Number(uid));
+  }
 }

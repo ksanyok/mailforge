@@ -49,7 +49,7 @@ export class InboxService {
 
   async getConversations(): Promise<Conversation[]> {
     const senders = await this.prisma.senderAccount.findMany({
-      where: { status: { not: 'INACTIVE' } },
+      where: { status: 'ACTIVE' },
       select: {
         id: true, fromEmail: true, fromName: true,
         smtpHost: true, smtpPort: true, smtpUser: true,
@@ -125,13 +125,14 @@ export class InboxService {
     const sender = await this.prisma.senderAccount.findUnique({
       where: { id: senderId },
       select: {
+        id: true, fromEmail: true, fromName: true,
         smtpHost: true, smtpPort: true, smtpUser: true,
         smtpPasswordEncrypted: true, smtpEncryption: true,
       },
     });
     if (!sender) return;
 
-    const client = this.createClient(sender);
+    const client = this.createClient(sender as SenderRow);
     try {
       await client.connect();
       await client.mailboxOpen('INBOX');
@@ -272,6 +273,9 @@ export class InboxService {
       auth: { user: sender.smtpUser, pass: password },
       logger: false,
       tls: { rejectUnauthorized: false },
+      connectionTimeout: 8000,
+      greetingTimeout: 8000,
+      socketTimeout: 15000,
     });
   }
 

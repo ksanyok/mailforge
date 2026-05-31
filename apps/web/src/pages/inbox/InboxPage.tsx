@@ -114,13 +114,13 @@ function MessageBubble({ msg, isSent, index, onDelete }: {
 
   return (
     <div
-      className={cn(
-        'flex group',
-        isSent ? 'justify-end pl-16' : 'justify-start pr-16',
-      )}
-      style={{ animationDelay: `${delay}s`, animation: `${isSent ? 'slideRight' : 'slideLeft'} 0.18s ease-out both` }}
+      className={cn('flex w-full group', isSent ? 'justify-end' : 'justify-start')}
+      style={{ animationDelay: `${delay}s` }}
     >
-      <div className="relative">
+      <div
+        className={cn('relative', isSent ? 'mr-2' : 'ml-2')}
+        style={{ maxWidth: '65%' }}
+      >
         {/* Delete on hover — received only */}
         {!isSent && onDelete && (
           <button
@@ -133,7 +133,7 @@ function MessageBubble({ msg, isSent, index, onDelete }: {
         )}
 
         <div className={cn(
-          'relative px-3.5 py-2 shadow-sm max-w-[420px] min-w-[60px]',
+          'relative px-3.5 py-2 shadow-sm min-w-[60px]',
           isSent ? [
             'bg-[#25D366] text-white',
             'rounded-2xl rounded-br-[4px]',
@@ -142,7 +142,6 @@ function MessageBubble({ msg, isSent, index, onDelete }: {
             'rounded-2xl rounded-bl-[4px]',
           ],
         )}>
-          {/* Bubble tail */}
           {isSent && (
             <span className="absolute bottom-0 right-[-6px] w-0 h-0 border-l-[7px] border-l-[#25D366] border-t-[7px] border-t-transparent" />
           )}

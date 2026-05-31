@@ -25,6 +25,8 @@ interface BuilderForm {
   senderId: string; fromNameOverride: string;
   htmlContent: string; textContent: string;
   throttlePerHour: number; trackOpens: boolean; trackClicks: boolean;
+  followUpEnabled: boolean; followUpDays: number;
+  followUpSubject: string; followUpBody: string;
 }
 
 const STEPS = [
@@ -51,7 +53,7 @@ export function CampaignBuilderPage() {
   const [contentTab, setContentTab] = useState<'code' | 'preview'>('code');
 
   const { register, handleSubmit, setValue, watch } = useForm<BuilderForm>({
-    defaultValues: { throttlePerHour: 1200, trackOpens: true, trackClicks: true },
+    defaultValues: { throttlePerHour: 1200, trackOpens: true, trackClicks: true, followUpEnabled: false, followUpDays: 3, followUpSubject: '', followUpBody: '' },
   });
 
   const subject = watch('subject') ?? '';
@@ -473,6 +475,36 @@ export function CampaignBuilderPage() {
                     </div>
                   </label>
                 ))}
+              </div>
+
+              {/* Follow-up */}
+              <div className="space-y-3">
+                <p className="text-sm font-semibold">Auto Follow-up</p>
+                <label className="flex items-start gap-3 p-3 rounded-xl border cursor-pointer hover:bg-muted/30 transition-colors">
+                  <input type="checkbox" {...register('followUpEnabled')} className="accent-primary mt-0.5 h-4 w-4" />
+                  <div>
+                    <p className="text-sm font-medium">Send follow-up if no reply</p>
+                    <p className="text-xs text-muted-foreground">Automatically resend to contacts who haven't responded</p>
+                  </div>
+                </label>
+                {watch('followUpEnabled') && (
+                  <div className="pl-3 border-l-2 border-primary/30 space-y-3">
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">Wait days before sending follow-up</Label>
+                      <Input type="number" min={1} max={30} {...register('followUpDays', { valueAsNumber: true })} className="w-24" />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">Follow-up subject (optional)</Label>
+                      <Input {...register('followUpSubject')} placeholder={`Re: ${watch('subject') || 'your message'}`} />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">Follow-up message (optional, uses original if blank)</Label>
+                      <textarea rows={4} {...register('followUpBody')}
+                        placeholder="Hi {{firstName}}, just following up on my previous message…"
+                        className="w-full rounded-md border px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary resize-y" />
+                    </div>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>

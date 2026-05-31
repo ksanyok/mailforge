@@ -485,6 +485,11 @@ model Campaign {
   skipCount        Int            @default(0)
   throttlePerMinute Int           @default(60)
   rotationMode     RotationMode   @default(SINGLE)
+  followUpEnabled  Boolean        @default(false)
+  followUpDays     Int            @default(3)
+  followUpSubject  String?
+  followUpBody     String?        @db.LongText
+  followUpSentAt   DateTime?
   trackOpens       Boolean        @default(true)
   trackClicks      Boolean        @default(true)
   utmSource        String?

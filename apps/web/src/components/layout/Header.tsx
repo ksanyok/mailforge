@@ -1,5 +1,6 @@
-import { Bell, LogOut, User } from 'lucide-react';
+import { Bell, LogOut, User, Inbox } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem,
@@ -7,6 +8,8 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useAuthStore } from '@/stores/auth.store';
 import { authApi } from '@/api/auth';
+import { notificationsApi, inboxApi } from '@/api/index';
+import { cn } from '@/utils/cn';
 
 interface HeaderProps {
   title?: string;
@@ -15,6 +18,25 @@ interface HeaderProps {
 export function Header({ title }: HeaderProps) {
   const { user, refreshToken, logout } = useAuthStore();
   const navigate = useNavigate();
+
+  // Unread notification count
+  const { data: unreadData } = useQuery({
+    queryKey: ['notifications-unread'],
+    queryFn: () => notificationsApi.unreadCount(),
+    refetchInterval: 30_000,
+  });
+  const notifCount = (unreadData as any)?.count ?? 0;
+
+  // Unread inbox count
+  const { data: convRaw } = useQuery({
+    queryKey: ['inbox-conversations'],
+    queryFn: () => inboxApi.conversations(),
+    refetchInterval: 60_000,
+    staleTime: 30_000,
+  });
+  const inboxUnread = ((convRaw as any[]) ?? []).reduce(
+    (sum: number, c: any) => sum + (c.unreadCount ?? 0), 0,
+  );
 
   const handleLogout = async () => {
     if (refreshToken) {
@@ -27,10 +49,32 @@ export function Header({ title }: HeaderProps) {
   return (
     <header className="fixed top-0 left-56 right-0 h-14 border-b bg-background flex items-center justify-between px-6 z-10">
       <h1 className="text-lg font-semibold">{title}</h1>
-      <div className="flex items-center gap-2">
-        <Button variant="ghost" size="icon" onClick={() => navigate('/notifications')}>
-          <Bell className="h-5 w-5" />
+      <div className="flex items-center gap-1">
+
+        {/* Inbox bell */}
+        <Button variant="ghost" size="icon" className="relative" onClick={() => navigate('/inbox')}>
+          <Inbox className="h-5 w-5" />
+          {inboxUnread > 0 && (
+            <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 rounded-full bg-indigo-500 text-white text-[9px] font-bold flex items-center justify-center px-0.5">
+              {inboxUnread > 99 ? '99+' : inboxUnread}
+            </span>
+          )}
         </Button>
+
+        {/* Notifications bell */}
+        <Button variant="ghost" size="icon" className="relative" onClick={() => navigate('/notifications')}>
+          <Bell className="h-5 w-5" />
+          {notifCount > 0 && (
+            <span className={cn(
+              'absolute -top-0.5 -right-0.5 min-w-[16px] h-4 rounded-full text-white text-[9px] font-bold flex items-center justify-center px-0.5',
+              'bg-red-500',
+            )}>
+              {notifCount > 99 ? '99+' : notifCount}
+            </span>
+          )}
+        </Button>
+
+        {/* User menu */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon">

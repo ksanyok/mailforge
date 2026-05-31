@@ -1,12 +1,13 @@
 import { useState, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import { Upload, FileText, Info, X, ChevronDown, ChevronUp } from 'lucide-react';
+import { Upload, FileText, Info, X, ChevronDown, ChevronUp, Plus } from 'lucide-react';
 import type { ColumnDef } from '@tanstack/react-table';
 import { Button } from '@/components/ui/button';
 import { DataTable } from '@/components/data-table/DataTable';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
 import { importsApi, listsApi } from '@/api/index';
 import { formatDate, STATUS_COLORS } from '@/utils/format';
 import { cn } from '@/utils/cn';
@@ -36,6 +37,8 @@ export function ImportsPage() {
   const [isDragging, setIsDragging] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [listId, setListId] = useState<string>('');
+  const [newListName, setNewListName] = useState<string>('');
+  const [creatingList, setCreatingList] = useState(false);
   const [dedupeRule, setDedupeRule] = useState<string>('SKIP');
   const [showHints, setShowHints] = useState(false);
 
@@ -44,6 +47,18 @@ export function ImportsPage() {
 
   const result = data as { data: Import[]; total: number } | undefined;
   const lists = ((listsData as any)?.data ?? []) as { id: string; name: string; contactCount: number }[];
+
+  const createList = useMutation({
+    mutationFn: (name: string) => listsApi.create({ name }),
+    onSuccess: (res: any) => {
+      qc.invalidateQueries({ queryKey: ['lists'] });
+      setListId(res.id);
+      setNewListName('');
+      setCreatingList(false);
+      toast({ title: `List "${res.name}" created` });
+    },
+    onError: () => toast({ title: 'Failed to create list', variant: 'destructive' }),
+  });
 
   const upload = useMutation({
     mutationFn: (file: File) => {
@@ -175,18 +190,50 @@ export function ImportsPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-1.5">
             <Label>Add to list (optional)</Label>
-            <Select value={listId} onValueChange={setListId}>
-              <SelectTrigger>
-                <SelectValue placeholder="— No list —" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="__none__">— No list —</SelectItem>
-                {lists.map((l) => (
-                  <SelectItem key={l.id} value={l.id}>{l.name} ({l.contactCount} contacts)</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <p className="text-xs text-muted-foreground">Imported contacts will be automatically added to this list</p>
+            {creatingList ? (
+              <div className="flex gap-2">
+                <Input
+                  autoFocus
+                  placeholder="New list name…"
+                  value={newListName}
+                  onChange={(e) => setNewListName(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && newListName.trim()) createList.mutate(newListName.trim());
+                    if (e.key === 'Escape') { setCreatingList(false); setNewListName(''); }
+                  }}
+                  className="flex-1"
+                />
+                <Button
+                  type="button"
+                  size="sm"
+                  disabled={!newListName.trim() || createList.isPending}
+                  onClick={() => newListName.trim() && createList.mutate(newListName.trim())}
+                >
+                  {createList.isPending ? '…' : 'Create'}
+                </Button>
+                <Button type="button" size="sm" variant="ghost" onClick={() => { setCreatingList(false); setNewListName(''); }}>
+                  Cancel
+                </Button>
+              </div>
+            ) : (
+              <div className="flex gap-2">
+                <Select value={listId} onValueChange={setListId}>
+                  <SelectTrigger className="flex-1">
+                    <SelectValue placeholder="— No list —" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">— No list —</SelectItem>
+                    {lists.map((l) => (
+                      <SelectItem key={l.id} value={l.id}>{l.name} ({l.contactCount})</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button type="button" size="sm" variant="outline" onClick={() => setCreatingList(true)} title="Create new list">
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
+            <p className="text-xs text-muted-foreground">Select an existing list or create a new one to group imported contacts</p>
           </div>
 
           <div className="space-y-1.5">

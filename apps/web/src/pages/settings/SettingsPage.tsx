@@ -20,6 +20,7 @@ const LABEL_MAP: Record<string, { label: string; description: string; placeholde
   'sending.maxDailyGlobal':     { label: 'Global Daily Send Limit',     description: 'Maximum total emails per day across all senders',     placeholder: '10000', type: 'number' },
   'warmup.defaultInitialVolume':{ label: 'Initial Warmup Volume',       description: 'Emails per day to start with during IP warmup',       placeholder: '20',    type: 'number' },
   'warmup.defaultDailyIncrease':{ label: 'Daily Warmup Increase (%)',   description: 'Percentage increase in daily volume during warmup',   placeholder: '20',    type: 'number' },
+  'notifications.forwardEmail': { label: 'Forward Notifications To',    description: 'System alerts will be emailed here (leave blank to disable)', placeholder: 'you@example.com' },
 };
 
 const SETTING_GROUPS = [
@@ -40,6 +41,12 @@ const SETTING_GROUPS = [
     description: 'Controls how new sending IPs are gradually ramped up',
     icon: Zap,
     keys: ['warmup.defaultInitialVolume', 'warmup.defaultDailyIncrease'],
+  },
+  {
+    title: 'Notifications',
+    description: 'Receive system alerts outside the interface',
+    icon: Bell,
+    keys: ['notifications.forwardEmail'],
   },
 ];
 

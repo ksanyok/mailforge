@@ -1,23 +1,53 @@
 import { useParams, useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
-import { ArrowLeft } from 'lucide-react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { ArrowLeft, Play, Pause, RotateCcw, Edit2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { campaignsApi, analyticsApi } from '@/api/index';
 import { formatDate, formatPercent, STATUS_COLORS } from '@/utils/format';
 import { cn } from '@/utils/cn';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import { toast } from '@/hooks/use-toast';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 
 export function CampaignDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { data: campaign } = useQuery({ queryKey: ['campaign', id], queryFn: () => campaignsApi.findOne(id!), enabled: !!id });
-  const { data: funnel } = useQuery({ queryKey: ['funnel', id], queryFn: () => analyticsApi.campaignFunnel(id!), enabled: !!id });
+  const qc = useQueryClient();
+
+  const { data: campaign, refetch } = useQuery({
+    queryKey: ['campaign', id],
+    queryFn: () => campaignsApi.findOne(id!),
+    enabled: !!id,
+    refetchInterval: 5000,
+  });
+  const { data: funnel } = useQuery({
+    queryKey: ['funnel', id],
+    queryFn: () => analyticsApi.campaignFunnel(id!),
+    enabled: !!id,
+  });
+
+  const dispatch = useMutation({
+    mutationFn: () => campaignsApi.dispatch(id!),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['campaign', id] }); toast({ title: 'Campaign launched' }); refetch(); },
+    onError: () => toast({ title: 'Failed to launch campaign', variant: 'destructive' }),
+  });
+
+  const pause = useMutation({
+    mutationFn: () => campaignsApi.pause(id!),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['campaign', id] }); toast({ title: 'Campaign paused' }); },
+  });
+
+  const resume = useMutation({
+    mutationFn: () => campaignsApi.resume(id!),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['campaign', id] }); toast({ title: 'Campaign resumed' }); },
+  });
 
   const c = campaign as Record<string, unknown> | undefined;
   const funnelData = funnel as { stage: string; count: number }[] | undefined;
 
-  if (!c) return <div className="text-muted-foreground">Loading...</div>;
+  if (!c) return <div className="text-muted-foreground p-4">Loading...</div>;
+
+  const status = c.status as string;
 
   const stats = [
     { label: 'Recipients', value: c.totalRecipients as number },
@@ -30,17 +60,53 @@ export function CampaignDetailPage() {
 
   return (
     <div className="space-y-4 max-w-4xl">
-      <div className="flex items-center gap-4">
-        <Button variant="ghost" size="sm" onClick={() => navigate(-1)}><ArrowLeft className="h-4 w-4 mr-2" />Back</Button>
-        <Button variant="outline" size="sm" onClick={() => navigate(`/campaigns/${id}/edit`)}>Edit</Button>
+      {/* Actions bar */}
+      <div className="flex items-center gap-2 flex-wrap">
+        <Button variant="ghost" size="sm" onClick={() => navigate(-1)}>
+          <ArrowLeft className="h-4 w-4 mr-2" />Back
+        </Button>
+        <Button variant="outline" size="sm" onClick={() => navigate(`/campaigns/${id}/edit`)}>
+          <Edit2 className="h-4 w-4 mr-2" />Edit
+        </Button>
+
+        {status === 'DRAFT' && (
+          <Button size="sm" className="gap-2 bg-green-600 hover:bg-green-700 text-white" onClick={() => dispatch.mutate()} disabled={dispatch.isPending}>
+            <Play className="h-4 w-4" />
+            {dispatch.isPending ? 'Launching…' : 'Launch Campaign'}
+          </Button>
+        )}
+        {status === 'SENDING' && (
+          <Button size="sm" variant="outline" className="gap-2" onClick={() => pause.mutate()} disabled={pause.isPending}>
+            <Pause className="h-4 w-4" />Pause
+          </Button>
+        )}
+        {status === 'PAUSED' && (
+          <Button size="sm" className="gap-2" onClick={() => resume.mutate()} disabled={resume.isPending}>
+            <RotateCcw className="h-4 w-4" />Resume
+          </Button>
+        )}
       </div>
 
-      <div>
-        <h2 className="text-xl font-semibold">{c.name as string}</h2>
-        <p className="text-sm text-muted-foreground">{c.subject as string}</p>
-        <span className={cn('text-xs px-2 py-0.5 rounded-full font-medium', STATUS_COLORS[c.status as string] ?? 'bg-gray-100')}>{c.status as string}</span>
+      {/* Campaign header */}
+      <div className="flex items-start justify-between">
+        <div>
+          <h2 className="text-xl font-semibold">{c.name as string}</h2>
+          <p className="text-sm text-muted-foreground">{c.subject as string}</p>
+        </div>
+        <span className={cn('text-xs px-2.5 py-1 rounded-full font-semibold', STATUS_COLORS[status] ?? 'bg-gray-100')}>
+          {status}
+        </span>
       </div>
 
+      {/* Draft hint */}
+      {status === 'DRAFT' && (
+        <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 flex items-center gap-2">
+          <Play className="h-4 w-4 shrink-0" />
+          Campaign is ready. Click <strong>Launch Campaign</strong> to start sending.
+        </div>
+      )}
+
+      {/* Stats */}
       <div className="grid grid-cols-3 gap-4">
         {stats.map((s) => (
           <Card key={s.label}>
@@ -52,14 +118,25 @@ export function CampaignDetailPage() {
         ))}
       </div>
 
-      {c.sentCount as number > 0 && (
+      {/* Rates */}
+      {(c.sentCount as number) > 0 && (
         <div className="grid grid-cols-3 gap-4 text-sm">
-          <Card><CardContent className="p-4 text-center"><p className="text-lg font-bold text-green-600">{formatPercent(c.uniqueOpenCount as number, c.sentCount as number)}</p><p className="text-xs text-muted-foreground">Open Rate</p></CardContent></Card>
-          <Card><CardContent className="p-4 text-center"><p className="text-lg font-bold text-blue-600">{formatPercent(c.uniqueClickCount as number, c.sentCount as number)}</p><p className="text-xs text-muted-foreground">Click Rate</p></CardContent></Card>
-          <Card><CardContent className="p-4 text-center"><p className="text-lg font-bold text-red-600">{formatPercent(c.bounceCount as number, c.sentCount as number)}</p><p className="text-xs text-muted-foreground">Bounce Rate</p></CardContent></Card>
+          <Card><CardContent className="p-4 text-center">
+            <p className="text-lg font-bold text-green-600">{formatPercent(c.uniqueOpenCount as number, c.sentCount as number)}</p>
+            <p className="text-xs text-muted-foreground">Open Rate</p>
+          </CardContent></Card>
+          <Card><CardContent className="p-4 text-center">
+            <p className="text-lg font-bold text-blue-600">{formatPercent(c.uniqueClickCount as number, c.sentCount as number)}</p>
+            <p className="text-xs text-muted-foreground">Click Rate</p>
+          </CardContent></Card>
+          <Card><CardContent className="p-4 text-center">
+            <p className="text-lg font-bold text-red-600">{formatPercent(c.bounceCount as number, c.sentCount as number)}</p>
+            <p className="text-xs text-muted-foreground">Bounce Rate</p>
+          </CardContent></Card>
         </div>
       )}
 
+      {/* Funnel */}
       {funnelData && funnelData.length > 0 && (
         <Card>
           <CardHeader><CardTitle className="text-sm">Campaign Funnel</CardTitle></CardHeader>
@@ -76,6 +153,21 @@ export function CampaignDetailPage() {
         </Card>
       )}
 
+      {/* Follow-up info */}
+      {c.followUpEnabled && (
+        <Card>
+          <CardHeader><CardTitle className="text-sm flex items-center gap-2">
+            <RotateCcw className="h-4 w-4 text-indigo-500" />
+            Follow-up configured
+          </CardTitle></CardHeader>
+          <CardContent className="text-sm text-muted-foreground">
+            Auto-follow-up after <strong className="text-foreground">{c.followUpDays as number} days</strong> of no reply.
+            {c.followUpSentAt && <span> Last sent: {formatDate(c.followUpSentAt as string)}</span>}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Details */}
       <Card>
         <CardHeader><CardTitle className="text-sm">Details</CardTitle></CardHeader>
         <CardContent className="text-sm grid grid-cols-2 gap-2">

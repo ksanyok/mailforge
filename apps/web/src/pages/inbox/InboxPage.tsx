@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Search, RefreshCw, Mail, ChevronLeft, Send, Users, Inbox, Circle } from 'lucide-react';
+import { Search, RefreshCw, Mail, ChevronLeft, Send, Users, Inbox, Circle, ChevronDown } from 'lucide-react';
 import { inboxApi } from '@/api/index';
 import { cn } from '@/utils/cn';
 import { toast } from '@/hooks/use-toast';
@@ -199,52 +199,26 @@ export function InboxPage() {
           </div>
         </div>
 
-        {/* Sender filter chips */}
-        {senders.length > 1 && (
-          <div className="px-3 py-2 border-b overflow-x-auto">
-            <div className="flex gap-1.5 min-w-max">
-              <button
-                onClick={() => setSenderFilter(null)}
-                className={cn(
-                  'px-2.5 py-1 rounded-full text-xs font-medium whitespace-nowrap transition-colors',
-                  !senderFilter
-                    ? 'bg-indigo-500 text-white'
-                    : 'bg-gray-100 text-gray-500 hover:bg-gray-200',
-                )}
+        {/* Sender dropdown filter */}
+        {senders.length > 0 && (
+          <div className="px-3 py-2 border-b">
+            <label className="block text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1">
+              Sender account
+            </label>
+            <div className="relative">
+              <select
+                value={senderFilter ?? ''}
+                onChange={(e) => setSenderFilter(e.target.value || null)}
+                className="w-full appearance-none bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 pr-8 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400 cursor-pointer"
               >
-                All senders
-              </button>
-              {senders.map((s) => {
-                const localPart = s.email.split('@')[0];
-                const isActive = senderFilter === s.id;
-                return (
-                  <button
-                    key={s.id}
-                    onClick={() => setSenderFilter(isActive ? null : s.id)}
-                    title={s.email}
-                    className={cn(
-                      'flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium whitespace-nowrap transition-colors',
-                      isActive
-                        ? 'bg-indigo-500 text-white'
-                        : 'bg-gray-100 text-gray-600 hover:bg-indigo-50 hover:text-indigo-600',
-                    )}
-                  >
-                    <span className={cn(
-                      'w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold shrink-0',
-                      isActive ? 'bg-white/20 text-white' : 'bg-indigo-100 text-indigo-600',
-                    )}>
-                      {localPart[0]?.toUpperCase()}
-                    </span>
-                    {localPart}
-                    <span className={cn(
-                      'text-[10px] px-1 rounded-full',
-                      isActive ? 'bg-white/20' : 'bg-gray-200 text-gray-500',
-                    )}>
-                      {s.count}
-                    </span>
-                  </button>
-                );
-              })}
+                <option value="">All senders ({allConvs.length})</option>
+                {senders.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.email} ({s.count})
+                  </option>
+                ))}
+              </select>
+              <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400 pointer-events-none" />
             </div>
           </div>
         )}

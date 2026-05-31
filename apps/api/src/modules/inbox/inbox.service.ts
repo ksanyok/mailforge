@@ -112,6 +112,13 @@ export class InboxService {
       (m) => m.from.address.toLowerCase() === contactEmail.toLowerCase(),
     );
 
+    // Fetch bodies for received messages
+    const receivedUids = fromContact.map((m) => m.uid);
+    const bodyMap = await this.fetchInboxBodies(sender, receivedUids);
+    for (const msg of fromContact) {
+      msg.text = bodyMap.get(msg.uid) ?? '';
+    }
+
     const sent = await this.fetchSent(sender, contactEmail);
 
     const all = [...fromContact, ...sent].sort(
@@ -144,6 +151,7 @@ export class InboxService {
 
   // ── private helpers ─────────────────────────────────────────────────
 
+  // Fetch only envelopes — fast, no body download
   private async fetchInbox(sender: SenderRow, limit: number): Promise<InboxMessage[]> {
     const client = this.createClient(sender);
     const messages: InboxMessage[] = [];
@@ -156,43 +164,53 @@ export class InboxService {
 
       const from = Math.max(1, total - limit + 1);
       for await (const msg of client.fetch(`${from}:*`, {
-        uid: true, flags: true, envelope: true, bodyStructure: true,
-        source: false,
+        uid: true, flags: true, envelope: true,
       })) {
-        try {
-          const full: FetchMessageObject | false = await client.fetchOne(String(msg.uid), {
-            bodyParts: ['TEXT'],
-          }, { uid: true });
-
-          const textPart = (full && full.bodyParts?.get('text')) as Buffer | undefined;
-          const rawText = textPart?.toString('utf-8') ?? '';
-
-          messages.push({
-            uid: msg.uid,
-            messageId: msg.envelope?.messageId ?? '',
-            subject: msg.envelope?.subject ?? '(no subject)',
-            from: {
-              name: msg.envelope?.from?.[0]?.name ?? '',
-              address: msg.envelope?.from?.[0]?.address ?? '',
-            },
-            to: (msg.envelope?.to ?? []).map((t: any) => ({
-              name: t.name ?? '',
-              address: t.address ?? '',
-            })),
-            date: msg.envelope?.date ?? new Date(),
-            text: rawText,
-            html: null,
-            isRead: (msg.flags ?? new Set()).has('\\Seen'),
-          });
-        } catch {
-          // skip malformed messages
-        }
+        messages.push({
+          uid: msg.uid,
+          messageId: msg.envelope?.messageId ?? '',
+          subject: msg.envelope?.subject ?? '(no subject)',
+          from: {
+            name: msg.envelope?.from?.[0]?.name ?? '',
+            address: msg.envelope?.from?.[0]?.address ?? '',
+          },
+          to: (msg.envelope?.to ?? []).map((t: any) => ({
+            name: t.name ?? '',
+            address: t.address ?? '',
+          })),
+          date: msg.envelope?.date ?? new Date(),
+          text: '',
+          html: null,
+          isRead: (msg.flags ?? new Set()).has('\\Seen'),
+        });
       }
     } finally {
       await client.logout().catch(() => null);
     }
 
     return messages;
+  }
+
+  // Fetch full bodies for a specific thread — used only when opening a conversation
+  private async fetchInboxBodies(sender: SenderRow, uids: number[]): Promise<Map<number, string>> {
+    const client = this.createClient(sender);
+    const bodyMap = new Map<number, string>();
+    if (!uids.length) return bodyMap;
+
+    try {
+      await client.connect();
+      await client.mailboxOpen('INBOX');
+      for await (const msg of client.fetch(uids, {
+        uid: true, bodyParts: ['TEXT'],
+      }, { uid: true })) {
+        const textPart = (msg.bodyParts?.get('text')) as Buffer | undefined;
+        bodyMap.set(msg.uid, textPart?.toString('utf-8') ?? '');
+      }
+    } finally {
+      await client.logout().catch(() => null);
+    }
+
+    return bodyMap;
   }
 
   private async fetchSent(sender: SenderRow, contactEmail: string): Promise<InboxMessage[]> {
@@ -213,6 +231,8 @@ export class InboxService {
       if (!total) return [];
 
       const from = Math.max(1, total - 200 + 1);
+      // Collect matching envelopes first (fast)
+      const matched: Array<{ uid: number; env: any }> = [];
       for await (const msg of client.fetch(`${from}:*`, {
         uid: true, flags: true, envelope: true,
       })) {
@@ -220,34 +240,31 @@ export class InboxService {
           (t.address ?? '').toLowerCase(),
         );
         if (!toAddresses.includes(contactEmail.toLowerCase())) continue;
+        matched.push({ uid: msg.uid, env: msg.envelope });
+      }
 
-        try {
-          const full: FetchMessageObject | false = await client.fetchOne(String(msg.uid), {
-            bodyParts: ['TEXT'],
-          }, { uid: true });
+      // Bulk fetch bodies for matched messages
+      if (matched.length > 0) {
+        const bodyMap = new Map<number, string>();
+        for await (const msg of client.fetch(matched.map((m) => m.uid), {
+          uid: true, bodyParts: ['TEXT'],
+        }, { uid: true })) {
+          const textPart = (msg.bodyParts?.get('text')) as Buffer | undefined;
+          bodyMap.set(msg.uid, textPart?.toString('utf-8') ?? '');
+        }
 
-          const textPart = (full && full.bodyParts?.get('text')) as Buffer | undefined;
-          const rawText = textPart?.toString('utf-8') ?? '';
-
+        for (const { uid, env } of matched) {
           messages.push({
-            uid: msg.uid,
-            messageId: msg.envelope?.messageId ?? '',
-            subject: msg.envelope?.subject ?? '(no subject)',
-            from: {
-              name: sender.fromName,
-              address: sender.fromEmail,
-            },
-            to: (msg.envelope?.to ?? []).map((t: any) => ({
-              name: t.name ?? '',
-              address: t.address ?? '',
-            })),
-            date: msg.envelope?.date ?? new Date(),
-            text: rawText,
+            uid,
+            messageId: env?.messageId ?? '',
+            subject: env?.subject ?? '(no subject)',
+            from: { name: sender.fromName, address: sender.fromEmail },
+            to: (env?.to ?? []).map((t: any) => ({ name: t.name ?? '', address: t.address ?? '' })),
+            date: env?.date ?? new Date(),
+            text: bodyMap.get(uid) ?? '',
             html: null,
             isRead: true,
           });
-        } catch {
-          // skip
         }
       }
     } catch (err) {

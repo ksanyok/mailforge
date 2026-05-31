@@ -46,6 +46,27 @@ function saveReadState(s: ReadState) {
 function convKey(c: Pick<Conversation, 'senderId' | 'contactEmail'>) {
   return `${c.senderId}::${c.contactEmail}`;
 }
+
+// Split body into reply text + quoted block (lines starting with ">", "On ... wrote:", etc.)
+function splitEmailBody(text: string): { main: string; quoted: string | null } {
+  if (!text) return { main: '', quoted: null };
+  // "On [date] [name] wrote:" quote header
+  const onWroteMatch = text.match(/\n{0,2}On .{5,300}?wrote:\s*\n/s);
+  if (onWroteMatch && onWroteMatch.index !== undefined && onWroteMatch.index > 0) {
+    return { main: text.slice(0, onWroteMatch.index).trim(), quoted: text.slice(onWroteMatch.index).trim() };
+  }
+  // Lines starting with ">"
+  const lines = text.split('\n');
+  const qi = lines.findIndex(l => l.trimStart().startsWith('>'));
+  if (qi > 0) {
+    return { main: lines.slice(0, qi).join('\n').trim(), quoted: lines.slice(qi).join('\n').trim() };
+  }
+  // Entire message is quoted
+  if (text.trimStart().startsWith('>') || /^On .{5,300}?wrote:/s.test(text.trimStart())) {
+    return { main: '', quoted: text };
+  }
+  return { main: text, quoted: null };
+}
 function initials(name: string, email: string): string {
   const n = name || email;
   return n.split(/[\s@]/).slice(0, 2).map(p => p[0]?.toUpperCase() ?? '').join('');
@@ -109,24 +130,29 @@ function ReadTicks({ isRead }: { isRead: boolean }) {
 function MessageBubble({ msg, isSent, index, onDelete }: {
   msg: Message; isSent: boolean; index: number; onDelete?: () => void;
 }) {
-  const body = (msg.text || '').trim();
+  const [showQuoted, setShowQuoted] = useState(false);
+  const { main, quoted } = splitEmailBody((msg.text || '').trim());
   const delay = Math.min(index * 0.04, 0.4);
 
   return (
+    /*
+     * Layout: flex row (or row-reverse for sent).
+     * Bubble + spacer(flex-1 min-w-[35%]) → bubble always ≤ 65% wide,
+     * pushed to its own side by flex-row-reverse / flex-row.
+     */
     <div
-      className={cn('flex w-full group', isSent ? 'justify-end' : 'justify-start')}
+      className={cn('flex w-full group px-2', isSent ? 'flex-row-reverse' : 'flex-row')}
       style={{ animationDelay: `${delay}s` }}
     >
-      <div
-        className={cn('relative', isSent ? 'mr-2' : 'ml-2')}
-        style={{ maxWidth: '65%' }}
-      >
-        {/* Delete on hover — received only */}
+      {/* ── Bubble ─────────────────────────────── */}
+      <div className={cn('relative max-w-[65%]', isSent ? 'ml-1' : 'mr-1')}>
+
+        {/* Delete button — received only */}
         {!isSent && onDelete && (
           <button
             onClick={onDelete}
-            title="Delete message"
-            className="absolute -right-7 top-2 opacity-0 group-hover:opacity-100 transition-all duration-150 w-5 h-5 rounded-full bg-white border border-gray-200 flex items-center justify-center text-gray-400 hover:text-red-500 hover:border-red-200 shadow-sm z-10"
+            title="Delete"
+            className="absolute -right-7 top-2 opacity-0 group-hover:opacity-100 transition-all w-5 h-5 rounded-full bg-white border border-gray-200 flex items-center justify-center text-gray-400 hover:text-red-500 shadow-sm z-10"
           >
             <Trash2 className="h-2.5 w-2.5" />
           </button>
@@ -134,24 +160,45 @@ function MessageBubble({ msg, isSent, index, onDelete }: {
 
         <div className={cn(
           'relative px-3.5 py-2 shadow-sm min-w-[60px]',
-          isSent ? [
-            'bg-[#25D366] text-white',
-            'rounded-2xl rounded-br-[4px]',
-          ] : [
-            'bg-white text-gray-900',
-            'rounded-2xl rounded-bl-[4px]',
-          ],
+          isSent
+            ? 'bg-[#25D366] text-white rounded-2xl rounded-br-[4px]'
+            : 'bg-white text-gray-900 rounded-2xl rounded-bl-[4px]',
         )}>
-          {isSent && (
-            <span className="absolute bottom-0 right-[-6px] w-0 h-0 border-l-[7px] border-l-[#25D366] border-t-[7px] border-t-transparent" />
-          )}
-          {!isSent && (
-            <span className="absolute bottom-0 left-[-6px] w-0 h-0 border-r-[7px] border-r-white border-t-[7px] border-t-transparent" />
+          {/* Tails */}
+          {isSent && <span className="absolute bottom-0 right-[-6px] w-0 h-0 border-l-[7px] border-l-[#25D366] border-t-[7px] border-t-transparent" />}
+          {!isSent && <span className="absolute bottom-0 left-[-6px] w-0 h-0 border-r-[7px] border-r-white border-t-[7px] border-t-transparent" />}
+
+          {/* Main reply text */}
+          {(main || !quoted) && (
+            <p className="text-[13.5px] leading-[1.55] whitespace-pre-wrap break-words">
+              {main || '(empty)'}
+            </p>
           )}
 
-          <p className="text-[13.5px] leading-[1.55] whitespace-pre-wrap break-words">
-            {body || '(empty)'}
-          </p>
+          {/* Quoted block — collapsed by default */}
+          {quoted && (
+            <div className={cn('mt-1', main ? 'border-t pt-1' : '', isSent ? 'border-white/30' : 'border-gray-100')}>
+              <button
+                onClick={() => setShowQuoted(v => !v)}
+                className={cn(
+                  'text-[11px] flex items-center gap-1 opacity-60 hover:opacity-90 transition-opacity select-none',
+                  isSent ? 'text-white' : 'text-gray-500',
+                )}
+              >
+                <span className="text-[9px]">{showQuoted ? '▲' : '▼'}</span>
+                {showQuoted ? 'Hide quoted text' : 'Show quoted text'}
+              </button>
+              {showQuoted && (
+                <p className={cn(
+                  'mt-1.5 text-[12px] leading-relaxed whitespace-pre-wrap break-words opacity-70',
+                )}>
+                  {quoted}
+                </p>
+              )}
+            </div>
+          )}
+
+          {/* Timestamp + ticks */}
           <div className={cn(
             'flex items-center gap-1 mt-0.5 justify-end',
             isSent ? 'text-[rgba(255,255,255,0.7)]' : 'text-gray-400',
@@ -161,6 +208,9 @@ function MessageBubble({ msg, isSent, index, onDelete }: {
           </div>
         </div>
       </div>
+
+      {/* ── Spacer: pushes bubble to its side, takes ≥35% ── */}
+      <div className="flex-1 min-w-[35%]" />
     </div>
   );
 }

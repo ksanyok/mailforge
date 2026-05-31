@@ -182,6 +182,27 @@ export class InboxService {
     }
   }
 
+  async markUnread(senderId: string, uid: number): Promise<void> {
+    const sender = await this.prisma.senderAccount.findUnique({
+      where: { id: senderId },
+      select: {
+        id: true, fromEmail: true, fromName: true,
+        smtpHost: true, smtpPort: true, smtpUser: true,
+        smtpPasswordEncrypted: true, smtpEncryption: true,
+      },
+    });
+    if (!sender) return;
+
+    const client = this.createClient(sender as SenderRow);
+    try {
+      await client.connect();
+      await client.mailboxOpen('INBOX');
+      await client.messageFlagsRemove({ uid }, ['\\Seen'], { uid: true });
+    } finally {
+      await client.logout().catch(() => null);
+    }
+  }
+
   // ── private helpers ─────────────────────────────────────────────────
 
   // Fetch only envelopes — fast, no body download

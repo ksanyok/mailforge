@@ -41,4 +41,12 @@ export class InboxController {
   ) {
     return this.inboxService.markRead(senderId, Number(uid));
   }
+
+  @Post('unread')
+  markUnread(
+    @Query('senderId') senderId: string,
+    @Query('uid') uid: string,
+  ) {
+    return this.inboxService.markUnread(senderId, Number(uid));
+  }
 }

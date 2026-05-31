@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useMutation } from '@tanstack/react-query';
 import {
   Search, RefreshCw, Mail, ChevronLeft, Send, Star,
-  ChevronDown, MailOpen, Inbox, CheckCheck, X,
+  ChevronDown, MailOpen, Inbox, CheckCheck, X, EyeOff,
 } from 'lucide-react';
 import { inboxApi } from '@/api/index';
 import { cn } from '@/utils/cn';
@@ -189,6 +189,29 @@ export function InboxPage() {
       toast({ title: '✓ Reply sent' });
     },
     onError: () => toast({ title: 'Failed to send reply', variant: 'destructive' }),
+  });
+
+  const markConvUnreadMutation = useMutation({
+    mutationFn: async (conv: Conversation) => {
+      const msgs = thread as Message[];
+      const incoming = msgs.filter(
+        m => m.from.address.toLowerCase() !== conv.senderEmail.toLowerCase()
+      );
+      const last = incoming[incoming.length - 1];
+      if (last) await inboxApi.markUnread(conv.senderId, last.uid);
+    },
+    onSuccess: () => {
+      if (active) {
+        setLocalRead(prev => {
+          const next = new Set(prev);
+          next.delete(convKey(active));
+          return next;
+        });
+        setTimeout(() => qc.invalidateQueries({ queryKey: ['inbox-conversations'] }), 500);
+      }
+      toast({ title: '✓ Marked as unread' });
+    },
+    onError: () => toast({ title: 'Failed to mark as unread', variant: 'destructive' }),
   });
 
   const markAllReadMutation = useMutation({
@@ -589,6 +612,17 @@ export function InboxPage() {
                   )}
                 >
                   <Star className={cn('h-4 w-4', starred.has(convKey(active)) && 'fill-amber-400')} />
+                </button>
+                <button
+                  onClick={() => markConvUnreadMutation.mutate(active)}
+                  disabled={markConvUnreadMutation.isPending}
+                  title="Mark as unread"
+                  className="w-8 h-8 rounded-xl hover:bg-indigo-50 flex items-center justify-center text-gray-400 hover:text-indigo-500 transition-all duration-200 hover:scale-110 active:scale-95"
+                >
+                  {markConvUnreadMutation.isPending
+                    ? <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+                    : <EyeOff className="h-3.5 w-3.5" />
+                  }
                 </button>
                 <div className="text-right hidden sm:block">
                   <p className="text-[10px] text-gray-400">via</p>

@@ -348,35 +348,58 @@ export class InboxService {
   private cleanMimeBody(raw: string): string {
     if (!raw) return '';
 
-    // Try to extract text/plain from multipart
-    const boundaryMatch = raw.match(/boundary="?([^"\s;]+)"?/i);
-    if (boundaryMatch) {
-      const b = boundaryMatch[1].replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    // Strategy 1: boundary declared in text (multipart nested or forwarded)
+    // Strategy 2: BODY[TEXT] starts with --boundary (top-level multipart)
+    //   → extract boundary from first --xxx line since Content-Type header
+    //     is in the MESSAGE headers, not in BODY[TEXT]
+
+    const boundaryFromHeader = raw.match(/boundary="?([^"\s;]+)"?/i)?.[1];
+    const boundaryFromFirstLine = raw.match(/^--([^\s\r\n-][^\s\r\n]*)/m)?.[1];
+    const boundary = boundaryFromHeader ?? boundaryFromFirstLine;
+
+    if (boundary) {
+      const b = boundary.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       const parts = raw.split(new RegExp(`--${b}(?:--)?`));
+      let htmlFallback = '';
+
       for (const part of parts) {
-        if (!/content-type:\s*text\/plain/i.test(part)) continue;
-        const bodyStart = part.search(/\r?\n\r?\n/);
-        if (bodyStart === -1) continue;
-        const encoding = (part.match(/content-transfer-encoding:\s*(\S+)/i) || [])[1] || '';
-        const body = part.slice(bodyStart).replace(/^\r?\n/, '');
-        return encoding.toLowerCase() === 'quoted-printable'
-          ? this.decodeQP(body).trim()
-          : body.trim();
+        if (!part.trim()) continue;
+        const hdrEnd = part.search(/\r?\n\r?\n/);
+        if (hdrEnd === -1) continue;
+        const hdr = part.slice(0, hdrEnd);
+        const body = part.slice(hdrEnd).replace(/^\r?\n/, '');
+        const enc = (hdr.match(/content-transfer-encoding:\s*(\S+)/i) || [])[1] ?? '';
+        const decoded = enc.toLowerCase() === 'quoted-printable' ? this.decodeQP(body) : body;
+
+        if (/content-type:\s*text\/plain/i.test(hdr)) {
+          return decoded.trim();
+        }
+        if (/content-type:\s*text\/html/i.test(hdr) && !htmlFallback) {
+          htmlFallback = decoded;
+        }
+        // Recurse into nested multipart
+        if (/content-type:\s*multipart\//i.test(hdr)) {
+          const nested = this.cleanMimeBody(decoded);
+          if (nested) return nested;
+        }
       }
+
+      if (htmlFallback) return this.stripHtml(htmlFallback).trim();
     }
 
-    // Not multipart — strip headers if present, then decode
+    // Single part — strip part headers if present, then decode
     const bodyStart = raw.search(/\r?\n\r?\n/);
     if (bodyStart > 0 && /^content-/im.test(raw.slice(0, bodyStart))) {
-      const headers = raw.slice(0, bodyStart);
+      const hdr = raw.slice(0, bodyStart);
       const body = raw.slice(bodyStart).replace(/^\r?\n/, '');
-      const encoding = (headers.match(/content-transfer-encoding:\s*(\S+)/i) || [])[1] || '';
-      return encoding.toLowerCase() === 'quoted-printable'
-        ? this.decodeQP(body).trim()
-        : body.trim();
+      const enc = (hdr.match(/content-transfer-encoding:\s*(\S+)/i) || [])[1] ?? '';
+      const decoded = enc.toLowerCase() === 'quoted-printable' ? this.decodeQP(body) : body;
+      return /^<[a-z]/i.test(decoded.trim()) ? this.stripHtml(decoded).trim() : decoded.trim();
     }
 
-    return this.decodeQP(raw).trim();
+    // Last resort — decode and strip any stray HTML
+    const decoded = this.decodeQP(raw);
+    return /^<[a-z]/i.test(decoded.trim()) ? this.stripHtml(decoded).trim() : decoded.trim();
   }
 
   private decodeQP(text: string): string {

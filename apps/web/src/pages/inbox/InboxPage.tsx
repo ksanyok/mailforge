@@ -32,6 +32,17 @@ function loadStarred(): Set<string> {
 function saveStarred(s: Set<string>) {
   localStorage.setItem('inbox-starred', JSON.stringify([...s]));
 }
+
+// readState: key → lastMessageAt string we last read
+// If current lastMessageAt > stored value, there are new messages
+type ReadState = Record<string, string>;
+function loadReadState(): ReadState {
+  try { return JSON.parse(localStorage.getItem('inbox-read-state') ?? '{}'); }
+  catch { return {}; }
+}
+function saveReadState(s: ReadState) {
+  localStorage.setItem('inbox-read-state', JSON.stringify(s));
+}
 function convKey(c: Pick<Conversation, 'senderId' | 'contactEmail'>) {
   return `${c.senderId}::${c.contactEmail}`;
 }
@@ -176,7 +187,7 @@ export function InboxPage() {
   const [active, setActive] = useState<Conversation | null>(null);
   const [replyText, setReplyText] = useState('');
   const [starred, setStarred] = useState<Set<string>>(loadStarred);
-  const [localRead, setLocalRead] = useState<Set<string>>(new Set());
+  const [readState, setReadState] = useState<ReadState>(loadReadState);
   const [markAllConfirm, setMarkAllConfirm] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -219,9 +230,10 @@ export function InboxPage() {
     },
     onSuccess: () => {
       if (active) {
-        setLocalRead(prev => {
-          const next = new Set(prev);
-          next.delete(convKey(active));
+        setReadState(prev => {
+          const next = { ...prev };
+          delete next[convKey(active)];
+          saveReadState(next);
           return next;
         });
         setTimeout(() => qc.invalidateQueries({ queryKey: ['inbox-conversations'] }), 500);
@@ -234,8 +246,13 @@ export function InboxPage() {
   const markAllReadMutation = useMutation({
     mutationFn: () => inboxApi.markAllRead(),
     onSuccess: () => {
-      const allKeys = (convRaw as Conversation[]).map(c => convKey(c));
-      setLocalRead(new Set(allKeys));
+      const convs = convRaw as Conversation[];
+      setReadState(prev => {
+        const next = { ...prev };
+        convs.forEach(c => { next[convKey(c)] = c.lastMessageAt; });
+        saveReadState(next);
+        return next;
+      });
       setMarkAllConfirm(false);
       setTimeout(() => qc.invalidateQueries({ queryKey: ['inbox-conversations'] }), 1500);
       toast({ title: '✓ All conversations marked as read' });
@@ -292,7 +309,13 @@ export function InboxPage() {
   /* ── Mark as read: optimistic + IMAP background ─────────────────── */
   const markConversationRead = useCallback(async (conv: Conversation, msgs: Message[]) => {
     const key = convKey(conv);
-    setLocalRead(prev => new Set([...prev, key]));
+
+    // Persist read state immediately to localStorage — survives page refresh
+    setReadState(prev => {
+      const next = { ...prev, [key]: conv.lastMessageAt };
+      saveReadState(next);
+      return next;
+    });
 
     const unread = msgs.filter(
       m => !m.isRead && m.from.address.toLowerCase() !== conv.senderEmail.toLowerCase()
@@ -303,7 +326,6 @@ export function InboxPage() {
       unread.map(m => inboxApi.markRead(conv.senderId, m.uid).catch(() => null))
     );
 
-    // Refresh conversations list to reflect new read state
     qc.invalidateQueries({ queryKey: ['inbox-conversations'] });
   }, [qc]);
 
@@ -322,11 +344,14 @@ export function InboxPage() {
 
   const allConvs = convRaw as Conversation[];
 
-  /* ── Effective conversations (respects optimistic localRead) ──────── */
-  const effectiveConvs = allConvs.map(c => ({
-    ...c,
-    unreadCount: localRead.has(convKey(c)) ? 0 : c.unreadCount,
-  }));
+  /* ── Effective conversations — suppress unread if user already read ── */
+  const effectiveConvs = allConvs.map(c => {
+    const key = convKey(c);
+    const readAt = readState[key];
+    // Show unread only if a new message arrived after we last read it
+    const hasNewMsg = !readAt || new Date(String(c.lastMessageAt)) > new Date(readAt);
+    return { ...c, unreadCount: hasNewMsg ? c.unreadCount : 0 };
+  });
 
   const totalUnread = effectiveConvs.reduce((s, c) => s + c.unreadCount, 0);
 
@@ -370,7 +395,12 @@ export function InboxPage() {
   const openConversation = (conv: Conversation) => {
     setActive(conv);
     setReplyText('');
-    setLocalRead(prev => new Set([...prev, convKey(conv)]));
+    // Optimistically mark as read immediately when opening
+    setReadState(prev => {
+      const next = { ...prev, [convKey(conv)]: conv.lastMessageAt };
+      saveReadState(next);
+      return next;
+    });
     setTimeout(() => textareaRef.current?.focus(), 300);
   };
 

@@ -29,6 +29,7 @@ interface Message {
 }
 
 type Filter = 'all' | 'unread' | 'external';
+interface SenderOption { id: string; email: string; name: string; count: number; }
 
 function initials(name: string, email: string): string {
   const n = name || email;
@@ -62,6 +63,7 @@ function isExternalEmail(email: string, senderDomain: string): boolean {
 export function InboxPage() {
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<Filter>('external');
+  const [senderFilter, setSenderFilter] = useState<string | null>(null);
   const [active, setActive] = useState<Conversation | null>(null);
   const [replyText, setReplyText] = useState('');
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -110,13 +112,22 @@ export function InboxPage() {
 
   const allConvs = convRaw as Conversation[];
 
-  // Get primary domain from senders
-  const senderDomains = new Set(allConvs.map((c) => c.senderEmail.split('@')[1] ?? ''));
+  // Build unique sender list
+  const senderMap = new Map<string, SenderOption>();
+  for (const c of allConvs) {
+    if (!senderMap.has(c.senderId)) {
+      senderMap.set(c.senderId, { id: c.senderId, email: c.senderEmail, name: c.senderName, count: 0 });
+    }
+    senderMap.get(c.senderId)!.count++;
+  }
+  const senders = Array.from(senderMap.values()).sort((a, b) => b.count - a.count);
 
   const filtered = allConvs.filter((c) => {
     const matchSearch = !search ||
       c.contactEmail.toLowerCase().includes(search.toLowerCase()) ||
       c.contactName.toLowerCase().includes(search.toLowerCase());
+
+    const matchSender = !senderFilter || c.senderId === senderFilter;
 
     const domain = c.senderEmail.split('@')[1] ?? '';
     const isExternal = isExternalEmail(c.contactEmail, domain);
@@ -125,13 +136,15 @@ export function InboxPage() {
       filter === 'unread' ? c.unreadCount > 0 :
       isExternal;
 
-    return matchSearch && matchFilter;
+    return matchSearch && matchSender && matchFilter;
   });
 
+  // Counts respect sender filter
+  const base = senderFilter ? allConvs.filter((c) => c.senderId === senderFilter) : allConvs;
   const counts = {
-    all: allConvs.length,
-    unread: allConvs.filter((c) => c.unreadCount > 0).length,
-    external: allConvs.filter((c) => {
+    all: base.length,
+    unread: base.filter((c) => c.unreadCount > 0).length,
+    external: base.filter((c) => {
       const domain = c.senderEmail.split('@')[1] ?? '';
       return isExternalEmail(c.contactEmail, domain);
     }).length,
@@ -185,6 +198,56 @@ export function InboxPage() {
             />
           </div>
         </div>
+
+        {/* Sender filter chips */}
+        {senders.length > 1 && (
+          <div className="px-3 py-2 border-b overflow-x-auto">
+            <div className="flex gap-1.5 min-w-max">
+              <button
+                onClick={() => setSenderFilter(null)}
+                className={cn(
+                  'px-2.5 py-1 rounded-full text-xs font-medium whitespace-nowrap transition-colors',
+                  !senderFilter
+                    ? 'bg-indigo-500 text-white'
+                    : 'bg-gray-100 text-gray-500 hover:bg-gray-200',
+                )}
+              >
+                All senders
+              </button>
+              {senders.map((s) => {
+                const localPart = s.email.split('@')[0];
+                const isActive = senderFilter === s.id;
+                return (
+                  <button
+                    key={s.id}
+                    onClick={() => setSenderFilter(isActive ? null : s.id)}
+                    title={s.email}
+                    className={cn(
+                      'flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium whitespace-nowrap transition-colors',
+                      isActive
+                        ? 'bg-indigo-500 text-white'
+                        : 'bg-gray-100 text-gray-600 hover:bg-indigo-50 hover:text-indigo-600',
+                    )}
+                  >
+                    <span className={cn(
+                      'w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold shrink-0',
+                      isActive ? 'bg-white/20 text-white' : 'bg-indigo-100 text-indigo-600',
+                    )}>
+                      {localPart[0]?.toUpperCase()}
+                    </span>
+                    {localPart}
+                    <span className={cn(
+                      'text-[10px] px-1 rounded-full',
+                      isActive ? 'bg-white/20' : 'bg-gray-200 text-gray-500',
+                    )}>
+                      {s.count}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {/* Filter tabs */}
         <div className="flex border-b text-xs font-medium">

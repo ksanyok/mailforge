@@ -115,53 +115,49 @@ function MessageBubble({ msg, isSent, index, onDelete }: {
   return (
     <div
       className={cn(
-        'flex items-end gap-2 group',
-        isSent ? 'flex-row-reverse' : 'flex-row',
-        isSent ? 'animate-slide-right' : 'animate-slide-left',
+        'flex group',
+        isSent ? 'justify-end pl-16' : 'justify-start pr-16',
       )}
-      style={{ animationDelay: `${delay}s` }}
+      style={{ animationDelay: `${delay}s`, animation: `${isSent ? 'slideRight' : 'slideLeft'} 0.18s ease-out both` }}
     >
-      <div className={cn(
-        'w-7 h-7 rounded-full flex items-center justify-center text-white text-[10px] font-bold shrink-0 mb-1 shadow-sm',
-        'bg-gradient-to-br', avatarGradient(msg.from.address),
-      )}>
-        {initials(msg.from.name, msg.from.address)}
-      </div>
-
-      <div className="relative flex items-end gap-1.5 max-w-[72%]">
-        {/* Delete button — received only, appears on hover */}
+      <div className="relative">
+        {/* Delete on hover — received only */}
         {!isSent && onDelete && (
           <button
             onClick={onDelete}
             title="Delete message"
-            className="opacity-0 group-hover:opacity-100 transition-all duration-200 w-6 h-6 rounded-full bg-white border border-gray-200 flex items-center justify-center text-gray-400 hover:text-red-500 hover:border-red-200 hover:bg-red-50 shadow-sm mb-1 shrink-0 order-last"
+            className="absolute -right-7 top-2 opacity-0 group-hover:opacity-100 transition-all duration-150 w-5 h-5 rounded-full bg-white border border-gray-200 flex items-center justify-center text-gray-400 hover:text-red-500 hover:border-red-200 shadow-sm z-10"
           >
-            <Trash2 className="h-3 w-3" />
+            <Trash2 className="h-2.5 w-2.5" />
           </button>
         )}
 
         <div className={cn(
-          'px-4 py-2.5 shadow-sm relative transition-shadow duration-200 group-hover:shadow-md',
+          'relative px-3.5 py-2 shadow-sm max-w-[420px] min-w-[60px]',
           isSent ? [
-            'bg-gradient-to-br from-indigo-500 to-violet-600 text-white',
-            'rounded-2xl rounded-tr-sm',
+            'bg-[#25D366] text-white',
+            'rounded-2xl rounded-br-[4px]',
           ] : [
-            'bg-white text-gray-800 border border-gray-100',
-            'rounded-2xl rounded-tl-sm',
+            'bg-white text-gray-900',
+            'rounded-2xl rounded-bl-[4px]',
           ],
         )}>
-          {msg.subject && msg.subject !== '(no subject)' && (
-            <p className={cn('text-[11px] font-semibold mb-1.5 truncate',
-              isSent ? 'text-indigo-200' : 'text-indigo-500')}>
-              {msg.subject}
-            </p>
+          {/* Bubble tail */}
+          {isSent && (
+            <span className="absolute bottom-0 right-[-6px] w-0 h-0 border-l-[7px] border-l-[#25D366] border-t-[7px] border-t-transparent" />
           )}
-          <p className="text-[13.5px] leading-relaxed whitespace-pre-wrap break-words">
+          {!isSent && (
+            <span className="absolute bottom-0 left-[-6px] w-0 h-0 border-r-[7px] border-r-white border-t-[7px] border-t-transparent" />
+          )}
+
+          <p className="text-[13.5px] leading-[1.55] whitespace-pre-wrap break-words">
             {body || '(empty)'}
           </p>
-          <div className={cn('flex items-center gap-1.5 mt-1.5 justify-end',
-            isSent ? 'text-indigo-200' : 'text-gray-400')}>
-            <span className="text-[10px]">{formatTime(msg.date)}</span>
+          <div className={cn(
+            'flex items-center gap-1 mt-0.5 justify-end',
+            isSent ? 'text-[rgba(255,255,255,0.7)]' : 'text-gray-400',
+          )}>
+            <span className="text-[10.5px]">{formatTime(msg.date)}</span>
             {isSent && <ReadTicks isRead={msg.isRead} />}
           </div>
         </div>
@@ -722,55 +718,41 @@ export function InboxPage() {
               </div>
             </div>
 
-            {/* Messages area */}
+            {/* Messages area — WhatsApp style */}
             <div
-              className="flex-1 overflow-y-auto overscroll-contain px-5 py-5 space-y-3"
-              style={{
-                background: 'linear-gradient(160deg, #eef0fd 0%, #f5f5fb 40%, #edf2ff 100%)',
-              }}
+              className="flex-1 overflow-y-auto overscroll-contain px-4 py-4 space-y-1.5"
+              style={{ background: '#f0f2f5' }}
             >
               {loadingThread ? (
-                <div className="flex flex-col gap-4 animate-fade-in">
-                  {[...Array(4)].map((_, i) => (
-                    <div key={i} className={cn('flex gap-2', i % 2 === 0 ? 'flex-row' : 'flex-row-reverse')}>
-                      {i % 2 === 0 && <div className="skeleton w-7 h-7 rounded-full shrink-0" />}
-                      <div className={cn('skeleton rounded-2xl', i % 2 === 0 ? 'h-16 w-48' : 'h-14 w-56')} />
+                <div className="flex flex-col gap-3 animate-fade-in pt-4">
+                  {[...Array(5)].map((_, i) => (
+                    <div key={i} className={cn('flex', i % 2 === 0 ? 'justify-start' : 'justify-end')}>
+                      <div className={cn('skeleton rounded-2xl h-12', i % 2 === 0 ? 'w-48 rounded-bl-sm' : 'w-44 rounded-br-sm')} />
                     </div>
                   ))}
                 </div>
               ) : (thread as Message[]).length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-full gap-3 text-gray-400 animate-fade-in">
                   <Mail className="h-8 w-8 opacity-30 animate-float" />
-                  <span className="text-sm">No messages found</span>
+                  <span className="text-sm">No messages yet</span>
                 </div>
               ) : (
                 (thread as Message[]).map((msg, i) => {
                   const isSent = msg.from.address.toLowerCase() === active.senderEmail.toLowerCase();
                   const prev = i > 0 ? (thread as Message[])[i - 1] : null;
-                  const showDate = !prev ||
-                    new Date(msg.date).toDateString() !== new Date(prev.date).toDateString();
-                  const senderChanged = !prev || prev.from.address !== msg.from.address;
-                  const showReceivedLabel = !isSent && senderChanged;
-                  const showSentLabel = isSent && senderChanged;
+                  const next = i < (thread as Message[]).length - 1 ? (thread as Message[])[i + 1] : null;
+                  const showDate = !prev || new Date(msg.date).toDateString() !== new Date(prev.date).toDateString();
+                  const isLastInGroup = !next || next.from.address !== msg.from.address ||
+                    new Date(msg.date).toDateString() !== new Date(next.date).toDateString();
 
                   return (
-                    <div key={`${msg.uid}-${i}`}>
+                    <div key={`${msg.uid}-${i}`} className={isLastInGroup ? 'mb-2' : ''}>
                       {showDate && (
                         <div className="flex items-center justify-center my-4 animate-fade-in">
-                          <span className="bg-white/80 backdrop-blur-sm text-[11px] text-gray-500 font-medium px-4 py-1.5 rounded-full shadow-sm border border-gray-100/80">
+                          <span className="bg-white/90 text-[11px] text-gray-500 font-medium px-3.5 py-1 rounded-full shadow-sm">
                             {new Date(msg.date).toLocaleDateString('en', { weekday: 'long', month: 'long', day: 'numeric' })}
                           </span>
                         </div>
-                      )}
-                      {showReceivedLabel && (
-                        <p className="text-[10px] text-gray-400 ml-9 mb-1 font-medium animate-fade-in">
-                          {msg.from.name || msg.from.address}
-                        </p>
-                      )}
-                      {showSentLabel && (
-                        <p className="text-[10px] text-indigo-400 mr-9 mb-1 font-medium animate-fade-in text-right">
-                          {active.senderName || active.senderEmail}
-                        </p>
                       )}
                       <MessageBubble
                         msg={msg}
@@ -785,42 +767,43 @@ export function InboxPage() {
               <div ref={bottomRef} />
             </div>
 
-            {/* Reply compose */}
-            <div className="bg-white/95 backdrop-blur-sm border-t border-gray-100/80 px-4 py-3 animate-slide-up shadow-[0_-1px_12px_rgba(0,0,0,0.04)]">
+            {/* Reply compose — WhatsApp style */}
+            <div className="bg-[#f0f2f5] border-t border-gray-200/60 px-3 py-3">
               <div className="flex items-end gap-2">
-                <textarea
-                  ref={textareaRef}
-                  value={replyText}
-                  onChange={e => {
-                    setReplyText(e.target.value);
-                    e.target.style.height = 'auto';
-                    e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
-                  }}
-                  onKeyDown={e => {
-                    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) handleReply();
-                  }}
-                  placeholder={`Reply to ${active.contactName || active.contactEmail}…`}
-                  rows={1}
-                  style={{ minHeight: '40px', maxHeight: '120px' }}
-                  className="flex-1 resize-none rounded-2xl border border-gray-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-300 bg-gray-50/80 transition-all placeholder:text-gray-400 overflow-hidden"
-                />
+                <div className="flex-1 bg-white rounded-3xl border border-gray-200/80 shadow-sm flex items-end px-4 py-2.5 gap-2">
+                  <textarea
+                    ref={textareaRef}
+                    value={replyText}
+                    onChange={e => {
+                      setReplyText(e.target.value);
+                      e.target.style.height = 'auto';
+                      e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
+                    }}
+                    onKeyDown={e => {
+                      if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) handleReply();
+                    }}
+                    placeholder="Type a message…"
+                    rows={1}
+                    style={{ minHeight: '24px', maxHeight: '120px' }}
+                    className="flex-1 resize-none text-[14px] text-gray-800 focus:outline-none placeholder:text-gray-400 bg-transparent overflow-hidden leading-relaxed"
+                  />
+                </div>
                 <button
                   onClick={handleReply}
-                  disabled={!replyText.trim() || reply.isPending}
+                  disabled={reply.isPending}
                   className={cn(
-                    'shrink-0 w-10 h-10 rounded-2xl flex items-center justify-center transition-all duration-200',
+                    'shrink-0 w-11 h-11 rounded-full flex items-center justify-center transition-all duration-200 active:scale-95',
                     replyText.trim() && !reply.isPending
-                      ? 'bg-gradient-to-br from-indigo-500 to-violet-600 text-white shadow-md shadow-indigo-200/50 hover:shadow-lg hover:scale-110 active:scale-95'
-                      : 'bg-gray-100 text-gray-300 cursor-not-allowed',
+                      ? 'bg-[#25D366] text-white shadow-md hover:bg-[#1fbe59]'
+                      : 'bg-[#25D366]/40 text-white cursor-not-allowed',
                   )}
                 >
                   {reply.isPending
                     ? <RefreshCw className="h-4 w-4 animate-spin" />
-                    : <Send className="h-4 w-4" />
+                    : <Send className="h-4 w-4 translate-x-px" />
                   }
                 </button>
               </div>
-              <p className="text-[10px] text-gray-400 mt-1.5 text-right">Ctrl+Enter to send</p>
             </div>
           </>
         )}

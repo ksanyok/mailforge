@@ -179,7 +179,7 @@ export class InboxService {
             address: t.address ?? '',
           })),
           date: msg.envelope?.date ?? new Date(),
-          text: '',
+          text: msg.envelope?.subject ?? '',
           html: null,
           isRead: (msg.flags ?? new Set()).has('\\Seen'),
         });

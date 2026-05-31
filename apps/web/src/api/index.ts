@@ -144,10 +144,10 @@ export const inboxApi = {
   reply: (data: { senderId: string; to: string; subject: string; body: string; inReplyTo?: string }) =>
     api.post('/inbox/reply', data).then(extractData),
   markRead: (senderId: string, uid: number) =>
-    api.post('/inbox/read', null, { params: { senderId, uid } }).then(extractData),
+    api.post('/inbox/read', {}, { params: { senderId, uid } }).then(extractData),
   markUnread: (senderId: string, uid: number) =>
-    api.post('/inbox/unread', null, { params: { senderId, uid } }).then(extractData),
+    api.post('/inbox/unread', {}, { params: { senderId, uid } }).then(extractData),
   deleteMessage: (senderId: string, uid: number) =>
-    api.post('/inbox/delete', null, { params: { senderId, uid } }).then(extractData),
+    api.post('/inbox/delete', {}, { params: { senderId, uid } }).then(extractData),
   markAllRead: () => api.post('/inbox/mark-all-read').then(extractData),
 };

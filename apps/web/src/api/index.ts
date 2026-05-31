@@ -145,4 +145,5 @@ export const inboxApi = {
     api.post('/inbox/reply', data).then(extractData),
   markRead: (senderId: string, uid: number) =>
     api.post('/inbox/read', null, { params: { senderId, uid } }).then(extractData),
+  markAllRead: () => api.post('/inbox/mark-all-read').then(extractData),
 };

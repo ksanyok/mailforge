@@ -129,6 +129,38 @@ export class InboxService {
     return all;
   }
 
+  async markAllRead(): Promise<{ marked: number }> {
+    const senders = await this.prisma.senderAccount.findMany({
+      where: { status: 'ACTIVE' },
+      select: {
+        id: true, fromEmail: true, fromName: true,
+        smtpHost: true, smtpPort: true, smtpUser: true,
+        smtpPasswordEncrypted: true, smtpEncryption: true,
+      },
+    });
+
+    let marked = 0;
+    await Promise.allSettled(
+      senders.map(async (sender: SenderRow) => {
+        const client = this.createClient(sender as SenderRow);
+        try {
+          await client.connect();
+          const mailbox = await client.mailboxOpen('INBOX');
+          if (mailbox.exists) {
+            await client.messageFlagsAdd('1:*', ['\\Seen']);
+            marked++;
+          }
+        } catch (err) {
+          this.logger.warn(`markAllRead failed for ${sender.fromEmail}: ${err instanceof Error ? err.message : err}`);
+        } finally {
+          await client.logout().catch(() => null);
+        }
+      }),
+    );
+
+    return { marked };
+  }
+
   async markRead(senderId: string, uid: number): Promise<void> {
     const sender = await this.prisma.senderAccount.findUnique({
       where: { id: senderId },

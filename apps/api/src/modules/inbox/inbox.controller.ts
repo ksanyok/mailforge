@@ -29,6 +29,11 @@ export class InboxController {
     return this.inboxService.sendReply(dto);
   }
 
+  @Post('mark-all-read')
+  markAllRead() {
+    return this.inboxService.markAllRead();
+  }
+
   @Post('read')
   markRead(
     @Query('senderId') senderId: string,

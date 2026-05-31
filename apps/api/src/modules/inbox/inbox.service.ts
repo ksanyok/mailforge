@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { ImapFlow, FetchMessageObject } from 'imapflow';
+import * as nodemailer from 'nodemailer';
 import { PrismaService } from '../../core/database/prisma.service';
 import { decrypt } from '../../shared/utils/crypto.util';
 
@@ -204,7 +205,8 @@ export class InboxService {
         uid: true, bodyParts: ['TEXT'],
       }, { uid: true })) {
         const textPart = (msg.bodyParts?.get('text')) as Buffer | undefined;
-        bodyMap.set(msg.uid, textPart?.toString('utf-8') ?? '');
+        const raw = textPart?.toString('utf-8') ?? '';
+        bodyMap.set(msg.uid, this.cleanMimeBody(raw));
       }
     } finally {
       await client.logout().catch(() => null);
@@ -250,7 +252,8 @@ export class InboxService {
           uid: true, bodyParts: ['TEXT'],
         }, { uid: true })) {
           const textPart = (msg.bodyParts?.get('text')) as Buffer | undefined;
-          bodyMap.set(msg.uid, textPart?.toString('utf-8') ?? '');
+          const raw = textPart?.toString('utf-8') ?? '';
+          bodyMap.set(msg.uid, this.cleanMimeBody(raw));
         }
 
         for (const { uid, env } of matched) {
@@ -294,6 +297,92 @@ export class InboxService {
       greetingTimeout: 8000,
       socketTimeout: 15000,
     });
+  }
+
+  async sendReply(dto: {
+    senderId: string;
+    to: string;
+    subject: string;
+    body: string;
+    inReplyTo?: string;
+  }): Promise<{ sent: boolean }> {
+    const sender = await this.prisma.senderAccount.findUnique({
+      where: { id: dto.senderId },
+      select: {
+        fromName: true, fromEmail: true, replyTo: true,
+        smtpHost: true, smtpPort: true, smtpUser: true,
+        smtpPasswordEncrypted: true, smtpEncryption: true,
+      },
+    });
+    if (!sender) throw new Error('Sender not found');
+
+    const encKey = this.config.getOrThrow('ENCRYPTION_KEY');
+    const password = decrypt(sender.smtpPasswordEncrypted, encKey);
+
+    const transporter = nodemailer.createTransport({
+      host: sender.smtpHost,
+      port: sender.smtpPort,
+      secure: sender.smtpEncryption === 'TLS',
+      auth: { user: sender.smtpUser, pass: password },
+      tls: { rejectUnauthorized: false },
+    });
+
+    const subject = dto.subject.toLowerCase().startsWith('re:')
+      ? dto.subject
+      : `Re: ${dto.subject}`;
+
+    await transporter.sendMail({
+      from: `"${sender.fromName}" <${sender.fromEmail}>`,
+      to: dto.to,
+      replyTo: sender.replyTo || sender.fromEmail,
+      subject,
+      text: dto.body,
+      ...(dto.inReplyTo ? { inReplyTo: dto.inReplyTo, references: dto.inReplyTo } : {}),
+    });
+
+    return { sent: true };
+  }
+
+  // ── MIME parsing ─────────────────────────────────────────────────────
+
+  private cleanMimeBody(raw: string): string {
+    if (!raw) return '';
+
+    // Try to extract text/plain from multipart
+    const boundaryMatch = raw.match(/boundary="?([^"\s;]+)"?/i);
+    if (boundaryMatch) {
+      const b = boundaryMatch[1].replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const parts = raw.split(new RegExp(`--${b}(?:--)?`));
+      for (const part of parts) {
+        if (!/content-type:\s*text\/plain/i.test(part)) continue;
+        const bodyStart = part.search(/\r?\n\r?\n/);
+        if (bodyStart === -1) continue;
+        const encoding = (part.match(/content-transfer-encoding:\s*(\S+)/i) || [])[1] || '';
+        const body = part.slice(bodyStart).replace(/^\r?\n/, '');
+        return encoding.toLowerCase() === 'quoted-printable'
+          ? this.decodeQP(body).trim()
+          : body.trim();
+      }
+    }
+
+    // Not multipart — strip headers if present, then decode
+    const bodyStart = raw.search(/\r?\n\r?\n/);
+    if (bodyStart > 0 && /^content-/im.test(raw.slice(0, bodyStart))) {
+      const headers = raw.slice(0, bodyStart);
+      const body = raw.slice(bodyStart).replace(/^\r?\n/, '');
+      const encoding = (headers.match(/content-transfer-encoding:\s*(\S+)/i) || [])[1] || '';
+      return encoding.toLowerCase() === 'quoted-printable'
+        ? this.decodeQP(body).trim()
+        : body.trim();
+    }
+
+    return this.decodeQP(raw).trim();
+  }
+
+  private decodeQP(text: string): string {
+    return text
+      .replace(/=\r?\n/g, '')
+      .replace(/=([0-9A-Fa-f]{2})/g, (_, h) => String.fromCharCode(parseInt(h, 16)));
   }
 
   private stripHtml(html: string): string {

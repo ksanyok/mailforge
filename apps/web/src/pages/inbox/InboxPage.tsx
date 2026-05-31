@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Search, RefreshCw, Mail, ChevronLeft, Circle } from 'lucide-react';
+import { Search, RefreshCw, Mail, ChevronLeft, Send, Users, Inbox, Circle } from 'lucide-react';
 import { inboxApi } from '@/api/index';
 import { cn } from '@/utils/cn';
+import { toast } from '@/hooks/use-toast';
 
 interface Conversation {
   contactEmail: string;
@@ -26,6 +27,8 @@ interface Message {
   html: string | null;
   isRead: boolean;
 }
+
+type Filter = 'all' | 'unread' | 'external';
 
 function initials(name: string, email: string): string {
   const n = name || email;
@@ -51,17 +54,17 @@ function formatTime(dateStr: string): string {
   return new Date(dateStr).toLocaleTimeString('en', { hour: '2-digit', minute: '2-digit' });
 }
 
-function cleanText(raw: string): string {
-  return raw
-    .replace(/=\r?\n/g, '')          // quoted-printable soft breaks
-    .replace(/=([0-9A-Fa-f]{2})/g, (_, h) => String.fromCharCode(parseInt(h, 16)))
-    .replace(/<[^>]+>/g, '')
-    .trim();
+function isExternalEmail(email: string, senderDomain: string): boolean {
+  const domain = email.split('@')[1] ?? '';
+  return domain !== senderDomain && !email.includes('dmarc') && !email.includes('postmaster');
 }
 
 export function InboxPage() {
   const [search, setSearch] = useState('');
+  const [filter, setFilter] = useState<Filter>('external');
   const [active, setActive] = useState<Conversation | null>(null);
+  const [replyText, setReplyText] = useState('');
+  const bottomRef = useRef<HTMLDivElement>(null);
   const qc = useQueryClient();
 
   const { data: convRaw = [], isFetching: loadingConvs, refetch } = useQuery({
@@ -87,17 +90,68 @@ export function InboxPage() {
     },
   });
 
-  const convs = (convRaw as Conversation[]).filter(
-    (c) =>
-      !search ||
+  const reply = useMutation({
+    mutationFn: (data: { senderId: string; to: string; subject: string; body: string; inReplyTo?: string }) =>
+      inboxApi.reply(data),
+    onSuccess: () => {
+      setReplyText('');
+      qc.invalidateQueries({ queryKey: ['inbox-thread', active?.senderId, active?.contactEmail] });
+      toast({ title: 'Reply sent' });
+    },
+    onError: () => toast({ title: 'Failed to send reply', variant: 'destructive' }),
+  });
+
+  // Scroll to bottom when thread loads
+  useEffect(() => {
+    if (thread.length > 0) {
+      setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
+    }
+  }, [thread.length]);
+
+  const allConvs = convRaw as Conversation[];
+
+  // Get primary domain from senders
+  const senderDomains = new Set(allConvs.map((c) => c.senderEmail.split('@')[1] ?? ''));
+
+  const filtered = allConvs.filter((c) => {
+    const matchSearch = !search ||
       c.contactEmail.toLowerCase().includes(search.toLowerCase()) ||
-      c.contactName.toLowerCase().includes(search.toLowerCase()),
-  );
+      c.contactName.toLowerCase().includes(search.toLowerCase());
+
+    const domain = c.senderEmail.split('@')[1] ?? '';
+    const isExternal = isExternalEmail(c.contactEmail, domain);
+    const matchFilter =
+      filter === 'all' ? true :
+      filter === 'unread' ? c.unreadCount > 0 :
+      isExternal;
+
+    return matchSearch && matchFilter;
+  });
+
+  const counts = {
+    all: allConvs.length,
+    unread: allConvs.filter((c) => c.unreadCount > 0).length,
+    external: allConvs.filter((c) => {
+      const domain = c.senderEmail.split('@')[1] ?? '';
+      return isExternalEmail(c.contactEmail, domain);
+    }).length,
+  };
 
   const openConversation = (conv: Conversation) => {
     setActive(conv);
-    const unread = (thread as Message[]).filter((m) => !m.isRead && m.from.address !== conv.senderEmail);
-    unread.forEach((m) => markRead.mutate({ senderId: conv.senderId, uid: m.uid }));
+    setReplyText('');
+  };
+
+  const handleReply = () => {
+    if (!active || !replyText.trim()) return;
+    const lastMsg = (thread as Message[]).slice().reverse().find((m) => m.from.address !== active.senderEmail);
+    reply.mutate({
+      senderId: active.senderId,
+      to: active.contactEmail,
+      subject: lastMsg?.subject ?? 'Re: your message',
+      body: replyText.trim(),
+      inReplyTo: lastMsg?.messageId,
+    });
   };
 
   return (
@@ -132,20 +186,51 @@ export function InboxPage() {
           </div>
         </div>
 
+        {/* Filter tabs */}
+        <div className="flex border-b text-xs font-medium">
+          {([
+            { key: 'external', label: 'Clients', icon: Users },
+            { key: 'unread', label: 'Unread', icon: Circle },
+            { key: 'all', label: 'All', icon: Inbox },
+          ] as { key: Filter; label: string; icon: any }[]).map(({ key, label, icon: Icon }) => (
+            <button
+              key={key}
+              onClick={() => setFilter(key)}
+              className={cn(
+                'flex-1 flex flex-col items-center py-2 gap-0.5 transition-colors',
+                filter === key
+                  ? 'text-indigo-600 border-b-2 border-indigo-500'
+                  : 'text-gray-500 hover:text-gray-700',
+              )}
+            >
+              <Icon className="h-3.5 w-3.5" />
+              <span>{label}</span>
+              {counts[key] > 0 && (
+                <span className={cn(
+                  'text-[10px] px-1 rounded-full',
+                  filter === key ? 'bg-indigo-100 text-indigo-700' : 'bg-gray-100 text-gray-500',
+                )}>
+                  {counts[key]}
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
+
         {/* List */}
         <div className="flex-1 overflow-y-auto">
-          {loadingConvs && convs.length === 0 ? (
+          {loadingConvs && filtered.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-40 gap-2 text-gray-400">
               <RefreshCw className="h-5 w-5 animate-spin" />
               <span className="text-sm">Loading…</span>
             </div>
-          ) : convs.length === 0 ? (
+          ) : filtered.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-40 gap-2 text-gray-400">
               <Mail className="h-7 w-7 opacity-40" />
-              <span className="text-sm">No conversations yet</span>
+              <span className="text-sm">No conversations</span>
             </div>
           ) : (
-            convs.map((c) => {
+            filtered.map((c) => {
               const isActive = active?.contactEmail === c.contactEmail && active?.senderId === c.senderId;
               return (
                 <button
@@ -156,28 +241,21 @@ export function InboxPage() {
                     isActive ? 'bg-indigo-50' : 'hover:bg-gray-50',
                   )}
                 >
-                  {/* Avatar */}
                   <div className="shrink-0 w-10 h-10 rounded-full bg-gradient-to-br from-indigo-400 to-violet-500 flex items-center justify-center text-white text-sm font-semibold">
                     {initials(c.contactName, c.contactEmail)}
                   </div>
-
-                  {/* Content */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between gap-1">
                       <span className={cn('text-sm truncate', c.unreadCount > 0 ? 'font-semibold text-gray-900' : 'font-medium text-gray-700')}>
                         {c.contactName || c.contactEmail}
                       </span>
-                      <span className="text-xs text-gray-400 shrink-0">
-                        {timeAgo(c.lastMessageAt)}
-                      </span>
+                      <span className="text-xs text-gray-400 shrink-0">{timeAgo(c.lastMessageAt)}</span>
                     </div>
                     <p className="text-xs text-gray-400 truncate mt-0.5">{c.senderEmail}</p>
                     <p className={cn('text-xs truncate mt-0.5', c.unreadCount > 0 ? 'text-gray-700 font-medium' : 'text-gray-400')}>
                       {c.lastMessage || '…'}
                     </p>
                   </div>
-
-                  {/* Unread badge */}
                   {c.unreadCount > 0 && (
                     <span className="shrink-0 mt-1 min-w-[18px] h-[18px] rounded-full bg-indigo-500 text-white text-[10px] font-bold flex items-center justify-center px-1">
                       {c.unreadCount}
@@ -204,19 +282,14 @@ export function InboxPage() {
           <>
             {/* Chat header */}
             <div className="flex items-center gap-3 px-4 py-3 bg-white border-b shadow-sm">
-              <button
-                className="md:hidden p-1 rounded hover:bg-gray-100"
-                onClick={() => setActive(null)}
-              >
+              <button className="md:hidden p-1 rounded hover:bg-gray-100" onClick={() => setActive(null)}>
                 <ChevronLeft className="h-5 w-5" />
               </button>
               <div className="w-9 h-9 rounded-full bg-gradient-to-br from-indigo-400 to-violet-500 flex items-center justify-center text-white text-sm font-semibold shrink-0">
                 {initials(active.contactName, active.contactEmail)}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-gray-900 truncate">
-                  {active.contactName || active.contactEmail}
-                </p>
+                <p className="text-sm font-semibold text-gray-900 truncate">{active.contactName || active.contactEmail}</p>
                 <p className="text-xs text-gray-500 truncate">{active.contactEmail}</p>
               </div>
               <div className="text-right shrink-0">
@@ -240,13 +313,12 @@ export function InboxPage() {
               ) : (
                 (thread as Message[]).map((msg, i) => {
                   const isSent = msg.from.address.toLowerCase() === active.senderEmail.toLowerCase();
-                  const body = cleanText(msg.text || msg.html || '');
+                  const body = (msg.text || '').trim();
                   const prev = i > 0 ? (thread as Message[])[i - 1] : null;
                   const showDate = !prev || new Date(msg.date).toDateString() !== new Date(prev.date).toDateString();
 
                   return (
                     <div key={`${msg.uid}-${i}`}>
-                      {/* Date separator */}
                       {showDate && (
                         <div className="flex items-center justify-center my-3">
                           <span className="bg-white text-xs text-gray-500 px-3 py-1 rounded-full shadow-sm">
@@ -256,44 +328,35 @@ export function InboxPage() {
                       )}
 
                       <div className={cn('flex items-end gap-1.5', isSent ? 'flex-row-reverse' : 'flex-row')}>
-                        {/* Avatar (received only) */}
                         {!isSent && (
                           <div className="w-7 h-7 rounded-full bg-gradient-to-br from-indigo-400 to-violet-500 flex items-center justify-center text-white text-[10px] font-semibold shrink-0 mb-0.5">
                             {initials(msg.from.name, msg.from.address)}
                           </div>
                         )}
 
-                        {/* Bubble */}
                         <div className={cn(
-                          'max-w-[70%] rounded-2xl px-3.5 py-2 shadow-sm',
+                          'max-w-[70%] rounded-2xl px-3.5 py-2.5 shadow-sm',
                           isSent
                             ? 'bg-[#25d366] text-white rounded-tr-sm'
                             : 'bg-white text-gray-800 rounded-tl-sm',
                         )}>
-                          {/* Subject (first message in chain or subject changes) */}
                           {msg.subject && msg.subject !== '(no subject)' && (
                             <p className={cn(
-                              'text-[11px] font-semibold mb-1 truncate',
+                              'text-[11px] font-semibold mb-1.5 truncate',
                               isSent ? 'text-green-100' : 'text-indigo-500',
                             )}>
                               {msg.subject}
                             </p>
                           )}
-
-                          {/* Body */}
                           <p className="text-sm leading-relaxed whitespace-pre-wrap break-words">
                             {body || '(empty)'}
                           </p>
-
-                          {/* Time + read status */}
                           <div className={cn(
                             'flex items-center gap-1 mt-1 justify-end',
                             isSent ? 'text-green-100' : 'text-gray-400',
                           )}>
                             <span className="text-[10px]">{formatTime(msg.date)}</span>
-                            {isSent && (
-                              <span className="text-[10px]">✓✓</span>
-                            )}
+                            {isSent && <span className="text-[10px]">✓✓</span>}
                             {!isSent && !msg.isRead && (
                               <Circle className="h-2 w-2 fill-indigo-500 text-indigo-500" />
                             )}
@@ -304,13 +367,39 @@ export function InboxPage() {
                   );
                 })
               )}
+              <div ref={bottomRef} />
             </div>
 
-            {/* Bottom hint */}
-            <div className="bg-white border-t px-4 py-2.5 flex items-center gap-2">
-              <p className="text-xs text-gray-400 flex-1">
-                Reply via your email client at <span className="font-medium text-indigo-500">{active.senderEmail}</span>
-              </p>
+            {/* Reply compose */}
+            <div className="bg-white border-t px-4 py-3">
+              <div className="flex items-end gap-2">
+                <textarea
+                  value={replyText}
+                  onChange={(e) => setReplyText(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) handleReply();
+                  }}
+                  placeholder={`Reply to ${active.contactName || active.contactEmail}…`}
+                  rows={2}
+                  className="flex-1 resize-none rounded-xl border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300 bg-gray-50"
+                />
+                <button
+                  onClick={handleReply}
+                  disabled={!replyText.trim() || reply.isPending}
+                  className={cn(
+                    'shrink-0 w-10 h-10 rounded-full flex items-center justify-center transition-colors',
+                    replyText.trim() && !reply.isPending
+                      ? 'bg-indigo-500 text-white hover:bg-indigo-600'
+                      : 'bg-gray-100 text-gray-300 cursor-not-allowed',
+                  )}
+                >
+                  {reply.isPending
+                    ? <RefreshCw className="h-4 w-4 animate-spin" />
+                    : <Send className="h-4 w-4" />
+                  }
+                </button>
+              </div>
+              <p className="text-[10px] text-gray-400 mt-1 text-right">Ctrl+Enter to send</p>
             </div>
           </>
         )}

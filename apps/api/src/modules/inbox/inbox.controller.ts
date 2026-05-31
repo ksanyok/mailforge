@@ -1,4 +1,4 @@
-import { Controller, Get, Param, Post, Query } from '@nestjs/common';
+import { Controller, Get, Post, Query, Body } from '@nestjs/common';
 import { InboxService } from './inbox.service';
 
 @Controller('inbox')
@@ -16,6 +16,17 @@ export class InboxController {
     @Query('contactEmail') contactEmail: string,
   ) {
     return this.inboxService.getThread(senderId, contactEmail);
+  }
+
+  @Post('reply')
+  sendReply(@Body() dto: {
+    senderId: string;
+    to: string;
+    subject: string;
+    body: string;
+    inReplyTo?: string;
+  }) {
+    return this.inboxService.sendReply(dto);
   }
 
   @Post('read')

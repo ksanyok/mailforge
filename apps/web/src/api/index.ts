@@ -141,6 +141,8 @@ export const inboxApi = {
   conversations: () => api.get('/inbox/conversations').then(extractData),
   thread: (senderId: string, contactEmail: string) =>
     api.get('/inbox/thread', { params: { senderId, contactEmail } }).then(extractData),
+  reply: (data: { senderId: string; to: string; subject: string; body: string; inReplyTo?: string }) =>
+    api.post('/inbox/reply', data).then(extractData),
   markRead: (senderId: string, uid: number) =>
     api.post('/inbox/read', null, { params: { senderId, uid } }).then(extractData),
 };

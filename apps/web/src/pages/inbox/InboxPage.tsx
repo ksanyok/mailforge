@@ -108,14 +108,12 @@ function MessageBubble({ msg, isSent, index }: { msg: Message; isSent: boolean; 
       )}
       style={{ animationDelay: `${delay}s` }}
     >
-      {!isSent && (
-        <div className={cn(
-          'w-7 h-7 rounded-full flex items-center justify-center text-white text-[10px] font-bold shrink-0 mb-1 shadow-sm',
-          'bg-gradient-to-br', avatarGradient(msg.from.address),
-        )}>
-          {initials(msg.from.name, msg.from.address)}
-        </div>
-      )}
+      <div className={cn(
+        'w-7 h-7 rounded-full flex items-center justify-center text-white text-[10px] font-bold shrink-0 mb-1 shadow-sm',
+        'bg-gradient-to-br', avatarGradient(msg.from.address),
+      )}>
+        {initials(msg.from.name, msg.from.address)}
+      </div>
 
       <div className={cn(
         'max-w-[72%] px-4 py-2.5 shadow-sm relative transition-shadow duration-200 group-hover:shadow-md',
@@ -626,8 +624,9 @@ export function InboxPage() {
                   const prev = i > 0 ? (thread as Message[])[i - 1] : null;
                   const showDate = !prev ||
                     new Date(msg.date).toDateString() !== new Date(prev.date).toDateString();
-                  const showSender = !isSent && (!prev ||
-                    (thread as Message[])[i - 1]?.from?.address !== msg.from.address);
+                  const senderChanged = !prev || prev.from.address !== msg.from.address;
+                  const showReceivedLabel = !isSent && senderChanged;
+                  const showSentLabel = isSent && senderChanged;
 
                   return (
                     <div key={`${msg.uid}-${i}`}>
@@ -638,9 +637,14 @@ export function InboxPage() {
                           </span>
                         </div>
                       )}
-                      {!isSent && showSender && (
+                      {showReceivedLabel && (
                         <p className="text-[10px] text-gray-400 ml-9 mb-1 font-medium animate-fade-in">
                           {msg.from.name || msg.from.address}
+                        </p>
+                      )}
+                      {showSentLabel && (
+                        <p className="text-[10px] text-indigo-400 mr-9 mb-1 font-medium animate-fade-in text-right">
+                          {active.senderName || active.senderEmail}
                         </p>
                       )}
                       <MessageBubble msg={msg} isSent={isSent} index={i} />

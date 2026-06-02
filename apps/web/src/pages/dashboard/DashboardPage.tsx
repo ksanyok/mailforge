@@ -1,9 +1,9 @@
 import { useQuery } from '@tanstack/react-query';
 import {
-  Users, UserCheck, UserX, Mail, Send, TrendingUp, AlertTriangle, Ban,
+  Users, UserCheck, UserX, Mail, Send, TrendingUp, AlertTriangle, Ban, MessageSquare, MousePointerClick, ThumbsDown,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { analyticsApi, recommendationsApi } from '@/api/index';
+import { analyticsApi, recommendationsApi, inboxApi } from '@/api/index';
 import { formatNumber, formatPercent, STATUS_COLORS } from '@/utils/format';
 import { cn } from '@/utils/cn';
 import {
@@ -17,21 +17,27 @@ export function DashboardPage() {
   const { data: stats } = useQuery({ queryKey: ['dashboard'], queryFn: analyticsApi.dashboard });
   const { data: daily } = useQuery({ queryKey: ['daily-metrics'], queryFn: () => analyticsApi.dailyMetrics(30) });
   const { data: recs } = useQuery({ queryKey: ['recommendations'], queryFn: () => recommendationsApi.findAll({ limit: 5 }) });
+  const { data: inboxStats } = useQuery({
+    queryKey: ['inbox-conversations'],
+    queryFn: () => inboxApi.conversations(),
+    staleTime: 60_000,
+  });
 
   const s = stats as { contacts?: Record<string, number>; campaigns?: Record<string, number>; sending?: Record<string, number>; senders?: Record<string, unknown> } | undefined;
   const dailyData = (Array.isArray(daily) ? daily : ((daily as any)?.data ?? [])) as { date: string; sent: number; opened: number; clicked: number; bounced: number }[];
   const recsRaw = (recs as any)?.data;
   const recsData = (Array.isArray(recsRaw) ? recsRaw : []) as { id: string; severity: string; title: string; message: string }[];
+  const conversations = Array.isArray(inboxStats) ? (inboxStats as any[]).length : 0;
 
   const kpiCards = [
     { label: 'Total Contacts', value: s?.contacts?.total ?? 0, icon: Users, color: 'text-blue-600' },
     { label: 'Subscribed', value: s?.contacts?.subscribed ?? 0, icon: UserCheck, color: 'text-green-600' },
-    { label: 'Bounced', value: s?.contacts?.bounced ?? 0, icon: UserX, color: 'text-red-600' },
-    { label: 'Unsubscribed', value: s?.contacts?.unsubscribed ?? 0, icon: UserX, color: 'text-gray-600' },
-    { label: 'Suppressed', value: s?.contacts?.suppressed ?? 0, icon: Ban, color: 'text-purple-600' },
+    { label: 'Opened (30d)', value: (s?.sending as any)?.openedLast30 ?? 0, icon: TrendingUp, color: 'text-emerald-600' },
+    { label: 'Clicked (30d)', value: (s?.sending as any)?.clickedLast30 ?? 0, icon: MousePointerClick, color: 'text-blue-500' },
+    { label: 'Replied / Conversations', value: conversations, icon: MessageSquare, color: 'text-violet-600' },
+    { label: 'Not Interested', value: s?.contacts?.unsubscribed ?? 0, icon: ThumbsDown, color: 'text-gray-600' },
     { label: 'Total Campaigns', value: s?.campaigns?.total ?? 0, icon: Mail, color: 'text-indigo-600' },
     { label: 'Sent Today', value: s?.sending?.sentToday ?? 0, icon: Send, color: 'text-cyan-600' },
-    { label: 'Avg Open Rate', value: `${(s?.sending?.openRate ?? 0).toFixed(1)}%`, icon: TrendingUp, color: 'text-emerald-600', raw: true },
   ];
 
   const pieData = [
@@ -46,12 +52,12 @@ export function DashboardPage() {
     <div className="space-y-6">
       {/* KPI Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {kpiCards.map(({ label, value, icon: Icon, color, raw }) => (
+        {kpiCards.map(({ label, value, icon: Icon, color }) => (
           <Card key={label}>
             <CardContent className="p-4 flex items-center gap-3">
               <Icon className={cn('h-8 w-8 shrink-0', color)} />
               <div>
-                <p className="text-2xl font-bold">{raw ? value : formatNumber(value as number)}</p>
+                <p className="text-2xl font-bold">{formatNumber(value as number)}</p>
                 <p className="text-xs text-muted-foreground">{label}</p>
               </div>
             </CardContent>

@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useMutation } from '@tanstack/react-query';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Search, RefreshCw, Mail, ChevronLeft, Send, Star,
   ChevronDown, MailOpen, Inbox, CheckCheck, X, EyeOff, Trash2,
@@ -234,11 +235,14 @@ export function InboxPage() {
   const [starred, setStarred] = useState<Set<string>>(loadStarred);
   const [readState, setReadState] = useState<ReadState>(loadReadState);
   const [markAllConfirm, setMarkAllConfirm] = useState(false);
+  const [deleteConvConfirm, setDeleteConvConfirm] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const prevConvsRef = useRef<Map<string, string>>(new Map());
   const notifInitRef = useRef(false);
   const qc = useQueryClient();
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
   const { data: convRaw = [], isFetching: loadingConvs, refetch } = useQuery({
     queryKey: ['inbox-conversations'],
@@ -316,6 +320,18 @@ export function InboxPage() {
     onError: () => toast({ title: 'Failed to delete message', variant: 'destructive' }),
   });
 
+  const deleteConversationMutation = useMutation({
+    mutationFn: ({ senderId, contactEmail }: { senderId: string; contactEmail: string }) =>
+      inboxApi.deleteConversation(senderId, contactEmail),
+    onSuccess: () => {
+      setActive(null);
+      setDeleteConvConfirm(false);
+      qc.invalidateQueries({ queryKey: ['inbox-conversations'] });
+      toast({ title: '✓ Conversation deleted' });
+    },
+    onError: () => toast({ title: 'Failed to delete conversation', variant: 'destructive' }),
+  });
+
   /* ── Browser notifications for new messages ──────────────────────── */
   useEffect(() => {
     if ('Notification' in window && Notification.permission === 'default') {
@@ -339,9 +355,26 @@ export function InboxPage() {
           const title = `New message from ${conv.contactName || conv.contactEmail}`;
           const body = (conv.lastMessage || '').slice(0, 80);
           if ('Notification' in window && Notification.permission === 'granted' && document.visibilityState !== 'visible') {
-            new Notification(title, { body, icon: '/favicon.ico', tag: key });
+            const notif = new Notification(title, { body, icon: '/favicon.ico', tag: key });
+            const targetSenderId = conv.senderId;
+            const targetEmail = conv.contactEmail;
+            notif.onclick = () => {
+              window.focus();
+              navigate(`/inbox?senderId=${encodeURIComponent(targetSenderId)}&contactEmail=${encodeURIComponent(targetEmail)}`);
+            };
           } else {
-            toast({ title, description: body });
+            toast({
+              title,
+              description: body,
+              action: (
+                <button
+                  className="text-xs text-indigo-600 underline"
+                  onClick={() => openConversation(conv)}
+                >
+                  Open
+                </button>
+              ) as any,
+            });
           }
         }
       }
@@ -349,7 +382,22 @@ export function InboxPage() {
 
     notifInitRef.current = true;
     prevConvsRef.current = current;
-  }, [convRaw]);
+  }, [convRaw, navigate]);
+
+  /* ── Auto-open conversation from URL params (notification click) ──── */
+  useEffect(() => {
+    const senderId = searchParams.get('senderId');
+    const contactEmail = searchParams.get('contactEmail');
+    if (senderId && contactEmail && convRaw && (convRaw as Conversation[]).length > 0) {
+      const conv = (convRaw as Conversation[]).find(
+        c => c.senderId === senderId && c.contactEmail === contactEmail,
+      );
+      if (conv && (!active || active.contactEmail !== contactEmail)) {
+        openConversation(conv);
+      }
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams, convRaw]);
 
   /* ── Mark as read: optimistic + IMAP background ─────────────────── */
   const markConversationRead = useCallback(async (conv: Conversation, msgs: Message[]) => {
@@ -440,6 +488,7 @@ export function InboxPage() {
   const openConversation = (conv: Conversation) => {
     setActive(conv);
     setReplyText('');
+    setDeleteConvConfirm(false);
     // Optimistically mark as read immediately when opening
     setReadState(prev => {
       const next = { ...prev, [convKey(conv)]: conv.lastMessageAt };
@@ -760,6 +809,32 @@ export function InboxPage() {
                     : <EyeOff className="h-3.5 w-3.5" />
                   }
                 </button>
+
+                {/* Delete all conversation messages */}
+                {deleteConvConfirm ? (
+                  <div className="flex items-center gap-1 animate-scale-in">
+                    <button
+                      onClick={() => deleteConversationMutation.mutate({ senderId: active.senderId, contactEmail: active.contactEmail })}
+                      disabled={deleteConversationMutation.isPending}
+                      className="flex items-center gap-1 text-[11px] font-medium bg-red-500 text-white px-2.5 py-1 rounded-lg hover:bg-red-600 transition-all active:scale-95"
+                    >
+                      {deleteConversationMutation.isPending ? <RefreshCw className="h-3 w-3 animate-spin" /> : <Trash2 className="h-3 w-3" />}
+                      Delete all
+                    </button>
+                    <button onClick={() => setDeleteConvConfirm(false)} className="w-6 h-6 rounded-lg hover:bg-gray-100 flex items-center justify-center text-gray-400">
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => setDeleteConvConfirm(true)}
+                    title="Delete all messages in this conversation"
+                    className="w-8 h-8 rounded-xl hover:bg-red-50 flex items-center justify-center text-gray-400 hover:text-red-500 transition-all duration-200 hover:scale-110 active:scale-95"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                )}
+
                 <div className="text-right hidden sm:block">
                   <p className="text-[10px] text-gray-400">via</p>
                   <p className="text-xs font-semibold text-indigo-600 truncate max-w-[140px]">{active.senderEmail}</p>

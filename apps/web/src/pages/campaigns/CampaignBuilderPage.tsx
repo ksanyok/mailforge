@@ -93,7 +93,7 @@ export function CampaignBuilderPage() {
   const onSubmit = (data: BuilderForm) => {
     if (selectedLists.length === 0) { toast({ title: 'Select at least one list', variant: 'destructive' }); setStep(2); return; }
     const { fromNameOverride, throttlePerHour, ...campaignData } = data;
-    save.mutate({ ...campaignData, throttlePerMinute: Math.max(1, Math.round(throttlePerHour / 60)), listIds: selectedLists });
+    save.mutate({ ...campaignData, throttlePerMinute: Math.max(1, Math.round(throttlePerHour / 60)), listIds: selectedLists } as any);
   };
 
   const goNext = () => {
@@ -442,19 +442,23 @@ export function CampaignBuilderPage() {
             <CardContent className="space-y-6">
               <div className="space-y-1.5">
                 <Label>Send Rate (emails per hour)</Label>
-                <Input type="number" min={1} max={36000} step={1} {...register('throttlePerHour', { valueAsNumber: true })} />
-                <p className="text-xs text-muted-foreground">Hourly rate reduces spam risk. 20/hr recommended for warmup.</p>
-                <div className="grid grid-cols-3 gap-2 mt-2">
-                  {[{ v: 300,  label: 'Slow',     hint: 'Best reputation' },
-                    { v: 1200, label: 'Standard', hint: 'Recommended' },
-                    { v: 3600, label: 'Fast',     hint: 'Large lists' }].map(({ v, label, hint }) => (
+                <Input type="number" min={1} max={36000} step={1} {...register('throttlePerHour', { valueAsNumber: true, min: 1 })} />
+                <p className="text-xs text-muted-foreground">Minimum 1/hr. Low rates protect sender reputation during warmup.</p>
+                <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 mt-2">
+                  {[
+                    { v: 1,    label: '1/hr',    hint: 'Ultra slow' },
+                    { v: 10,   label: '10/hr',   hint: 'Test' },
+                    { v: 50,   label: '50/hr',   hint: 'Warmup' },
+                    { v: 300,  label: '300/hr',  hint: 'Slow' },
+                    { v: 1200, label: '1.2k/hr', hint: 'Standard' },
+                    { v: 3600, label: '3.6k/hr', hint: 'Fast' },
+                  ].map(({ v, label, hint }) => (
                     <button key={v} type="button"
                       onClick={() => setValue('throttlePerHour', v)}
                       className={cn('p-2 rounded-lg border text-xs text-center transition-colors',
                         watch('throttlePerHour') === v ? 'border-primary bg-primary/5 text-primary' : 'hover:bg-muted/50',
                       )}>
-                      <p className="font-semibold">{v}/hr</p>
-                      <p className="text-muted-foreground">{label}</p>
+                      <p className="font-semibold">{label}</p>
                       <p className="text-muted-foreground">{hint}</p>
                     </button>
                   ))}

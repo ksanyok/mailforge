@@ -132,6 +132,8 @@ export const activityApi = {
 export const usersApi = {
   findAll: (params?: Record<string, unknown>) => api.get('/users', { params }).then(extractData),
   findOne: (id: string) => api.get(`/users/${id}`).then(extractData),
+  invite: (data: { name: string; email: string; password: string; role?: string }) =>
+    api.post('/users', data).then(extractData),
   update: (id: string, data: unknown) => api.patch(`/users/${id}`, data).then(extractData),
   remove: (id: string) => api.delete(`/users/${id}`).then(extractData),
   toggleActive: (id: string) => api.patch(`/users/${id}/toggle-active`).then(extractData),
@@ -149,5 +151,8 @@ export const inboxApi = {
     api.post('/inbox/unread', {}, { params: { senderId, uid } }).then(extractData),
   deleteMessage: (senderId: string, uid: number) =>
     api.post('/inbox/delete', {}, { params: { senderId, uid } }).then(extractData),
+  deleteConversation: (senderId: string, contactEmail: string) =>
+    api.delete('/inbox/conversation', { params: { senderId, contactEmail } }).then(extractData),
   markAllRead: () => api.post('/inbox/mark-all-read').then(extractData),
+  stats: () => api.get('/inbox/stats').then(extractData),
 };

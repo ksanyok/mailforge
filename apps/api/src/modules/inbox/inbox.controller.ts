@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Query, Body } from '@nestjs/common';
+import { Controller, Get, Post, Delete, Query, Body } from '@nestjs/common';
 import { InboxService } from './inbox.service';
 
 @Controller('inbox')
@@ -56,5 +56,18 @@ export class InboxController {
     @Query('uid') uid: string,
   ) {
     return this.inboxService.deleteMessage(senderId, Number(uid));
+  }
+
+  @Delete('conversation')
+  deleteConversation(
+    @Query('senderId') senderId: string,
+    @Query('contactEmail') contactEmail: string,
+  ) {
+    return this.inboxService.deleteConversation(senderId, contactEmail);
+  }
+
+  @Get('stats')
+  getStats() {
+    return this.inboxService.getStats();
   }
 }

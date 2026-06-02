@@ -1,5 +1,5 @@
 import {
-  Controller, Get, Patch, Delete, Body, Param, Query,
+  Controller, Get, Post, Patch, Delete, Body, Param, Query,
   HttpCode, HttpStatus,
 } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
@@ -42,6 +42,18 @@ export class UsersController {
     @CurrentUser() user: RequestUser,
   ) {
     return this.usersService.changePassword(id, dto.currentPassword, dto.newPassword, user.id);
+  }
+
+  @Post()
+  @Roles(Role.ADMIN)
+  invite(@Body() dto: { name: string; email: string; password: string; role?: string }) {
+    return this.usersService.invite(dto);
+  }
+
+  @Patch(':id/toggle-active')
+  @Roles(Role.ADMIN)
+  toggleActive(@Param('id') id: string, @CurrentUser() user: RequestUser) {
+    return this.usersService.toggleActive(id, user.id);
   }
 
   @Delete(':id')

@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   ForbiddenException,
+  ConflictException,
 } from '@nestjs/common';
 import * as bcryptjs from 'bcryptjs';
 import { PrismaService } from '../../core/database/prisma.service';
@@ -86,5 +87,33 @@ export class UsersService {
     }
     await this.findOne(id);
     await this.prisma.user.delete({ where: { id } });
+  }
+
+  async invite(dto: { name: string; email: string; password: string; role?: string }) {
+    const existing = await this.prisma.user.findUnique({ where: { email: dto.email } });
+    if (existing) throw new ConflictException('Email already registered');
+    const passwordHash = await bcryptjs.hash(dto.password, 10);
+    return this.prisma.user.create({
+      data: {
+        name: dto.name,
+        email: dto.email,
+        passwordHash,
+        role: (dto.role as any) ?? 'USER',
+        isActive: true,
+      },
+      select: {
+        id: true, email: true, name: true, role: true, isActive: true, createdAt: true,
+      },
+    });
+  }
+
+  async toggleActive(id: string, requesterId: string) {
+    if (id === requesterId) throw new ForbiddenException('Cannot deactivate your own account');
+    const user = await this.findOne(id);
+    return this.prisma.user.update({
+      where: { id },
+      data: { isActive: !user.isActive },
+      select: { id: true, isActive: true },
+    });
   }
 }

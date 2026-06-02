@@ -224,6 +224,43 @@ export class InboxService {
     }
   }
 
+  async deleteConversation(senderId: string, contactEmail: string): Promise<{ deleted: number }> {
+    const sender = await this.prisma.senderAccount.findUnique({
+      where: { id: senderId },
+      select: {
+        id: true, fromEmail: true, fromName: true,
+        smtpHost: true, smtpPort: true, smtpUser: true,
+        smtpPasswordEncrypted: true, smtpEncryption: true,
+      },
+    });
+    if (!sender) return { deleted: 0 };
+
+    const messages = await this.fetchInbox(sender as SenderRow, 500);
+    const fromContact = messages.filter(
+      (m) => m.from.address.toLowerCase() === contactEmail.toLowerCase(),
+    );
+    if (!fromContact.length) return { deleted: 0 };
+
+    const client = this.createClient(sender as SenderRow);
+    let deleted = 0;
+    try {
+      await client.connect();
+      await client.mailboxOpen('INBOX');
+      for (const msg of fromContact) {
+        await client.messageDelete(String(msg.uid), { uid: true }).catch(() => null);
+        deleted++;
+      }
+    } finally {
+      await client.logout().catch(() => null);
+    }
+    return { deleted };
+  }
+
+  async getStats(): Promise<{ conversations: number }> {
+    const conversations = await this.getConversations();
+    return { conversations: conversations.length };
+  }
+
   // ── private helpers ─────────────────────────────────────────────────
 
   // Fetch only envelopes — fast, no body download

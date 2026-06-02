@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Search, Trash2 } from 'lucide-react';
+import { Plus, Search, Trash2, Filter } from 'lucide-react';
 import type { ColumnDef } from '@tanstack/react-table';
 import { useForm } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
@@ -22,16 +22,25 @@ interface Contact {
 
 const STATUSES = ['SUBSCRIBED', 'UNSUBSCRIBED', 'BOUNCED', 'COMPLAINED', 'SUPPRESSED'];
 
+const STATUS_LABELS: Record<string, string> = {
+  SUBSCRIBED: 'Subscribed',
+  UNSUBSCRIBED: 'Unsubscribed (Not Interested)',
+  BOUNCED: 'Bounced',
+  COMPLAINED: 'Complained',
+  SUPPRESSED: 'Suppressed',
+};
+
 export function ContactsPage() {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string>('');
   const [addOpen, setAddOpen] = useState(false);
 
   const { data, isLoading } = useQuery({
-    queryKey: ['contacts', page, search],
-    queryFn: () => contactsApi.findAll({ page, limit: 20, search }),
+    queryKey: ['contacts', page, search, statusFilter],
+    queryFn: () => contactsApi.findAll({ page, limit: 20, search, ...(statusFilter ? { status: statusFilter } : {}) }),
   });
   const result = data as { data: Contact[]; total: number } | undefined;
 
@@ -136,15 +145,38 @@ export function ContactsPage() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div className="relative w-72">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search contacts..."
-            className="pl-9"
-            value={search}
-            onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-          />
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <div className="flex items-center gap-2 flex-1 min-w-0">
+          <div className="relative w-64 shrink-0">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search contacts..."
+              className="pl-9"
+              value={search}
+              onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+            />
+          </div>
+          <Select value={statusFilter || '__all__'} onValueChange={(v) => { setStatusFilter(v === '__all__' ? '' : v); setPage(1); }}>
+            <SelectTrigger className="w-52 shrink-0">
+              <Filter className="h-3.5 w-3.5 mr-2 text-muted-foreground" />
+              <SelectValue placeholder="All statuses" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="__all__">All statuses</SelectItem>
+              {STATUSES.map(s => (
+                <SelectItem key={s} value={s}>
+                  <span className={cn('px-2 py-0.5 rounded-full text-xs font-medium', STATUS_COLORS[s] ?? 'bg-gray-100')}>
+                    {STATUS_LABELS[s] ?? s}
+                  </span>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {(data as any)?.total !== undefined && (
+            <span className="text-sm text-muted-foreground whitespace-nowrap">
+              {(data as any).total} contact{(data as any).total !== 1 ? 's' : ''}
+            </span>
+          )}
         </div>
         <Button onClick={() => setAddOpen(true)}>
           <Plus className="h-4 w-4 mr-2" />Add Contact

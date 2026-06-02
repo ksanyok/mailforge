@@ -57,6 +57,12 @@ export class AnalyticsService {
       where: { status: 'ACTIVE' },
     });
 
+    // Replied = contacts who have UNSUBSCRIBED status (they responded "not interested")
+    // Plus contacts who clicked at least once (engaged)
+    const repliedContacts = await this.prisma.contact.count({
+      where: { status: 'UNSUBSCRIBED' },
+    });
+
     return {
       contacts: {
         total: totalContacts,
@@ -78,6 +84,9 @@ export class AnalyticsService {
         clickRate: sentLast30 > 0 ? Math.round((clickedLast30 / sentLast30) * 10000) / 100 : 0,
         bounceRate: sentLast30 > 0 ? Math.round((bouncedLast30 / sentLast30) * 10000) / 100 : 0,
         complaintRate: sentLast30 > 0 ? Math.round((complainedLast30 / sentLast30) * 10000) / 100 : 0,
+        openedLast30,
+        clickedLast30,
+        repliedContacts,
       },
       senders: {
         total: totalSenders,

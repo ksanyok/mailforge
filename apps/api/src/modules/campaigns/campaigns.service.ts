@@ -391,4 +391,97 @@ export class CampaignsService {
       data: { status: 'QUEUED', queuedAt: new Date() },
     });
   }
+
+  async getNonResponders(campaignId: string): Promise<{
+    total: number; responded: number; notResponded: number;
+    contacts: { id: string; email: string; firstName?: string; lastName?: string }[];
+  }> {
+    const campaign = await this.findOne(campaignId);
+
+    // All recipients who were actually sent the email
+    const allSent = await this.prisma.campaignRecipient.findMany({
+      where: { campaignId, status: { in: ['SENT', 'DELIVERED', 'OPENED', 'CLICKED'] } },
+      select: { contactId: true, status: true },
+    });
+
+    const respondedIds = new Set(
+      allSent.filter((r) => ['OPENED', 'CLICKED'].includes(r.status)).map((r) => r.contactId),
+    );
+
+    const notRespondedIds = allSent
+      .filter((r) => !respondedIds.has(r.contactId))
+      .map((r) => r.contactId);
+
+    const uniqueNotResponded = [...new Set(notRespondedIds)];
+
+    const contacts = await this.prisma.contact.findMany({
+      where: {
+        id: { in: uniqueNotResponded },
+        status: { notIn: ['UNSUBSCRIBED', 'BOUNCED', 'COMPLAINED', 'SUPPRESSED'] },
+      },
+      select: { id: true, email: true, firstName: true, lastName: true },
+    });
+
+    return {
+      total: allSent.length > 0 ? [...new Set(allSent.map((r) => r.contactId))].length : campaign.totalRecipients,
+      responded: respondedIds.size,
+      notResponded: contacts.length,
+      contacts,
+    };
+  }
+
+  async createFollowUp(campaignId: string, userId: string, overrides?: { subject?: string; body?: string }): Promise<{ id: string }> {
+    const campaign = await this.findOne(campaignId);
+    const { contacts } = await this.getNonResponders(campaignId);
+
+    if (contacts.length === 0) {
+      throw new BadRequestException('No eligible non-responders found for follow-up');
+    }
+
+    // Create a new list with non-responders
+    const listName = `Follow-up: ${campaign.name} (${new Date().toLocaleDateString('en')})`;
+    const list = await this.prisma.contactList.create({
+      data: {
+        name: listName,
+        createdBy: userId,
+      },
+    });
+
+    // Add contacts to the new list
+    await this.prisma.contactListMember.createMany({
+      data: contacts.map((c) => ({ listId: list.id, contactId: c.id })),
+      skipDuplicates: true,
+    });
+
+    await this.prisma.contactList.update({
+      where: { id: list.id },
+      data: { contactCount: contacts.length },
+    });
+
+    // Create new draft campaign
+    const followUpSubject = overrides?.subject
+      ?? (campaign.subject.toLowerCase().startsWith('re:') ? campaign.subject : `Re: ${campaign.subject}`);
+
+    const newCampaign = await this.prisma.campaign.create({
+      data: {
+        name: `Follow-up: ${campaign.name}`,
+        subject: followUpSubject,
+        preheader: campaign.preheader ?? undefined,
+        htmlContent: campaign.htmlContent,
+        textContent: campaign.textContent ?? undefined,
+        senderId: campaign.senderId ?? undefined,
+        throttlePerMinute: campaign.throttlePerMinute,
+        trackOpens: campaign.trackOpens,
+        trackClicks: campaign.trackClicks,
+        status: 'DRAFT',
+        createdBy: userId,
+      },
+    });
+
+    await this.prisma.campaignList.create({
+      data: { campaignId: newCampaign.id, listId: list.id },
+    });
+
+    return { id: newCampaign.id };
+  }
 }

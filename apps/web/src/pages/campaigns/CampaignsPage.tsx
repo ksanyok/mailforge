@@ -69,12 +69,25 @@ export function CampaignsPage() {
       id: 'stats',
       header: 'Stats',
       cell: ({ row }) => {
-        const c = row.original;
+        const c = row.original as Campaign & { uniqueOpenCount?: number; uniqueClickCount?: number };
+        const responded = (c.uniqueOpenCount ?? 0) + (c.uniqueClickCount ?? 0);
+        const notResponded = c.sentCount > 0 ? c.sentCount - (c.uniqueOpenCount ?? 0) : 0;
         return (
           <div className="text-xs space-y-0.5">
-            <p>{c.sentCount}/{c.totalRecipients} sent</p>
-            <p>Open: {formatPercent(c.openCount, c.sentCount)}</p>
-            <p>Click: {formatPercent(c.clickCount, c.sentCount)}</p>
+            <p className="text-muted-foreground">{c.sentCount}/{c.totalRecipients} sent</p>
+            {c.sentCount > 0 && (
+              <>
+                <p className="text-green-700 font-medium">
+                  ✓ {c.uniqueOpenCount ?? 0} responded
+                  <span className="text-muted-foreground font-normal ml-1">
+                    ({formatPercent(c.uniqueOpenCount ?? 0, c.sentCount)})
+                  </span>
+                </p>
+                {notResponded > 0 && (
+                  <p className="text-gray-500">{notResponded} no response</p>
+                )}
+              </>
+            )}
           </div>
         );
       },

@@ -37,6 +37,20 @@ export class CampaignsController {
     return this.campaignsService.getFunnel(id);
   }
 
+  @Get(':id/non-responders')
+  getNonResponders(@Param('id') id: string) {
+    return this.campaignsService.getNonResponders(id);
+  }
+
+  @Post(':id/create-followup')
+  createFollowUp(
+    @Param('id') id: string,
+    @Body() dto: { subject?: string; body?: string },
+    @CurrentUser() user: RequestUser,
+  ) {
+    return this.campaignsService.createFollowUp(id, user.id, dto);
+  }
+
   @Post()
   create(@Body() dto: any, @CurrentUser() user: RequestUser) {
     return this.campaignsService.create(dto, user.id);

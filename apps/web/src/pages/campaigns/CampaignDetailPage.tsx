@@ -1,7 +1,7 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Play, Pause, RotateCcw, Edit2, XCircle, Trash2, X } from 'lucide-react';
+import { ArrowLeft, Play, Pause, RotateCcw, Edit2, XCircle, Trash2, X, SendHorizonal, UserX, CheckCircle2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { campaignsApi, analyticsApi } from '@/api/index';
@@ -16,6 +16,8 @@ export function CampaignDetailPage() {
   const qc = useQueryClient();
   const [cancelConfirm, setCancelConfirm] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
+  const [followUpSubject, setFollowUpSubject] = useState('');
+  const [showFollowUp, setShowFollowUp] = useState(false);
 
   const { data: campaign, refetch } = useQuery({
     queryKey: ['campaign', id],
@@ -28,6 +30,12 @@ export function CampaignDetailPage() {
     queryFn: () => analyticsApi.campaignFunnel(id!),
     enabled: !!id,
   });
+  const { data: nonRespondersData } = useQuery({
+    queryKey: ['non-responders', id],
+    queryFn: () => campaignsApi.nonResponders(id!),
+    enabled: !!id && ['SENT', 'SENDING', 'PAUSED', 'CANCELLED'].includes((campaign as any)?.status ?? ''),
+  });
+  const nr = nonRespondersData as { total: number; responded: number; notResponded: number } | undefined;
 
   const dispatch = useMutation({
     mutationFn: () => campaignsApi.dispatch(id!),
@@ -64,6 +72,16 @@ export function CampaignDetailPage() {
       navigate('/campaigns');
     },
     onError: () => toast({ title: 'Failed to delete campaign', variant: 'destructive' }),
+  });
+
+  const createFollowUp = useMutation({
+    mutationFn: () => campaignsApi.createFollowUp(id!, followUpSubject ? { subject: followUpSubject } : undefined),
+    onSuccess: (res: any) => {
+      toast({ title: `Follow-up campaign created with ${nr?.notResponded ?? 0} recipients` });
+      setShowFollowUp(false);
+      navigate(`/campaigns/${res.id}`);
+    },
+    onError: (err: any) => toast({ title: err?.response?.data?.message ?? 'Failed to create follow-up', variant: 'destructive' }),
   });
 
   const c = campaign as Record<string, unknown> | undefined;
@@ -173,6 +191,75 @@ export function CampaignDetailPage() {
           </Card>
         ))}
       </div>
+
+      {/* Response summary + Follow-up */}
+      {nr && (c.sentCount as number) > 0 && (
+        <Card className={cn(
+          'border-2',
+          nr.notResponded === 0 ? 'border-green-200 bg-green-50/40' : 'border-blue-200 bg-blue-50/30',
+        )}>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between gap-4 flex-wrap">
+              <div className="flex items-center gap-6">
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="h-5 w-5 text-green-600" />
+                  <div>
+                    <p className="text-xl font-bold text-green-700">{nr.responded}</p>
+                    <p className="text-xs text-muted-foreground">Responded</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <UserX className="h-5 w-5 text-gray-400" />
+                  <div>
+                    <p className="text-xl font-bold text-gray-700">{nr.notResponded}</p>
+                    <p className="text-xs text-muted-foreground">No response</p>
+                  </div>
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  out of {nr.total} sent
+                </div>
+              </div>
+
+              {nr.notResponded > 0 && ['SENT', 'CANCELLED', 'PAUSED'].includes(status) && (
+                <div>
+                  {showFollowUp ? (
+                    <div className="flex items-center gap-2 flex-wrap animate-in fade-in slide-in-from-right-2">
+                      <input
+                        value={followUpSubject}
+                        onChange={(e) => setFollowUpSubject(e.target.value)}
+                        placeholder={`Re: ${c.subject as string}`}
+                        className="text-sm border rounded-lg px-3 py-1.5 w-64 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                      />
+                      <Button
+                        size="sm"
+                        className="bg-blue-600 hover:bg-blue-700 text-white gap-1.5"
+                        onClick={() => createFollowUp.mutate()}
+                        disabled={createFollowUp.isPending}
+                      >
+                        <SendHorizonal className="h-3.5 w-3.5" />
+                        {createFollowUp.isPending ? 'Creating…' : `Send to ${nr.notResponded} people`}
+                      </Button>
+                      <Button size="sm" variant="ghost" onClick={() => setShowFollowUp(false)}>
+                        <X className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="gap-2 border-blue-300 text-blue-700 hover:bg-blue-50"
+                      onClick={() => setShowFollowUp(true)}
+                    >
+                      <SendHorizonal className="h-3.5 w-3.5" />
+                      Follow-up {nr.notResponded} non-responders
+                    </Button>
+                  )}
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Rates */}
       {(c.sentCount as number) > 0 && (

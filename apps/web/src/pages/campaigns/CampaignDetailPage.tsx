@@ -1,6 +1,7 @@
 import { useParams, useNavigate } from 'react-router-dom';
+import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Play, Pause, RotateCcw, Edit2 } from 'lucide-react';
+import { ArrowLeft, Play, Pause, RotateCcw, Edit2, XCircle, Trash2, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { campaignsApi, analyticsApi } from '@/api/index';
@@ -13,6 +14,8 @@ export function CampaignDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const qc = useQueryClient();
+  const [cancelConfirm, setCancelConfirm] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState(false);
 
   const { data: campaign, refetch } = useQuery({
     queryKey: ['campaign', id],
@@ -29,7 +32,7 @@ export function CampaignDetailPage() {
   const dispatch = useMutation({
     mutationFn: () => campaignsApi.dispatch(id!),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['campaign', id] }); toast({ title: 'Campaign launched' }); refetch(); },
-    onError: () => toast({ title: 'Failed to launch campaign', variant: 'destructive' }),
+    onError: (err: any) => toast({ title: err?.response?.data?.message ?? 'Failed to launch campaign', variant: 'destructive' }),
   });
 
   const pause = useMutation({
@@ -40,6 +43,27 @@ export function CampaignDetailPage() {
   const resume = useMutation({
     mutationFn: () => campaignsApi.resume(id!),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['campaign', id] }); toast({ title: 'Campaign resumed' }); },
+  });
+
+  const cancel = useMutation({
+    mutationFn: () => campaignsApi.cancel(id!),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['campaign', id] });
+      qc.invalidateQueries({ queryKey: ['campaigns'] });
+      setCancelConfirm(false);
+      toast({ title: 'Campaign cancelled' });
+    },
+    onError: () => toast({ title: 'Failed to cancel campaign', variant: 'destructive' }),
+  });
+
+  const remove = useMutation({
+    mutationFn: () => campaignsApi.remove(id!),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['campaigns'] });
+      toast({ title: 'Campaign deleted' });
+      navigate('/campaigns');
+    },
+    onError: () => toast({ title: 'Failed to delete campaign', variant: 'destructive' }),
   });
 
   const c = campaign as Record<string, unknown> | undefined;
@@ -84,6 +108,38 @@ export function CampaignDetailPage() {
           <Button size="sm" className="gap-2" onClick={() => resume.mutate()} disabled={resume.isPending}>
             <RotateCcw className="h-4 w-4" />Resume
           </Button>
+        )}
+
+        {/* Cancel — for active/paused campaigns */}
+        {['SENDING', 'PAUSED'].includes(status) && (
+          cancelConfirm ? (
+            <div className="flex items-center gap-1">
+              <Button size="sm" variant="destructive" onClick={() => cancel.mutate()} disabled={cancel.isPending}>
+                <XCircle className="h-4 w-4 mr-1" />{cancel.isPending ? 'Cancelling…' : 'Confirm Cancel'}
+              </Button>
+              <Button size="sm" variant="ghost" onClick={() => setCancelConfirm(false)}><X className="h-4 w-4" /></Button>
+            </div>
+          ) : (
+            <Button size="sm" variant="outline" className="gap-2 text-orange-600 border-orange-300 hover:bg-orange-50" onClick={() => setCancelConfirm(true)}>
+              <XCircle className="h-4 w-4" />Cancel Campaign
+            </Button>
+          )
+        )}
+
+        {/* Delete — for draft and cancelled/sent campaigns */}
+        {['DRAFT', 'CANCELLED', 'SENT'].includes(status) && (
+          deleteConfirm ? (
+            <div className="flex items-center gap-1">
+              <Button size="sm" variant="destructive" onClick={() => remove.mutate()} disabled={remove.isPending}>
+                <Trash2 className="h-4 w-4 mr-1" />{remove.isPending ? 'Deleting…' : 'Confirm Delete'}
+              </Button>
+              <Button size="sm" variant="ghost" onClick={() => setDeleteConfirm(false)}><X className="h-4 w-4" /></Button>
+            </div>
+          ) : (
+            <Button size="sm" variant="outline" className="gap-2 text-red-600 border-red-300 hover:bg-red-50" onClick={() => setDeleteConfirm(true)}>
+              <Trash2 className="h-4 w-4" />Delete
+            </Button>
+          )
         )}
       </div>
 

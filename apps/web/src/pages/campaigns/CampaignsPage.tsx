@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Play, Pause, XCircle } from 'lucide-react';
+import { Plus, Play, Pause, XCircle, Trash2 } from 'lucide-react';
 import type { ColumnDef } from '@tanstack/react-table';
 import { Button } from '@/components/ui/button';
 import { DataTable } from '@/components/data-table/DataTable';
@@ -35,6 +35,18 @@ export function CampaignsPage() {
   const pause = useMutation({
     mutationFn: (id: string) => campaignsApi.pause(id),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['campaigns'] }),
+  });
+
+  const cancel = useMutation({
+    mutationFn: (id: string) => campaignsApi.cancel(id),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['campaigns'] }); toast({ title: 'Campaign cancelled' }); },
+    onError: () => toast({ title: 'Failed to cancel', variant: 'destructive' }),
+  });
+
+  const remove = useMutation({
+    mutationFn: (id: string) => campaignsApi.remove(id),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['campaigns'] }); toast({ title: 'Campaign deleted' }); },
+    onError: (err: any) => toast({ title: err?.response?.data?.message ?? 'Failed to delete', variant: 'destructive' }),
   });
 
   const columns: ColumnDef<Campaign>[] = [
@@ -74,9 +86,37 @@ export function CampaignsPage() {
       cell: ({ row }) => {
         const { id, status } = row.original;
         return (
-          <div className="flex gap-1">
-            {status === 'DRAFT' && <Button size="sm" variant="outline" onClick={() => dispatch.mutate(id)}><Play className="h-3.5 w-3.5" /></Button>}
-            {status === 'SENDING' && <Button size="sm" variant="outline" onClick={() => pause.mutate(id)}><Pause className="h-3.5 w-3.5" /></Button>}
+          <div className="flex gap-1 flex-wrap">
+            {status === 'DRAFT' && (
+              <Button size="sm" variant="outline" onClick={() => dispatch.mutate(id)} title="Launch">
+                <Play className="h-3.5 w-3.5" />
+              </Button>
+            )}
+            {status === 'SENDING' && (
+              <Button size="sm" variant="outline" onClick={() => pause.mutate(id)} title="Pause">
+                <Pause className="h-3.5 w-3.5" />
+              </Button>
+            )}
+            {['SENDING', 'PAUSED'].includes(status) && (
+              <Button
+                size="sm" variant="outline"
+                className="text-orange-600 border-orange-300 hover:bg-orange-50"
+                title="Cancel campaign"
+                onClick={() => { if (confirm('Cancel this campaign? This cannot be undone.')) cancel.mutate(id); }}
+              >
+                <XCircle className="h-3.5 w-3.5" />
+              </Button>
+            )}
+            {['DRAFT', 'CANCELLED', 'SENT'].includes(status) && (
+              <Button
+                size="sm" variant="outline"
+                className="text-red-600 border-red-300 hover:bg-red-50"
+                title="Delete campaign"
+                onClick={() => { if (confirm(`Delete "${row.original.name}"?`)) remove.mutate(id); }}
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </Button>
+            )}
             <Button size="sm" variant="outline" onClick={() => navigate(`/campaigns/${id}/edit`)}>Edit</Button>
           </div>
         );

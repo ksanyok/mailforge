@@ -77,6 +77,10 @@ services:
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
       PORT: 3001
       UPLOAD_DIR: /app/uploads
+      SSH_HOST: ${SSH_HOST:-172.18.0.1}
+      SSH_PORT: ${SSH_PORT:-22}
+      SSH_USER: ${SSH_USER:-root}
+      SSH_PASSWORD: ${SSH_PASSWORD:-}
     ports:
       - '127.0.0.1:3001:3001'
     volumes:

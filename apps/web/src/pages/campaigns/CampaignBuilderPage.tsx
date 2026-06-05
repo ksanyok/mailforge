@@ -93,7 +93,7 @@ export function CampaignBuilderPage() {
   const onSubmit = (data: BuilderForm) => {
     if (selectedLists.length === 0) { toast({ title: 'Select at least one list', variant: 'destructive' }); setStep(2); return; }
     const { fromNameOverride, throttlePerHour, ...campaignData } = data;
-    save.mutate({ ...campaignData, throttlePerMinute: Math.max(1, Math.round(throttlePerHour / 60)), listIds: selectedLists } as any);
+    save.mutate({ ...campaignData, throttlePerMinute: Math.max(1, throttlePerHour), listIds: selectedLists } as any);
   };
 
   const goNext = () => {

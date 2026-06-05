@@ -3,12 +3,16 @@ import {
 } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { SendersService } from './senders.service';
+import { MailboxService } from './mailbox.service';
 
 @ApiTags('Senders')
 @ApiBearerAuth()
 @Controller('senders')
 export class SendersController {
-  constructor(private readonly sendersService: SendersService) {}
+  constructor(
+    private readonly sendersService: SendersService,
+    private readonly mailboxService: MailboxService,
+  ) {}
 
   @Get()
   findAll(@Query() query: { page?: number; limit?: number; search?: string }) {
@@ -54,5 +58,21 @@ export class SendersController {
   @HttpCode(HttpStatus.NO_CONTENT)
   remove(@Param('id') id: string) {
     return this.sendersService.remove(id);
+  }
+
+  @Post(':id/provision-mailbox')
+  provisionMailbox(
+    @Param('id') id: string,
+    @Body('password') password: string,
+  ) {
+    return this.mailboxService.provisionMailbox(id, password);
+  }
+
+  @Delete(':id/remove-mailbox')
+  removeMailbox(
+    @Param('id') id: string,
+    @Body('deleteFiles') deleteFiles?: boolean,
+  ) {
+    return this.mailboxService.removeMailbox(id, deleteFiles);
   }
 }

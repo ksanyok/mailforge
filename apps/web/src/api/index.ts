@@ -50,6 +50,10 @@ export const sendersApi = {
   testConnection: (id: string) => api.post(`/senders/${id}/test`).then(extractData),
   resetStatus: (id: string) => api.post(`/senders/${id}/reset-status`).then(extractData),
   healthLogs: (id: string) => api.get(`/senders/${id}/health-logs`).then(extractData),
+  provisionMailbox: (id: string, password: string) =>
+    api.post(`/senders/${id}/provision-mailbox`, { password }).then(extractData),
+  removeMailbox: (id: string, deleteFiles?: boolean) =>
+    api.delete(`/senders/${id}/remove-mailbox`, { data: { deleteFiles: deleteFiles ?? false } }).then(extractData),
 };
 
 export const warmupApi = {

@@ -365,11 +365,17 @@ export class CampaignsService {
       include: { contact: { select: { id: true, email: true } } },
     });
 
+    // throttlePerMinute stores emails-per-hour; compute ms interval between each send
+    const throttlePerHour: number = campaign.throttlePerMinute ?? 3600;
+    const intervalMs = throttlePerHour > 0
+      ? Math.ceil(3_600_000 / throttlePerHour)
+      : 1000;
+
     const CHUNK = 1000;
-    for (let i = 0; i < recipients.length; i += CHUNK) {
-      const chunk = recipients.slice(i, i + CHUNK);
+    for (let chunkStart = 0; chunkStart < recipients.length; chunkStart += CHUNK) {
+      const chunk = recipients.slice(chunkStart, chunkStart + CHUNK);
       await this.sendingQueue.addBulk(
-        chunk.map((r) => ({
+        chunk.map((r, chunkIdx) => ({
           name: 'send-email',
           data: {
             campaignId: campaign.id,
@@ -381,6 +387,7 @@ export class CampaignsService {
           opts: {
             attempts: 3,
             backoff: { type: 'exponential', delay: 2000 },
+            delay: (chunkStart + chunkIdx) * intervalMs,
           },
         })),
       );

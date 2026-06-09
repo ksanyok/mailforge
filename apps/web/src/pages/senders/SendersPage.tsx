@@ -128,8 +128,11 @@ export function SendersPage() {
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="space-y-1"><Label>SMTP Username *</Label><Input {...register('smtpUser', { required: true })} /></div>
-                <div className="space-y-1"><Label>SMTP Password *</Label><Input type="password" {...register('smtpPassword', { required: true })} /></div>
+                <div className="space-y-1"><Label>SMTP Username *</Label><Input {...register('smtpUser', { required: true })} placeholder="user@senior-dev.cloud" /></div>
+                <div className="space-y-1">
+                  <Label>SMTP Password *</Label>
+                  <Input type="password" {...register('smtpPassword', { required: true })} placeholder="Enter a password (not your email)" />
+                </div>
                 <div className="space-y-1"><Label>Daily Limit</Label><Input type="number" {...register('dailyLimit', { valueAsNumber: true })} /></div>
               </div>
               <p className="text-xs text-muted-foreground">

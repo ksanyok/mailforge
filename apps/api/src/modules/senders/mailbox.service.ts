@@ -45,7 +45,7 @@ export class MailboxService {
       where: { id: senderId },
     });
 
-    const email = sender.fromEmail;
+    const email = sender.fromEmail.toLowerCase(); // Dovecot normalises to lowercase
     const atIdx = email.indexOf('@');
     if (atIdx < 1) throw new BadRequestException('Invalid email in sender account');
 
@@ -66,10 +66,12 @@ export class MailboxService {
       }
 
       // Add or update dovecot users
+      // Use grep -q + && / || to get clean "found"/"notfound" (grep -c exits 1 on no match
+      // which causes "|| echo 0" to append a second "0", making stdout "0\n0" ≠ "0")
       const checkDov = await ssh.execCommand(
-        `grep -c "^${email}:" /etc/dovecot/users || echo 0`,
+        `grep -q "^${email}:" /etc/dovecot/users && echo found || echo notfound`,
       );
-      if (checkDov.stdout.trim() === '0') {
+      if (checkDov.stdout.trim() !== 'found') {
         await ssh.execCommand(
           `echo ${this.escapeShellArg(`${email}:${hash}`)} >> /etc/dovecot/users`,
         );
@@ -83,9 +85,9 @@ export class MailboxService {
 
       // Add to postfix vmailbox if not present
       const checkVm = await ssh.execCommand(
-        `grep -c "^${email} " /etc/postfix/vmailbox || echo 0`,
+        `grep -q "^${email} " /etc/postfix/vmailbox && echo found || echo notfound`,
       );
-      if (checkVm.stdout.trim() === '0') {
+      if (checkVm.stdout.trim() !== 'found') {
         await ssh.execCommand(
           `echo ${this.escapeShellArg(`${email} ${domain}/${localPart}/`)} >> /etc/postfix/vmailbox`,
         );
@@ -117,7 +119,7 @@ export class MailboxService {
       where: { id: senderId },
     });
 
-    const email = sender.fromEmail;
+    const email = sender.fromEmail.toLowerCase();
     const atIdx = email.indexOf('@');
     if (atIdx < 1) throw new BadRequestException('Invalid email in sender account');
 

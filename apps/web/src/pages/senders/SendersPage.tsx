@@ -133,7 +133,7 @@ export function SendersPage() {
                 <div className="space-y-1"><Label>Daily Limit</Label><Input type="number" {...register('dailyLimit', { valueAsNumber: true })} /></div>
               </div>
               <p className="text-xs text-muted-foreground">
-                To create a mailbox on the server, save the sender first and then use the <strong>Server</strong> button on the sender card.
+                For <strong>@senior-dev.cloud</strong> senders, the mailbox is created on the server automatically. For external SMTP providers, no provisioning is needed.
               </p>
               <Button type="submit" disabled={create.isPending} className="w-full">Add Sender</Button>
             </form>

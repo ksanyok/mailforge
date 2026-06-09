@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  Logger,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as nodemailer from 'nodemailer';
@@ -9,12 +10,16 @@ import { PrismaService } from '../../core/database/prisma.service';
 import { encrypt, decrypt } from '../../shared/utils/crypto.util';
 import { calculateHealthScore } from '../../shared/utils/health-score.util';
 import { getPaginationParams, buildPaginatedResponse } from '../../shared/utils/pagination.util';
+import { MailboxService } from './mailbox.service';
 
 @Injectable()
 export class SendersService {
+  private readonly logger = new Logger(SendersService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly config: ConfigService,
+    private readonly mailboxService: MailboxService,
   ) {}
 
   async findAll(query: { page?: number; limit?: number; search?: string }) {
@@ -55,7 +60,7 @@ export class SendersService {
     const encryptionKey = this.config.getOrThrow('ENCRYPTION_KEY');
     const smtpPasswordEncrypted = encrypt(dto.smtpPassword, encryptionKey);
 
-    return this.prisma.senderAccount.create({
+    const sender = await this.prisma.senderAccount.create({
       data: {
         name: dto.name,
         fromName: dto.fromName,
@@ -75,6 +80,16 @@ export class SendersService {
       },
       select: this.selectFields(),
     });
+
+    // Auto-provision mailbox when sender uses our server
+    const ourHosts = ['mail.senior-dev.cloud', 'senior-dev.cloud', 'localhost', '127.0.0.1'];
+    if (ourHosts.some((h) => dto.smtpHost.includes(h))) {
+      this.mailboxService.provisionMailbox(sender.id, dto.smtpPassword).catch((e) => {
+        this.logger.warn(`Auto-provision failed for ${dto.fromEmail}: ${e.message}`);
+      });
+    }
+
+    return sender;
   }
 
   async update(id: string, dto: any) {

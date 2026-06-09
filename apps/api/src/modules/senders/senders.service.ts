@@ -81,12 +81,15 @@ export class SendersService {
       select: this.selectFields(),
     });
 
-    // Auto-provision mailbox when sender uses our server
+    // Auto-provision mailbox when sender uses our server (synchronous — ready before response)
     const ourHosts = ['mail.senior-dev.cloud', 'senior-dev.cloud', 'localhost', '127.0.0.1'];
     if (ourHosts.some((h) => dto.smtpHost.includes(h))) {
-      this.mailboxService.provisionMailbox(sender.id, dto.smtpPassword).catch((e) => {
-        this.logger.warn(`Auto-provision failed for ${dto.fromEmail}: ${e.message}`);
-      });
+      try {
+        await this.mailboxService.provisionMailbox(sender.id, dto.smtpPassword);
+        this.logger.log(`Auto-provisioned mailbox for ${dto.fromEmail}`);
+      } catch (e) {
+        this.logger.warn(`Auto-provision failed for ${dto.fromEmail}: ${(e as Error).message}`);
+      }
     }
 
     return sender;

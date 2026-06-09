@@ -48,6 +48,20 @@ export class InboxService {
     private readonly config: ConfigService,
   ) {}
 
+  private isSystemEmail(address: string): boolean {
+    const lower = address.toLowerCase();
+    return (
+      lower.startsWith('mailer-daemon@') ||
+      lower.startsWith('postmaster@') ||
+      lower.startsWith('noreply-dmarc') ||
+      lower.startsWith('noreply@dmarc') ||
+      lower.includes('dmarc') ||
+      lower.includes('mailer-daemon') ||
+      lower === 'dmarcreport@microsoft.com' ||
+      lower === 'reports@fastmaildmarc.com'
+    );
+  }
+
   async getConversations(): Promise<Conversation[]> {
     const senders = await this.prisma.senderAccount.findMany({
       where: { status: 'ACTIVE' },
@@ -68,6 +82,7 @@ export class InboxService {
 
           for (const msg of messages) {
             const key = msg.from.address.toLowerCase();
+            if (this.isSystemEmail(key)) continue;
             if (!byContact.has(key)) byContact.set(key, []);
             byContact.get(key)!.push(msg);
           }

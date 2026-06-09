@@ -420,7 +420,7 @@ export class InboxService {
     const sender = await this.prisma.senderAccount.findUnique({
       where: { id: dto.senderId },
       select: {
-        fromName: true, fromEmail: true, replyTo: true,
+        id: true, fromName: true, fromEmail: true, replyTo: true,
         smtpHost: true, smtpPort: true, smtpUser: true,
         smtpPasswordEncrypted: true, smtpEncryption: true,
       },
@@ -442,7 +442,7 @@ export class InboxService {
       ? dto.subject
       : `Re: ${dto.subject}`;
 
-    await transporter.sendMail({
+    const info = await transporter.sendMail({
       from: `"${sender.fromName}" <${sender.fromEmail}>`,
       to: dto.to,
       replyTo: sender.replyTo || sender.fromEmail,
@@ -451,7 +451,70 @@ export class InboxService {
       ...(dto.inReplyTo ? { inReplyTo: dto.inReplyTo, references: dto.inReplyTo } : {}),
     });
 
+    // Save a copy to IMAP Sent folder so replies appear on the right (green) in inbox
+    this.appendToSent(sender as SenderRow, {
+      from: `"${sender.fromName}" <${sender.fromEmail}>`,
+      to: dto.to,
+      subject,
+      text: dto.body,
+      messageId: info.messageId ?? '',
+      inReplyTo: dto.inReplyTo,
+    }).catch((err) =>
+      this.logger.debug(`Failed to append to Sent: ${err instanceof Error ? err.message : err}`),
+    );
+
     return { sent: true };
+  }
+
+  private async appendToSent(
+    sender: SenderRow,
+    msg: { from: string; to: string; subject: string; text: string; messageId: string; inReplyTo?: string },
+  ): Promise<void> {
+    const client = this.createClient(sender);
+    try {
+      await client.connect();
+      const list = await client.list();
+
+      const sentNames = ['Sent', 'INBOX.Sent', 'Sent Items', 'Sent Messages'];
+      let sentFolder = list.find((f) =>
+        sentNames.some((n) => f.path.toLowerCase() === n.toLowerCase()),
+      );
+
+      if (!sentFolder) {
+        // Try partial match
+        sentFolder = list.find((f) =>
+          sentNames.some((n) => f.path.toLowerCase().includes(n.toLowerCase())),
+        );
+      }
+
+      // Create Sent folder if none found
+      if (!sentFolder) {
+        try {
+          await client.mailboxCreate('Sent');
+          sentFolder = { path: 'Sent' } as any;
+        } catch {
+          return;
+        }
+      }
+
+      const date = new Date();
+      const raw = [
+        `From: ${msg.from}`,
+        `To: ${msg.to}`,
+        `Subject: ${msg.subject}`,
+        `Date: ${date.toUTCString()}`,
+        `Message-ID: ${msg.messageId}`,
+        ...(msg.inReplyTo ? [`In-Reply-To: ${msg.inReplyTo}`, `References: ${msg.inReplyTo}`] : []),
+        'MIME-Version: 1.0',
+        'Content-Type: text/plain; charset=utf-8',
+        '',
+        msg.text,
+      ].join('\r\n');
+
+      await client.append(sentFolder.path, Buffer.from(raw), ['\\Seen'], date);
+    } finally {
+      await client.logout().catch(() => null);
+    }
   }
 
   // ── MIME parsing ─────────────────────────────────────────────────────

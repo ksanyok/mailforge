@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { Cron, CronExpression } from '@nestjs/schedule';
 import { ImapFlow, FetchMessageObject } from 'imapflow';
 import * as nodemailer from 'nodemailer';
 import { PrismaService } from '../../core/database/prisma.service';
@@ -274,6 +275,128 @@ export class InboxService {
   async getStats(): Promise<{ conversations: number }> {
     const conversations = await this.getConversations();
     return { conversations: conversations.length };
+  }
+
+  // ── Bounce processing ────────────────────────────────────────────────
+
+  @Cron(CronExpression.EVERY_2_HOURS)
+  async processBounces(): Promise<{ processed: number; marked: number }> {
+    const senders = await this.prisma.senderAccount.findMany({
+      where: { status: 'ACTIVE' },
+      select: {
+        id: true, fromEmail: true, fromName: true,
+        smtpHost: true, smtpPort: true, smtpUser: true,
+        smtpPasswordEncrypted: true, smtpEncryption: true,
+      },
+    });
+
+    let processed = 0;
+    let marked = 0;
+
+    for (const sender of senders) {
+      try {
+        const result = await this.processSenderBounces(sender as SenderRow);
+        processed += result.processed;
+        marked += result.marked;
+      } catch (err) {
+        this.logger.warn(`Bounce processing failed for ${sender.fromEmail}: ${err instanceof Error ? err.message : err}`);
+      }
+    }
+
+    if (processed > 0) {
+      this.logger.log(`Bounce processor: ${processed} bounce emails scanned, ${marked} contacts marked as BOUNCED`);
+    }
+    return { processed, marked };
+  }
+
+  private async processSenderBounces(sender: SenderRow): Promise<{ processed: number; marked: number }> {
+    const client = this.createClient(sender);
+    let processed = 0;
+    let marked = 0;
+
+    try {
+      await client.connect();
+      const mailbox = await client.mailboxOpen('INBOX');
+      if (!mailbox.exists) return { processed, marked };
+
+      const bouncedUids: number[] = [];
+
+      for await (const msg of client.fetch('1:*', {
+        uid: true, flags: true, envelope: true, source: true,
+      })) {
+        const from = msg.envelope?.from?.[0]?.address?.toLowerCase() ?? '';
+        if (!this.isBounceAddress(from)) continue;
+        if ((msg.flags ?? new Set()).has('\\Seen')) continue; // already processed
+
+        processed++;
+
+        // Extract bounced email from raw source (DSN format RFC 3464)
+        const raw = msg.source?.toString('utf-8') ?? '';
+        const bouncedEmail = this.extractBouncedEmail(raw);
+        if (!bouncedEmail) {
+          bouncedUids.push(msg.uid); // mark as read so we don't reprocess
+          continue;
+        }
+
+        // Mark contact as BOUNCED
+        const updated = await this.prisma.contact.updateMany({
+          where: { email: bouncedEmail, status: { notIn: ['BOUNCED', 'UNSUBSCRIBED', 'SUPPRESSED'] } },
+          data: { status: 'BOUNCED', bouncedAt: new Date() },
+        });
+
+        if (updated.count > 0) {
+          marked++;
+          // Add to global suppression list
+          await this.prisma.suppression.upsert({
+            where: { email: bouncedEmail },
+            create: { email: bouncedEmail, reason: 'BOUNCE_HARD' },
+            update: { reason: 'BOUNCE_HARD' },
+          }).catch(() => null);
+
+          this.logger.debug(`Marked ${bouncedEmail} as BOUNCED`);
+        }
+
+        bouncedUids.push(msg.uid);
+      }
+
+      // Mark all processed bounces as read so they don't reappear
+      if (bouncedUids.length > 0) {
+        await client.messageFlagsAdd(bouncedUids, ['\\Seen'], { uid: true });
+      }
+    } finally {
+      await client.logout().catch(() => null);
+    }
+
+    return { processed, marked };
+  }
+
+  private isBounceAddress(address: string): boolean {
+    return (
+      address.startsWith('mailer-daemon@') ||
+      address.startsWith('postmaster@') ||
+      address.includes('mailer-daemon') ||
+      address === 'maildeliverysystem@' ||
+      address.startsWith('mail-noreply@')
+    );
+  }
+
+  private extractBouncedEmail(raw: string): string | null {
+    // RFC 3464 DSN: Final-Recipient header
+    const finalRecipient = raw.match(/Final-Recipient:\s*rfc822;\s*([^\s\r\n]+)/i)?.[1];
+    if (finalRecipient && finalRecipient.includes('@')) return finalRecipient.toLowerCase();
+
+    // X-Failed-Recipients header
+    const xFailed = raw.match(/X-Failed-Recipients:\s*([^\r\n]+)/i)?.[1];
+    if (xFailed) {
+      const email = xFailed.trim().split(/[,\s]/)[0];
+      if (email.includes('@')) return email.toLowerCase();
+    }
+
+    // Original-Recipient header
+    const original = raw.match(/Original-Recipient:\s*rfc822;\s*([^\s\r\n]+)/i)?.[1];
+    if (original && original.includes('@')) return original.toLowerCase();
+
+    return null;
   }
 
   // ── private helpers ─────────────────────────────────────────────────

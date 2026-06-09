@@ -70,4 +70,9 @@ export class InboxController {
   getStats() {
     return this.inboxService.getStats();
   }
+
+  @Post('process-bounces')
+  processBounces() {
+    return this.inboxService.processBounces();
+  }
 }

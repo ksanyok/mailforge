@@ -52,4 +52,14 @@ export class ContactsController {
   addNote(@Param('id') id: string, @Body('content') content: string) {
     return this.contactsService.addNote(id, content);
   }
+
+  @Post('verify-email')
+  verifyEmail(@Body('email') email: string) {
+    return this.contactsService.verifyEmailMx(email);
+  }
+
+  @Post('verify-list/:listId')
+  verifyList(@Param('listId') listId: string) {
+    return this.contactsService.verifyContactsList(listId);
+  }
 }

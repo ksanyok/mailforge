@@ -1,13 +1,14 @@
 import { useParams, useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
-import { ArrowLeft } from 'lucide-react';
+import { useQuery, useMutation } from '@tanstack/react-query';
+import { ArrowLeft, ShieldCheck } from 'lucide-react';
 import type { ColumnDef } from '@tanstack/react-table';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { DataTable } from '@/components/data-table/DataTable';
-import { listsApi } from '@/api/index';
+import { listsApi, contactsApi } from '@/api/index';
 import { formatDate, STATUS_COLORS } from '@/utils/format';
 import { cn } from '@/utils/cn';
+import { toast } from '@/hooks/use-toast';
 import { useState } from 'react';
 
 interface Member { contactId: string; contact: { email: string; status: string; firstName?: string; lastName?: string }; addedAt: string; }
@@ -16,6 +17,18 @@ export function ListDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [page, setPage] = useState(1);
+
+  const verifyList = useMutation({
+    mutationFn: () => contactsApi.verifyList(id!),
+    onSuccess: (res: any) => {
+      const r = res as { total: number; noMx: number; marked: number };
+      toast({
+        title: `Verification complete`,
+        description: `Checked ${r.total} contacts. Found ${r.noMx} invalid domains, marked ${r.marked} as BOUNCED.`,
+      });
+    },
+    onError: () => toast({ title: 'Verification failed', variant: 'destructive' }),
+  });
 
   const { data: list } = useQuery({ queryKey: ['list', id], queryFn: () => listsApi.findOne(id!), enabled: !!id });
   const { data: members } = useQuery({ queryKey: ['list-members', id, page], queryFn: () => listsApi.members(id!, { page, limit: 20 }), enabled: !!id });
@@ -35,7 +48,20 @@ export function ListDetailPage() {
 
   return (
     <div className="space-y-4">
-      <Button variant="ghost" size="sm" onClick={() => navigate(-1)}><ArrowLeft className="h-4 w-4 mr-2" />Back</Button>
+      <div className="flex items-center justify-between">
+        <Button variant="ghost" size="sm" onClick={() => navigate(-1)}><ArrowLeft className="h-4 w-4 mr-2" />Back</Button>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => verifyList.mutate()}
+          disabled={verifyList.isPending || !id}
+          className="text-indigo-700 border-indigo-300 hover:bg-indigo-50"
+          title="Check MX records for all contacts in this list and mark invalid domains as BOUNCED"
+        >
+          <ShieldCheck className="h-4 w-4 mr-2" />
+          {verifyList.isPending ? 'Verifying...' : 'Verify MX Records'}
+        </Button>
+      </div>
       {l && (
         <Card>
           <CardHeader>

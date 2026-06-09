@@ -162,4 +162,5 @@ export const inboxApi = {
     api.delete('/inbox/conversation', { params: { senderId, contactEmail } }).then(extractData),
   markAllRead: () => api.post('/inbox/mark-all-read').then(extractData),
   stats: () => api.get('/inbox/stats').then(extractData),
+  processBounces: () => api.post('/inbox/process-bounces').then(extractData),
 };

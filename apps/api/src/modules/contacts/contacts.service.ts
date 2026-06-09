@@ -3,6 +3,7 @@ import {
   NotFoundException,
   ConflictException,
 } from '@nestjs/common';
+import { promises as dns } from 'dns';
 import { PrismaService } from '../../core/database/prisma.service';
 import { getPaginationParams, buildPaginatedResponse } from '../../shared/utils/pagination.util';
 import { generateUnsubscribeToken } from '../../shared/utils/tokens.util';
@@ -257,6 +258,73 @@ export class ContactsService {
     }
 
     return ValidationStatus.VALID;
+  }
+
+  private async checkMxRecord(domain: string): Promise<boolean> {
+    try {
+      const records = await dns.resolveMx(domain);
+      return records.length > 0;
+    } catch {
+      return false;
+    }
+  }
+
+  async verifyEmailMx(email: string): Promise<{ valid: boolean; hasMx: boolean; reason: string }> {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return { valid: false, hasMx: false, reason: 'Invalid email format' };
+    }
+    const [, domain] = email.toLowerCase().split('@');
+    if (DISPOSABLE_DOMAINS.includes(domain)) {
+      return { valid: false, hasMx: false, reason: 'Disposable email domain' };
+    }
+    const hasMx = await this.checkMxRecord(domain);
+    return {
+      valid: hasMx,
+      hasMx,
+      reason: hasMx ? 'OK' : 'Domain has no MX record — email cannot be delivered',
+    };
+  }
+
+  async verifyContactsList(listId: string): Promise<{ total: number; noMx: number; marked: number }> {
+    const members = await this.prisma.contactListMember.findMany({
+      where: { listId },
+      include: { contact: { select: { id: true, email: true, status: true } } },
+    });
+
+    let noMx = 0;
+    let marked = 0;
+    const domainCache = new Map<string, boolean>();
+
+    for (const m of members) {
+      const contact = m.contact;
+      if (['BOUNCED', 'UNSUBSCRIBED', 'SUPPRESSED'].includes(contact.status)) continue;
+
+      const [, domain] = contact.email.toLowerCase().split('@');
+      let hasMx: boolean;
+      if (domainCache.has(domain)) {
+        hasMx = domainCache.get(domain)!;
+      } else {
+        hasMx = await this.checkMxRecord(domain);
+        domainCache.set(domain, hasMx);
+      }
+
+      if (!hasMx) {
+        noMx++;
+        await this.prisma.contact.update({
+          where: { id: contact.id },
+          data: { status: 'BOUNCED', validationStatus: 'INVALID' },
+        });
+        await this.prisma.suppression.upsert({
+          where: { email: contact.email },
+          create: { email: contact.email, reason: 'BOUNCE_HARD' },
+          update: { reason: 'BOUNCE_HARD' },
+        }).catch(() => null);
+        marked++;
+      }
+    }
+
+    return { total: members.length, noMx, marked };
   }
 
   private calculateRiskScore(validationStatus: ValidationStatus): number {

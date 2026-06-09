@@ -12,4 +12,8 @@ export const contactsApi = {
   notes: (id: string) => api.get(`/contacts/${id}/notes`).then(extractData),
   addNote: (id: string, content: string) =>
     api.post(`/contacts/${id}/notes`, { content }).then(extractData),
+  verifyEmail: (email: string) =>
+    api.post('/contacts/verify-email', { email }).then(extractData),
+  verifyList: (listId: string) =>
+    api.post(`/contacts/verify-list/${listId}`).then(extractData),
 };

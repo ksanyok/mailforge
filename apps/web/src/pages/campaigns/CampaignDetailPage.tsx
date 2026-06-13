@@ -205,14 +205,14 @@ export function CampaignDetailPage() {
                   <CheckCircle2 className="h-5 w-5 text-green-600" />
                   <div>
                     <p className="text-xl font-bold text-green-700">{nr.responded}</p>
-                    <p className="text-xs text-muted-foreground">Responded</p>
+                    <p className="text-xs text-muted-foreground">Opened / Clicked</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
                   <UserX className="h-5 w-5 text-gray-400" />
                   <div>
                     <p className="text-xl font-bold text-gray-700">{nr.notResponded}</p>
-                    <p className="text-xs text-muted-foreground">No response</p>
+                    <p className="text-xs text-muted-foreground">Did not open</p>
                   </div>
                 </div>
                 <div className="text-xs text-muted-foreground">
@@ -237,7 +237,7 @@ export function CampaignDetailPage() {
                         disabled={createFollowUp.isPending}
                       >
                         <SendHorizonal className="h-3.5 w-3.5" />
-                        {createFollowUp.isPending ? 'Creating…' : `Send to ${nr.notResponded} people`}
+                        {createFollowUp.isPending ? 'Creating…' : `Send follow-up to ${nr.notResponded} who didn't open`}
                       </Button>
                       <Button size="sm" variant="ghost" onClick={() => setShowFollowUp(false)}>
                         <X className="h-3.5 w-3.5" />
@@ -251,7 +251,7 @@ export function CampaignDetailPage() {
                       onClick={() => setShowFollowUp(true)}
                     >
                       <SendHorizonal className="h-3.5 w-3.5" />
-                      Follow-up {nr.notResponded} non-responders
+                      Follow-up {nr.notResponded} who didn't open
                     </Button>
                   )}
                 </div>

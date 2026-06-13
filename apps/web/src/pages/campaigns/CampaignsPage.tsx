@@ -78,13 +78,13 @@ export function CampaignsPage() {
             {c.sentCount > 0 && (
               <>
                 <p className="text-green-700 font-medium">
-                  ✓ {c.uniqueOpenCount ?? 0} responded
+                  ✓ {c.uniqueOpenCount ?? 0} opened
                   <span className="text-muted-foreground font-normal ml-1">
                     ({formatPercent(c.uniqueOpenCount ?? 0, c.sentCount)})
                   </span>
                 </p>
                 {notResponded > 0 && (
-                  <p className="text-gray-500">{notResponded} no response</p>
+                  <p className="text-gray-500">{notResponded} not opened</p>
                 )}
               </>
             )}

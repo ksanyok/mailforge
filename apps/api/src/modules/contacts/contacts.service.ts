@@ -2,8 +2,10 @@ import {
   Injectable,
   NotFoundException,
   ConflictException,
+  Logger,
 } from '@nestjs/common';
 import { promises as dns } from 'dns';
+import * as net from 'net';
 import { PrismaService } from '../../core/database/prisma.service';
 import { getPaginationParams, buildPaginatedResponse } from '../../shared/utils/pagination.util';
 import { generateUnsubscribeToken } from '../../shared/utils/tokens.util';
@@ -25,8 +27,19 @@ const DISPOSABLE_DOMAINS = [
   'dispostable.com', 'mailnesia.com', 'mailnull.com', 'spamgourmet.com',
 ];
 
+// Domains that always accept any address (catch-all) — skip SMTP check
+const CATCH_ALL_DOMAINS = [
+  'gmail.com', 'googlemail.com', 'yahoo.com', 'yahoo.co.uk', 'yahoo.fr',
+  'outlook.com', 'hotmail.com', 'live.com', 'msn.com',
+  'icloud.com', 'me.com', 'mac.com',
+  'protonmail.com', 'proton.me',
+  'aol.com', 'zoho.com',
+];
+
 @Injectable()
 export class ContactsService {
+  private readonly logger = new Logger(ContactsService.name);
+
   constructor(private readonly prisma: PrismaService) {}
 
   async findAll(query: {
@@ -269,62 +282,167 @@ export class ContactsService {
     }
   }
 
-  async verifyEmailMx(email: string): Promise<{ valid: boolean; hasMx: boolean; reason: string }> {
+  // SMTP handshake verification: connect to MX, do RCPT TO, disconnect
+  // Returns 'valid' | 'invalid' | 'catch_all' | 'unknown'
+  private async smtpVerify(email: string, domain: string): Promise<'valid' | 'invalid' | 'catch_all' | 'unknown'> {
+    if (CATCH_ALL_DOMAINS.includes(domain)) return 'catch_all';
+
+    let mxHost: string;
+    try {
+      const records = await dns.resolveMx(domain);
+      if (!records.length) return 'invalid';
+      records.sort((a, b) => a.priority - b.priority);
+      mxHost = records[0].exchange;
+    } catch {
+      return 'invalid';
+    }
+
+    return new Promise((resolve) => {
+      const socket = net.createConnection({ host: mxHost, port: 25 });
+      let buf = '';
+      let stage = 0;
+      const done = (result: 'valid' | 'invalid' | 'catch_all' | 'unknown') => {
+        socket.destroy();
+        resolve(result);
+      };
+      const timer = setTimeout(() => done('unknown'), 8000);
+
+      socket.on('data', (chunk) => {
+        buf += chunk.toString();
+        if (!buf.endsWith('\n')) return;
+
+        const line = buf.trim();
+        buf = '';
+
+        if (stage === 0 && line.startsWith('220')) {
+          socket.write(`EHLO mail.senior-dev.cloud\r\n`);
+          stage = 1;
+        } else if (stage === 1 && (line.startsWith('250') || line.startsWith('220'))) {
+          socket.write(`MAIL FROM:<verify@senior-dev.cloud>\r\n`);
+          stage = 2;
+        } else if (stage === 2 && line.startsWith('250')) {
+          socket.write(`RCPT TO:<${email}>\r\n`);
+          stage = 3;
+        } else if (stage === 3) {
+          clearTimeout(timer);
+          socket.write('QUIT\r\n');
+          if (line.startsWith('250') || line.startsWith('251')) {
+            done('valid');
+          } else if (line.startsWith('550') || line.startsWith('551') || line.startsWith('553') || line.startsWith('554')) {
+            done('invalid');
+          } else if (line.startsWith('450') || line.startsWith('451') || line.startsWith('452')) {
+            // Temporary failure — treat as unknown
+            done('unknown');
+          } else {
+            done('unknown');
+          }
+        } else if (line.startsWith('4') || line.startsWith('5')) {
+          clearTimeout(timer);
+          done('unknown');
+        }
+      });
+
+      socket.on('error', () => { clearTimeout(timer); resolve('unknown'); });
+      socket.on('timeout', () => { clearTimeout(timer); resolve('unknown'); });
+      socket.setTimeout(8000);
+    });
+  }
+
+  async verifyEmailMx(email: string): Promise<{ valid: boolean; hasMx: boolean; smtpResult: string; reason: string }> {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-      return { valid: false, hasMx: false, reason: 'Invalid email format' };
+      return { valid: false, hasMx: false, smtpResult: 'skipped', reason: 'Invalid email format' };
     }
     const [, domain] = email.toLowerCase().split('@');
     if (DISPOSABLE_DOMAINS.includes(domain)) {
-      return { valid: false, hasMx: false, reason: 'Disposable email domain' };
+      return { valid: false, hasMx: false, smtpResult: 'skipped', reason: 'Disposable email domain' };
     }
     const hasMx = await this.checkMxRecord(domain);
+    if (!hasMx) {
+      return { valid: false, hasMx: false, smtpResult: 'skipped', reason: 'Domain has no MX record' };
+    }
+    const smtpResult = await this.smtpVerify(email, domain);
     return {
-      valid: hasMx,
-      hasMx,
-      reason: hasMx ? 'OK' : 'Domain has no MX record — email cannot be delivered',
+      valid: smtpResult !== 'invalid',
+      hasMx: true,
+      smtpResult,
+      reason: smtpResult === 'valid' ? 'OK — address exists'
+        : smtpResult === 'invalid' ? 'Address rejected by mail server'
+        : smtpResult === 'catch_all' ? 'OK — domain accepts all addresses (cannot verify individual mailbox)'
+        : 'OK — domain has MX (server did not confirm individual address)',
     };
   }
 
-  async verifyContactsList(listId: string): Promise<{ total: number; noMx: number; marked: number }> {
+  async verifyContactsList(listId: string): Promise<{ total: number; invalid: number; marked: number; skipped: number }> {
     const members = await this.prisma.contactListMember.findMany({
       where: { listId },
       include: { contact: { select: { id: true, email: true, status: true } } },
     });
 
-    let noMx = 0;
+    let invalid = 0;
     let marked = 0;
-    const domainCache = new Map<string, boolean>();
+    let skipped = 0;
+    const mxCache = new Map<string, boolean>();
+    const smtpCache = new Map<string, string>();
 
     for (const m of members) {
       const contact = m.contact;
-      if (['BOUNCED', 'UNSUBSCRIBED', 'SUPPRESSED'].includes(contact.status)) continue;
+      if (['BOUNCED', 'UNSUBSCRIBED', 'SUPPRESSED'].includes(contact.status)) {
+        skipped++;
+        continue;
+      }
 
-      const [, domain] = contact.email.toLowerCase().split('@');
+      const email = contact.email.toLowerCase();
+      const [, domain] = email.split('@');
+
+      // Step 1: MX check (cached per domain)
       let hasMx: boolean;
-      if (domainCache.has(domain)) {
-        hasMx = domainCache.get(domain)!;
+      if (mxCache.has(domain)) {
+        hasMx = mxCache.get(domain)!;
       } else {
         hasMx = await this.checkMxRecord(domain);
-        domainCache.set(domain, hasMx);
+        mxCache.set(domain, hasMx);
       }
 
       if (!hasMx) {
-        noMx++;
-        await this.prisma.contact.update({
-          where: { id: contact.id },
-          data: { status: 'BOUNCED', validationStatus: 'INVALID' },
-        });
-        await this.prisma.suppression.upsert({
-          where: { email: contact.email },
-          create: { email: contact.email, reason: 'BOUNCE_HARD' },
-          update: { reason: 'BOUNCE_HARD' },
-        }).catch(() => null);
+        invalid++;
+        await this.markBounced(contact.id, contact.email);
         marked++;
+        continue;
+      }
+
+      // Step 2: SMTP verification (skip catch-all domains to avoid false positives)
+      if (!CATCH_ALL_DOMAINS.includes(domain)) {
+        let smtpResult: string;
+        if (smtpCache.has(email)) {
+          smtpResult = smtpCache.get(email)!;
+        } else {
+          smtpResult = await this.smtpVerify(email, domain);
+          smtpCache.set(email, smtpResult);
+        }
+
+        if (smtpResult === 'invalid') {
+          invalid++;
+          await this.markBounced(contact.id, contact.email);
+          marked++;
+        }
       }
     }
 
-    return { total: members.length, noMx, marked };
+    this.logger.log(`List ${listId} verified: ${members.length} total, ${invalid} invalid, ${marked} marked BOUNCED`);
+    return { total: members.length, invalid, marked, skipped };
+  }
+
+  private async markBounced(contactId: string, email: string): Promise<void> {
+    await this.prisma.contact.update({
+      where: { id: contactId },
+      data: { status: 'BOUNCED', validationStatus: 'INVALID' },
+    });
+    await this.prisma.suppression.upsert({
+      where: { email },
+      create: { email, reason: 'BOUNCE_HARD' },
+      update: { reason: 'BOUNCE_HARD' },
+    }).catch(() => null);
   }
 
   private calculateRiskScore(validationStatus: ValidationStatus): number {

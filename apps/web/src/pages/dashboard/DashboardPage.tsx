@@ -30,22 +30,22 @@ export function DashboardPage() {
   const conversations = Array.isArray(inboxStats) ? (inboxStats as any[]).length : 0;
 
   const kpiCards = [
-    { label: 'Total Contacts', value: s?.contacts?.total ?? 0, icon: Users, color: 'text-blue-600' },
-    { label: 'Subscribed', value: s?.contacts?.subscribed ?? 0, icon: UserCheck, color: 'text-green-600' },
-    { label: 'Opened (30d)', value: (s?.sending as any)?.openedLast30 ?? 0, icon: TrendingUp, color: 'text-emerald-600' },
-    { label: 'Clicked (30d)', value: (s?.sending as any)?.clickedLast30 ?? 0, icon: MousePointerClick, color: 'text-blue-500' },
-    { label: 'Replied / Conversations', value: conversations, icon: MessageSquare, color: 'text-violet-600' },
-    { label: 'Not Interested', value: s?.contacts?.unsubscribed ?? 0, icon: ThumbsDown, color: 'text-gray-600' },
-    { label: 'Total Campaigns', value: s?.campaigns?.total ?? 0, icon: Mail, color: 'text-indigo-600' },
-    { label: 'Sent Today', value: s?.sending?.sentToday ?? 0, icon: Send, color: 'text-cyan-600' },
+    { label: 'Всего контактов', value: s?.contacts?.total ?? 0, icon: Users, color: 'text-blue-600' },
+    { label: 'Подписаны', value: s?.contacts?.subscribed ?? 0, icon: UserCheck, color: 'text-green-600' },
+    { label: 'Открыто (30 дн.)', value: (s?.sending as any)?.openedLast30 ?? 0, icon: TrendingUp, color: 'text-emerald-600' },
+    { label: 'Кликнуто (30 дн.)', value: (s?.sending as any)?.clickedLast30 ?? 0, icon: MousePointerClick, color: 'text-blue-500' },
+    { label: 'Ответы / Диалоги', value: conversations, icon: MessageSquare, color: 'text-violet-600' },
+    { label: 'Не интересно', value: s?.contacts?.unsubscribed ?? 0, icon: ThumbsDown, color: 'text-gray-600' },
+    { label: 'Всего кампаний', value: s?.campaigns?.total ?? 0, icon: Mail, color: 'text-indigo-600' },
+    { label: 'Отправлено сегодня', value: s?.sending?.sentToday ?? 0, icon: Send, color: 'text-cyan-600' },
   ];
 
   const pieData = [
-    { name: 'Subscribed', value: s?.contacts?.subscribed ?? 0 },
-    { name: 'Unsubscribed', value: s?.contacts?.unsubscribed ?? 0 },
-    { name: 'Bounced', value: s?.contacts?.bounced ?? 0 },
-    { name: 'Complained', value: s?.contacts?.complained ?? 0 },
-    { name: 'Suppressed', value: s?.contacts?.suppressed ?? 0 },
+    { name: 'Подписан', value: s?.contacts?.subscribed ?? 0 },
+    { name: 'Отписан', value: s?.contacts?.unsubscribed ?? 0 },
+    { name: 'Отказ', value: s?.contacts?.bounced ?? 0 },
+    { name: 'Жалоба', value: s?.contacts?.complained ?? 0 },
+    { name: 'В стоп-листе', value: s?.contacts?.suppressed ?? 0 },
   ];
 
   return (
@@ -71,7 +71,7 @@ export function DashboardPage() {
           <CardHeader className="pb-2">
             <CardTitle className="text-sm flex items-center gap-2 text-orange-700">
               <AlertTriangle className="h-4 w-4" />
-              Recommendations ({recsData.length})
+              Рекомендации ({recsData.length})
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
@@ -95,7 +95,7 @@ export function DashboardPage() {
         {/* Area chart - 30 day activity */}
         <Card className="lg:col-span-2">
           <CardHeader>
-            <CardTitle className="text-sm">Email Activity (30 Days)</CardTitle>
+            <CardTitle className="text-sm">Активность писем (30 дней)</CardTitle>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={220}>
@@ -105,10 +105,10 @@ export function DashboardPage() {
                 <YAxis tick={{ fontSize: 11 }} />
                 <Tooltip />
                 <Legend />
-                <Area type="monotone" dataKey="sent" stroke="#6366f1" fill="#6366f120" name="Sent" />
-                <Area type="monotone" dataKey="opened" stroke="#22c55e" fill="#22c55e20" name="Opened" />
-                <Area type="monotone" dataKey="clicked" stroke="#3b82f6" fill="#3b82f620" name="Clicked" />
-                <Area type="monotone" dataKey="bounced" stroke="#ef4444" fill="#ef444420" name="Bounced" />
+                <Area type="monotone" dataKey="sent" stroke="#6366f1" fill="#6366f120" name="Отправлено" />
+                <Area type="monotone" dataKey="opened" stroke="#22c55e" fill="#22c55e20" name="Открыто" />
+                <Area type="monotone" dataKey="clicked" stroke="#3b82f6" fill="#3b82f620" name="Кликнуто" />
+                <Area type="monotone" dataKey="bounced" stroke="#ef4444" fill="#ef444420" name="Отказы" />
               </AreaChart>
             </ResponsiveContainer>
           </CardContent>
@@ -117,7 +117,7 @@ export function DashboardPage() {
         {/* Pie chart - contact status */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-sm">Contact Status</CardTitle>
+            <CardTitle className="text-sm">Статусы контактов</CardTitle>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={220}>
@@ -136,11 +136,11 @@ export function DashboardPage() {
       {s?.senders && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-sm">Sender Health</CardTitle>
+            <CardTitle className="text-sm">Состояние отправителей</CardTitle>
           </CardHeader>
           <CardContent className="text-sm">
-            <p className="text-muted-foreground">Active senders: <span className="font-semibold text-foreground">{s.senders.active as number ?? 0}</span> / {s.senders.total as number ?? 0}</p>
-            <p className="text-muted-foreground mt-1">Avg health score: <span className="font-semibold text-foreground">{s.senders.averageHealthScore as number ?? 0}</span></p>
+            <p className="text-muted-foreground">Активные отправители: <span className="font-semibold text-foreground">{s.senders.active as number ?? 0}</span> / {s.senders.total as number ?? 0}</p>
+            <p className="text-muted-foreground mt-1">Средний индекс здоровья: <span className="font-semibold text-foreground">{s.senders.averageHealthScore as number ?? 0}</span></p>
           </CardContent>
         </Card>
       )}

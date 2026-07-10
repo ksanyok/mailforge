@@ -1,15 +1,16 @@
 import { format, formatDistanceToNow } from 'date-fns';
+import { ru } from 'date-fns/locale';
 
-export function formatDate(date: string | Date, fmt = 'MMM d, yyyy') {
-  return format(new Date(date), fmt);
+export function formatDate(date: string | Date, fmt = 'd MMM yyyy') {
+  return format(new Date(date), fmt, { locale: ru });
 }
 
 export function formatDateTime(date: string | Date) {
-  return format(new Date(date), 'MMM d, yyyy HH:mm');
+  return format(new Date(date), 'd MMM yyyy HH:mm', { locale: ru });
 }
 
 export function formatRelative(date: string | Date) {
-  return formatDistanceToNow(new Date(date), { addSuffix: true });
+  return formatDistanceToNow(new Date(date), { addSuffix: true, locale: ru });
 }
 
 export function formatPercent(value: number, total: number): string {
@@ -18,7 +19,7 @@ export function formatPercent(value: number, total: number): string {
 }
 
 export function formatNumber(n: number): string {
-  return new Intl.NumberFormat().format(n);
+  return new Intl.NumberFormat('ru-RU').format(n);
 }
 
 export function healthColor(score: number): string {

@@ -23,11 +23,11 @@ export function ListDetailPage() {
     onSuccess: (res: any) => {
       const r = res as { total: number; noMx: number; marked: number };
       toast({
-        title: `Verification complete`,
-        description: `Checked ${r.total} contacts. Found ${r.noMx} invalid domains, marked ${r.marked} as BOUNCED.`,
+        title: `Проверка завершена`,
+        description: `Проверено контактов: ${r.total}. Найдено невалидных доменов: ${r.noMx}, помечено как «Отказ»: ${r.marked}.`,
       });
     },
-    onError: () => toast({ title: 'Verification failed', variant: 'destructive' }),
+    onError: () => toast({ title: 'Не удалось выполнить проверку', variant: 'destructive' }),
   });
 
   const { data: list } = useQuery({ queryKey: ['list', id], queryFn: () => listsApi.findOne(id!), enabled: !!id });
@@ -38,28 +38,28 @@ export function ListDetailPage() {
 
   const columns: ColumnDef<Member>[] = [
     { accessorKey: 'contact.email', header: 'Email' },
-    { id: 'name', header: 'Name', cell: ({ row }) => [row.original.contact?.firstName, row.original.contact?.lastName].filter(Boolean).join(' ') || '—' },
+    { id: 'name', header: 'Имя', cell: ({ row }) => [row.original.contact?.firstName, row.original.contact?.lastName].filter(Boolean).join(' ') || '—' },
     {
-      accessorKey: 'contact.status', header: 'Status',
+      accessorKey: 'contact.status', header: 'Статус',
       cell: ({ getValue }) => <span className={cn('px-2 py-0.5 rounded-full text-xs font-medium', STATUS_COLORS[getValue() as string] ?? 'bg-gray-100')}>{getValue() as string}</span>,
     },
-    { accessorKey: 'addedAt', header: 'Added', cell: ({ getValue }) => formatDate(getValue() as string) },
+    { accessorKey: 'addedAt', header: 'Добавлен', cell: ({ getValue }) => formatDate(getValue() as string) },
   ];
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <Button variant="ghost" size="sm" onClick={() => navigate(-1)}><ArrowLeft className="h-4 w-4 mr-2" />Back</Button>
+        <Button variant="ghost" size="sm" onClick={() => navigate(-1)}><ArrowLeft className="h-4 w-4 mr-2" />Назад</Button>
         <Button
           variant="outline"
           size="sm"
           onClick={() => verifyList.mutate()}
           disabled={verifyList.isPending || !id}
           className="text-indigo-700 border-indigo-300 hover:bg-indigo-50"
-          title="Check MX records for all contacts in this list and mark invalid domains as BOUNCED"
+          title="Проверить MX-записи всех контактов в списке и пометить невалидные домены как «Отказ»"
         >
           <ShieldCheck className="h-4 w-4 mr-2" />
-          {verifyList.isPending ? 'Verifying...' : 'Verify MX Records'}
+          {verifyList.isPending ? 'Проверка...' : 'Проверить MX-записи'}
         </Button>
       </div>
       {l && (
@@ -69,7 +69,7 @@ export function ListDetailPage() {
             {l.description && <p className="text-sm text-muted-foreground">{l.description as string}</p>}
           </CardHeader>
           <CardContent>
-            <p className="text-sm"><span className="font-medium">{l.contactCount as number}</span> contacts</p>
+            <p className="text-sm"><span className="font-medium">{l.contactCount as number}</span> контактов</p>
           </CardContent>
         </Card>
       )}

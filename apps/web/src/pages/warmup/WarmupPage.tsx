@@ -34,7 +34,7 @@ export function WarmupPage() {
 
   const saveRule = useMutation({
     mutationFn: ({ senderId, data }: { senderId: string; data: unknown }) => warmupApi.upsertRule(senderId, data),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['warmup'] }); toast({ title: 'Warmup rule saved' }); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['warmup'] }); toast({ title: 'Правило прогрева сохранено' }); },
   });
 
   return (
@@ -47,19 +47,19 @@ export function WarmupPage() {
               <p className="text-xs text-muted-foreground">{e.sender.fromEmail}</p>
             </CardHeader>
             <CardContent className="text-sm space-y-1">
-              <div className="flex justify-between"><span className="text-muted-foreground">Stage</span><span className="font-medium">{e.warmupStage}</span></div>
-              <div className="flex justify-between"><span className="text-muted-foreground">Current Limit</span><span className="font-medium">{e.warmupCurrentDailyLimit}/day</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Этап</span><span className="font-medium">{e.warmupStage}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Текущий лимит</span><span className="font-medium">{e.warmupCurrentDailyLimit}/день</span></div>
             </CardContent>
           </Card>
         ))}
-        {entries.length === 0 && <div className="col-span-3 text-center py-12 text-muted-foreground">No warmup-enabled senders.</div>}
+        {entries.length === 0 && <div className="col-span-3 text-center py-12 text-muted-foreground">Нет отправителей с включённым прогревом.</div>}
       </div>
 
       {selectedSender && (
         <>
           {logsData.length > 0 && (
             <Card>
-              <CardHeader><CardTitle className="text-sm">Warmup Progress (30 days)</CardTitle></CardHeader>
+              <CardHeader><CardTitle className="text-sm">Прогресс прогрева (30 дней)</CardTitle></CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={200}>
                   <AreaChart data={logsData}>
@@ -67,8 +67,8 @@ export function WarmupPage() {
                     <XAxis dataKey="date" tick={{ fontSize: 11 }} tickFormatter={(v) => v.slice(5)} />
                     <YAxis tick={{ fontSize: 11 }} />
                     <Tooltip />
-                    <Area type="monotone" dataKey="targetVolume" stroke="#94a3b8" fill="#94a3b820" name="Target" />
-                    <Area type="monotone" dataKey="actualVolume" stroke="#6366f1" fill="#6366f120" name="Actual" />
+                    <Area type="monotone" dataKey="targetVolume" stroke="#94a3b8" fill="#94a3b820" name="Целевой" />
+                    <Area type="monotone" dataKey="actualVolume" stroke="#6366f1" fill="#6366f120" name="Фактический" />
                   </AreaChart>
                 </ResponsiveContainer>
               </CardContent>
@@ -76,16 +76,16 @@ export function WarmupPage() {
           )}
 
           <Card>
-            <CardHeader><CardTitle className="text-sm">Warmup Rule Configuration</CardTitle></CardHeader>
+            <CardHeader><CardTitle className="text-sm">Настройка правила прогрева</CardTitle></CardHeader>
             <CardContent>
               <form onSubmit={handleSubmit((d) => saveRule.mutate({ senderId: selectedSender, data: d }))} className="grid grid-cols-2 gap-4">
-                <div className="space-y-1"><Label>Initial Daily Volume</Label><Input type="number" {...register('initialDailyVolume', { valueAsNumber: true })} /></div>
-                <div className="space-y-1"><Label>Daily Increase %</Label><Input type="number" {...register('dailyIncreasePercent', { valueAsNumber: true })} /></div>
-                <div className="space-y-1"><Label>Max Daily Limit</Label><Input type="number" {...register('maxDailyLimit', { valueAsNumber: true })} /></div>
-                <div className="space-y-1"><Label>Min Open Rate (0-1)</Label><Input type="number" step="0.01" {...register('minOpenRate', { valueAsNumber: true })} /></div>
-                <div className="space-y-1"><Label>Max Bounce Rate (0-1)</Label><Input type="number" step="0.001" {...register('maxBounceRate', { valueAsNumber: true })} /></div>
+                <div className="space-y-1"><Label>Начальный дневной объём</Label><Input type="number" {...register('initialDailyVolume', { valueAsNumber: true })} /></div>
+                <div className="space-y-1"><Label>Дневной прирост, %</Label><Input type="number" {...register('dailyIncreasePercent', { valueAsNumber: true })} /></div>
+                <div className="space-y-1"><Label>Максимальный дневной лимит</Label><Input type="number" {...register('maxDailyLimit', { valueAsNumber: true })} /></div>
+                <div className="space-y-1"><Label>Мин. процент открытий (0–1)</Label><Input type="number" step="0.01" {...register('minOpenRate', { valueAsNumber: true })} /></div>
+                <div className="space-y-1"><Label>Макс. процент отказов (0–1)</Label><Input type="number" step="0.001" {...register('maxBounceRate', { valueAsNumber: true })} /></div>
                 <div className="col-span-2">
-                  <Button type="submit" disabled={saveRule.isPending}>Save Rule</Button>
+                  <Button type="submit" disabled={saveRule.isPending}>Сохранить правило</Button>
                 </div>
               </form>
             </CardContent>

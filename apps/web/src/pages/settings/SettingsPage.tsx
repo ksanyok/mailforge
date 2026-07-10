@@ -12,39 +12,39 @@ import { toast } from '@/hooks/use-toast';
 interface Setting { key: string; value: string; description?: string; }
 
 const LABEL_MAP: Record<string, { label: string; description: string; placeholder?: string; type?: string }> = {
-  'app.name':                   { label: 'Application Name',            description: 'Display name shown in the interface',                  placeholder: 'MailForge' },
-  'app.url':                    { label: 'Application URL',             description: 'Public URL of this application',                      placeholder: 'https://your-domain.com' },
-  'app.supportEmail':           { label: 'Support Email',               description: 'Email address for user support requests',             placeholder: 'support@your-domain.com' },
-  'sending.defaultFromName':    { label: 'Default Sender Name',         description: 'Default "From" name when no sender is specified',     placeholder: 'My Company' },
-  'sending.defaultFromEmail':   { label: 'Default From Email',          description: 'Default "From" email address for outgoing mail',      placeholder: 'noreply@your-domain.com' },
-  'sending.maxDailyGlobal':     { label: 'Global Daily Send Limit',     description: 'Maximum total emails per day across all senders',     placeholder: '10000', type: 'number' },
-  'warmup.defaultInitialVolume':{ label: 'Initial Warmup Volume',       description: 'Emails per day to start with during IP warmup',       placeholder: '20',    type: 'number' },
-  'warmup.defaultDailyIncrease':{ label: 'Daily Warmup Increase (%)',   description: 'Percentage increase in daily volume during warmup',   placeholder: '20',    type: 'number' },
-  'notifications.forwardEmail': { label: 'Forward Notifications To',    description: 'System alerts will be emailed here (leave blank to disable)', placeholder: 'you@example.com' },
+  'app.name':                   { label: 'Название приложения',         description: 'Отображаемое название в интерфейсе',                  placeholder: 'MailForge' },
+  'app.url':                    { label: 'URL приложения',              description: 'Публичный URL этого приложения',                     placeholder: 'https://your-domain.com' },
+  'app.supportEmail':           { label: 'Email поддержки',             description: 'Email-адрес для обращений в поддержку',               placeholder: 'support@your-domain.com' },
+  'sending.defaultFromName':    { label: 'Имя отправителя по умолчанию', description: 'Имя в поле «От», если отправитель не указан',        placeholder: 'My Company' },
+  'sending.defaultFromEmail':   { label: 'Email отправителя по умолчанию', description: 'Email в поле «От» для исходящих писем',            placeholder: 'noreply@your-domain.com' },
+  'sending.maxDailyGlobal':     { label: 'Глобальный дневной лимит отправки', description: 'Максимум писем в день по всем отправителям',     placeholder: '10000', type: 'number' },
+  'warmup.defaultInitialVolume':{ label: 'Начальный объём прогрева',     description: 'Писем в день на старте прогрева IP',                  placeholder: '20',    type: 'number' },
+  'warmup.defaultDailyIncrease':{ label: 'Ежедневный прирост прогрева (%)', description: 'Процент прироста дневного объёма во время прогрева', placeholder: '20',    type: 'number' },
+  'notifications.forwardEmail': { label: 'Пересылать уведомления на',   description: 'Системные оповещения будут отправляться на этот адрес (оставьте пустым, чтобы отключить)', placeholder: 'you@example.com' },
 };
 
 const SETTING_GROUPS = [
   {
-    title: 'General',
-    description: 'Basic application configuration',
+    title: 'Общие',
+    description: 'Базовая конфигурация приложения',
     icon: Globe,
     keys: ['app.name', 'app.url', 'app.supportEmail'],
   },
   {
-    title: 'Email Sending',
-    description: 'Default values and limits for outgoing emails',
+    title: 'Отправка писем',
+    description: 'Значения по умолчанию и лимиты для исходящих писем',
     icon: Mail,
     keys: ['sending.defaultFromName', 'sending.defaultFromEmail', 'sending.maxDailyGlobal'],
   },
   {
-    title: 'IP Warmup',
-    description: 'Controls how new sending IPs are gradually ramped up',
+    title: 'Прогрев IP',
+    description: 'Управляет постепенным наращиванием объёмов для новых отправляющих IP',
     icon: Zap,
     keys: ['warmup.defaultInitialVolume', 'warmup.defaultDailyIncrease'],
   },
   {
-    title: 'Notifications',
-    description: 'Receive system alerts outside the interface',
+    title: 'Уведомления',
+    description: 'Получайте системные оповещения вне интерфейса',
     icon: Bell,
     keys: ['notifications.forwardEmail'],
   },
@@ -69,8 +69,8 @@ export function SettingsPage() {
       const payload = Object.entries(d).map(([k, v]) => ({ key: k.replace(/_/g, '.'), value: v }));
       return settingsApi.bulkUpdate(payload);
     },
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['settings'] }); toast({ title: 'Settings saved successfully' }); },
-    onError: () => toast({ title: 'Failed to save settings', variant: 'destructive' }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['settings'] }); toast({ title: 'Настройки успешно сохранены' }); },
+    onError: () => toast({ title: 'Не удалось сохранить настройки', variant: 'destructive' }),
   });
 
   const knownKeys = SETTING_GROUPS.flatMap((g) => g.keys);
@@ -79,8 +79,8 @@ export function SettingsPage() {
   return (
     <div className="max-w-2xl space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Settings</h1>
-        <p className="text-sm text-muted-foreground mt-1">Configure your MailForge instance</p>
+        <h1 className="text-2xl font-bold">Настройки</h1>
+        <p className="text-sm text-muted-foreground mt-1">Настройте свой экземпляр MailForge</p>
       </div>
 
       <form onSubmit={handleSubmit((d) => save.mutate(d))} className="space-y-4">
@@ -119,7 +119,7 @@ export function SettingsPage() {
             <CardHeader className="pb-3">
               <CardTitle className="text-base flex items-center gap-2">
                 <Shield className="h-4 w-4 text-primary" />
-                Other Settings
+                Прочие настройки
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -140,7 +140,7 @@ export function SettingsPage() {
         <div className="flex justify-end">
           <Button type="submit" disabled={save.isPending} className="gap-2">
             <Save className="h-4 w-4" />
-            {save.isPending ? 'Saving…' : 'Save Settings'}
+            {save.isPending ? 'Сохранение…' : 'Сохранить настройки'}
           </Button>
         </div>
       </form>

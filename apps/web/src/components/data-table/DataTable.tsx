@@ -46,9 +46,9 @@ export function DataTable<T>({
           </thead>
           <tbody>
             {isLoading ? (
-              <tr><td colSpan={columns.length} className="text-center py-8 text-muted-foreground">Loading...</td></tr>
+              <tr><td colSpan={columns.length} className="text-center py-8 text-muted-foreground">Загрузка…</td></tr>
             ) : table.getRowModel().rows.length === 0 ? (
-              <tr><td colSpan={columns.length} className="text-center py-8 text-muted-foreground">No results</td></tr>
+              <tr><td colSpan={columns.length} className="text-center py-8 text-muted-foreground">Нет данных</td></tr>
             ) : (
               table.getRowModel().rows.map((row) => (
                 <tr key={row.id} className={cn('border-b hover:bg-muted/30 transition-colors')}>
@@ -65,7 +65,7 @@ export function DataTable<T>({
       </div>
       {total > pageSize && (
         <div className="flex items-center justify-between text-sm text-muted-foreground">
-          <span>Showing {Math.min((page - 1) * pageSize + 1, total)}–{Math.min(page * pageSize, total)} of {total}</span>
+          <span>Показаны {Math.min((page - 1) * pageSize + 1, total)}–{Math.min(page * pageSize, total)} из {total}</span>
           <div className="flex gap-1">
             <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => onPageChange?.(page - 1)} disabled={page <= 1}>
               <ChevronLeft className="h-4 w-4" />

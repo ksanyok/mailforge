@@ -23,11 +23,11 @@ interface Contact {
 const STATUSES = ['SUBSCRIBED', 'UNSUBSCRIBED', 'BOUNCED', 'COMPLAINED', 'SUPPRESSED'];
 
 const STATUS_LABELS: Record<string, string> = {
-  SUBSCRIBED: 'Subscribed',
-  UNSUBSCRIBED: 'Unsubscribed (Not Interested)',
-  BOUNCED: 'Bounced',
-  COMPLAINED: 'Complained',
-  SUPPRESSED: 'Suppressed',
+  SUBSCRIBED: 'Подписан',
+  UNSUBSCRIBED: 'Отписан (не интересно)',
+  BOUNCED: 'Отказ',
+  COMPLAINED: 'Жалоба',
+  SUPPRESSED: 'В стоп-листе',
 };
 
 export function ContactsPage() {
@@ -55,22 +55,22 @@ export function ContactsPage() {
       qc.invalidateQueries({ queryKey: ['contacts'] });
       setAddOpen(false);
       reset();
-      toast({ title: 'Contact added' });
+      toast({ title: 'Контакт добавлен' });
     },
-    onError: (err: any) => toast({ title: err?.response?.data?.message ?? 'Failed to add contact', variant: 'destructive' }),
+    onError: (err: any) => toast({ title: err?.response?.data?.message ?? 'Не удалось добавить контакт', variant: 'destructive' }),
   });
 
   const remove = useMutation({
     mutationFn: (id: string) => contactsApi.remove(id),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['contacts'] }); toast({ title: 'Contact deleted' }); },
-    onError: () => toast({ title: 'Failed to delete contact', variant: 'destructive' }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['contacts'] }); toast({ title: 'Контакт удалён' }); },
+    onError: () => toast({ title: 'Не удалось удалить контакт', variant: 'destructive' }),
   });
 
   const changeStatus = useMutation({
     mutationFn: ({ id, status }: { id: string; status: string }) =>
       contactsApi.update(id, { status }),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['contacts'] }); toast({ title: 'Status updated' }); },
-    onError: () => toast({ title: 'Failed to update status', variant: 'destructive' }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['contacts'] }); toast({ title: 'Статус обновлён' }); },
+    onError: () => toast({ title: 'Не удалось обновить статус', variant: 'destructive' }),
   });
 
   const columns: ColumnDef<Contact>[] = [
@@ -85,12 +85,12 @@ export function ContactsPage() {
     },
     {
       id: 'name',
-      header: 'Name',
+      header: 'Имя',
       cell: ({ row }) => [row.original.firstName, row.original.lastName].filter(Boolean).join(' ') || '—',
     },
     {
       accessorKey: 'status',
-      header: 'Status',
+      header: 'Статус',
       cell: ({ row }) => (
         <Select
           value={row.original.status}
@@ -115,7 +115,7 @@ export function ContactsPage() {
     },
     {
       accessorKey: 'engagementScore',
-      header: 'Engagement',
+      header: 'Вовлечённость',
       cell: ({ getValue }) => {
         const v = getValue() as number;
         return <span className={cn('font-medium', v >= 70 ? 'text-green-600' : v >= 40 ? 'text-yellow-600' : 'text-red-600')}>{v}</span>;
@@ -123,7 +123,7 @@ export function ContactsPage() {
     },
     {
       accessorKey: 'createdAt',
-      header: 'Created',
+      header: 'Создан',
       cell: ({ getValue }) => formatDate(getValue() as string),
     },
     {
@@ -134,7 +134,7 @@ export function ContactsPage() {
           size="sm" variant="ghost"
           className="text-destructive hover:bg-destructive/10 h-7 w-7 p-0"
           onClick={() => {
-            if (confirm(`Delete ${row.original.email}?`)) remove.mutate(row.original.id);
+            if (confirm(`Удалить ${row.original.email}?`)) remove.mutate(row.original.id);
           }}
         >
           <Trash2 className="h-3.5 w-3.5" />
@@ -150,7 +150,7 @@ export function ContactsPage() {
           <div className="relative w-64 shrink-0">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Search contacts..."
+              placeholder="Поиск контактов..."
               className="pl-9"
               value={search}
               onChange={(e) => { setSearch(e.target.value); setPage(1); }}
@@ -159,10 +159,10 @@ export function ContactsPage() {
           <Select value={statusFilter || '__all__'} onValueChange={(v) => { setStatusFilter(v === '__all__' ? '' : v); setPage(1); }}>
             <SelectTrigger className="w-52 shrink-0">
               <Filter className="h-3.5 w-3.5 mr-2 text-muted-foreground" />
-              <SelectValue placeholder="All statuses" />
+              <SelectValue placeholder="Все статусы" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="__all__">All statuses</SelectItem>
+              <SelectItem value="__all__">Все статусы</SelectItem>
               {STATUSES.map(s => (
                 <SelectItem key={s} value={s}>
                   <span className={cn('px-2 py-0.5 rounded-full text-xs font-medium', STATUS_COLORS[s] ?? 'bg-gray-100')}>
@@ -174,12 +174,12 @@ export function ContactsPage() {
           </Select>
           {(data as any)?.total !== undefined && (
             <span className="text-sm text-muted-foreground whitespace-nowrap">
-              {(data as any).total} contact{(data as any).total !== 1 ? 's' : ''}
+              {(data as any).total} контакт(ов)
             </span>
           )}
         </div>
         <Button onClick={() => setAddOpen(true)}>
-          <Plus className="h-4 w-4 mr-2" />Add Contact
+          <Plus className="h-4 w-4 mr-2" />Добавить контакт
         </Button>
       </div>
 
@@ -195,7 +195,7 @@ export function ContactsPage() {
 
       <Dialog open={addOpen} onOpenChange={setAddOpen}>
         <DialogContent className="max-w-md">
-          <DialogHeader><DialogTitle>Add Contact</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>Добавить контакт</DialogTitle></DialogHeader>
           <form onSubmit={handleSubmit((d) => create.mutate(d))} className="space-y-3">
             <div className="space-y-1.5">
               <Label>Email *</Label>
@@ -203,26 +203,26 @@ export function ContactsPage() {
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label>First Name</Label>
+                <Label>Имя</Label>
                 <Input {...register('firstName')} />
               </div>
               <div className="space-y-1.5">
-                <Label>Last Name</Label>
+                <Label>Фамилия</Label>
                 <Input {...register('lastName')} />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label>Phone</Label>
+                <Label>Телефон</Label>
                 <Input {...register('phone')} />
               </div>
               <div className="space-y-1.5">
-                <Label>Company</Label>
+                <Label>Компания</Label>
                 <Input {...register('company')} />
               </div>
             </div>
             <div className="space-y-1.5">
-              <Label>Status</Label>
+              <Label>Статус</Label>
               <Select defaultValue="SUBSCRIBED" onValueChange={(v) => setValue('status', v)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -231,8 +231,8 @@ export function ContactsPage() {
               </Select>
             </div>
             <div className="flex justify-end gap-2 pt-2">
-              <Button type="button" variant="outline" onClick={() => setAddOpen(false)}>Cancel</Button>
-              <Button type="submit" disabled={create.isPending}>{create.isPending ? 'Adding…' : 'Add Contact'}</Button>
+              <Button type="button" variant="outline" onClick={() => setAddOpen(false)}>Отмена</Button>
+              <Button type="submit" disabled={create.isPending}>{create.isPending ? 'Добавление…' : 'Добавить контакт'}</Button>
             </div>
           </form>
         </DialogContent>

@@ -25,12 +25,12 @@ export function ListsPage() {
 
   const create = useMutation({
     mutationFn: (d: { name: string; description: string }) => listsApi.create(d),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['lists'] }); setOpen(false); reset(); toast({ title: 'List created' }); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['lists'] }); setOpen(false); reset(); toast({ title: 'Список создан' }); },
   });
 
   const remove = useMutation({
     mutationFn: (id: string) => listsApi.remove(id),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['lists'] }); toast({ title: 'List deleted' }); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['lists'] }); toast({ title: 'Список удалён' }); },
   });
 
   return (
@@ -38,20 +38,20 @@ export function ListsPage() {
       <div className="flex justify-end">
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
-            <Button><Plus className="h-4 w-4 mr-2" />New List</Button>
+            <Button><Plus className="h-4 w-4 mr-2" />Новый список</Button>
           </DialogTrigger>
           <DialogContent>
-            <DialogHeader><DialogTitle>Create Contact List</DialogTitle></DialogHeader>
+            <DialogHeader><DialogTitle>Создать список контактов</DialogTitle></DialogHeader>
             <form onSubmit={handleSubmit((d) => create.mutate(d))} className="space-y-4">
               <div className="space-y-1">
-                <Label>Name</Label>
-                <Input {...register('name', { required: true })} placeholder="Newsletter subscribers" />
+                <Label>Название</Label>
+                <Input {...register('name', { required: true })} placeholder="Подписчики рассылки" />
               </div>
               <div className="space-y-1">
-                <Label>Description</Label>
-                <Input {...register('description')} placeholder="Optional description" />
+                <Label>Описание</Label>
+                <Input {...register('description')} placeholder="Необязательное описание" />
               </div>
-              <Button type="submit" disabled={create.isPending} className="w-full">Create</Button>
+              <Button type="submit" disabled={create.isPending} className="w-full">Создать</Button>
             </form>
           </DialogContent>
         </Dialog>
@@ -69,7 +69,7 @@ export function ListsPage() {
             <CardContent>
               {list.description && <p className="text-sm text-muted-foreground mb-2">{list.description}</p>}
               <div className="flex items-center justify-between">
-                <span className="text-sm font-semibold">{formatNumber(list.contactCount)} contacts</span>
+                <span className="text-sm font-semibold">{formatNumber(list.contactCount)} контактов</span>
                 <div className="flex items-center gap-2">
                   <span className="text-xs text-muted-foreground">{formatDate(list.createdAt)}</span>
                   <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={(e) => { e.stopPropagation(); remove.mutate(list.id); }}>
@@ -81,7 +81,7 @@ export function ListsPage() {
           </Card>
         ))}
         {lists.length === 0 && (
-          <div className="col-span-3 text-center py-12 text-muted-foreground">No lists yet. Create your first one.</div>
+          <div className="col-span-3 text-center py-12 text-muted-foreground">Списков пока нет. Создайте первый.</div>
         )}
       </div>
     </div>

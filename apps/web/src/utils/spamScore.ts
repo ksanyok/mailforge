@@ -29,46 +29,46 @@ export function analyzeSpam(subject: string, html: string): SpamResult {
 
   const checks: SpamCheck[] = [
     {
-      label: 'Unsubscribe link present',
+      label: 'Есть ссылка для отписки',
       pass: html.includes('{{unsubscribeUrl}}') || htmlLower.includes('unsubscribe'),
       weight: 25,
-      tip: 'Add {{unsubscribeUrl}} — emails without it almost always land in spam',
+      tip: 'Добавьте {{unsubscribeUrl}} — письма без неё почти всегда попадают в спам',
     },
     {
-      label: 'No spam trigger words in subject',
+      label: 'Нет спам-слов в теме',
       pass: !SPAM_WORDS.slice(0, 15).some((w) => subjectLower.includes(w)),
       weight: 20,
-      tip: 'Words like FREE, URGENT, WIN, PRIZE in the subject are red flags for spam filters',
+      tip: 'Слова вроде FREE, URGENT, WIN, PRIZE в теме — тревожный сигнал для спам-фильтров',
     },
     {
-      label: 'Subject not all-caps',
+      label: 'Тема не полностью заглавными',
       pass: subject.replace(/[^A-Z]/g, '').length < subject.length * 0.4,
       weight: 10,
-      tip: 'Too many uppercase letters in the subject looks like spam',
+      tip: 'Слишком много заглавных букв в теме выглядит как спам',
     },
     {
-      label: 'No excessive punctuation in subject',
+      label: 'Нет лишней пунктуации в теме',
       pass: !/(!!|!!!|\$\$|\$\$\$)/.test(subject),
       weight: 10,
-      tip: 'Avoid !!!, $$$ and similar symbols in the subject line',
+      tip: 'Избегайте !!!, $$$ и подобных символов в теме письма',
     },
     {
-      label: 'HTML content is not empty',
+      label: 'HTML-содержимое не пустое',
       pass: html.trim().length > 50,
       weight: 15,
-      tip: 'Email body cannot be empty',
+      tip: 'Текст письма не может быть пустым',
     },
     {
-      label: 'Has text content (not images only)',
+      label: 'Есть текстовое содержимое (не только изображения)',
       pass: textContent.replace(/\s/g, '').length > 100,
       weight: 10,
-      tip: 'Image-only emails get blocked. Add enough text content.',
+      tip: 'Письма из одних изображений блокируются. Добавьте достаточно текста.',
     },
     {
-      label: 'No spam trigger words in body',
+      label: 'Нет спам-слов в тексте письма',
       pass: SPAM_WORDS.filter((w) => textLower.includes(w)).length < 4,
       weight: 10,
-      tip: `Spam words found in body: ${SPAM_WORDS.filter((w) => textLower.includes(w)).slice(0, 3).join(', ')}`,
+      tip: `Спам-слова, найденные в тексте: ${SPAM_WORDS.filter((w) => textLower.includes(w)).slice(0, 3).join(', ')}`,
     },
   ];
 

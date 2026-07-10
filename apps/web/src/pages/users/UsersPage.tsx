@@ -16,6 +16,8 @@ import { toast } from '@/hooks/use-toast';
 
 interface User { id: string; name: string; email: string; role: string; isActive: boolean; lastLoginAt?: string; createdAt: string; }
 
+const ROLE_LABELS: Record<string, string> = { ADMIN: 'Администратор', USER: 'Пользователь' };
+
 export function UsersPage() {
   const qc = useQueryClient();
   const [page, setPage] = useState(1);
@@ -33,21 +35,21 @@ export function UsersPage() {
       qc.invalidateQueries({ queryKey: ['users'] });
       setInviteOpen(false);
       reset();
-      toast({ title: 'User created successfully' });
+      toast({ title: 'Пользователь успешно создан' });
     },
-    onError: (err: any) => toast({ title: err?.response?.data?.message ?? 'Failed to create user', variant: 'destructive' }),
+    onError: (err: any) => toast({ title: err?.response?.data?.message ?? 'Не удалось создать пользователя', variant: 'destructive' }),
   });
 
   const toggle = useMutation({
     mutationFn: (id: string) => usersApi.toggleActive(id),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['users'] }); toast({ title: 'User updated' }); },
-    onError: (err: any) => toast({ title: err?.response?.data?.message ?? 'Failed to update user', variant: 'destructive' }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['users'] }); toast({ title: 'Пользователь обновлён' }); },
+    onError: (err: any) => toast({ title: err?.response?.data?.message ?? 'Не удалось обновить пользователя', variant: 'destructive' }),
   });
 
   const columns: ColumnDef<User>[] = [
     {
       id: 'user',
-      header: 'User',
+      header: 'Пользователь',
       cell: ({ row }) => (
         <div>
           <p className="font-medium text-sm">{row.original.name}</p>
@@ -57,26 +59,26 @@ export function UsersPage() {
     },
     {
       accessorKey: 'role',
-      header: 'Role',
+      header: 'Роль',
       cell: ({ getValue }) => (
         <span className={cn('px-2 py-0.5 rounded-full text-xs font-medium',
           getValue() === 'ADMIN' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800',
         )}>
-          {getValue() as string}
+          {ROLE_LABELS[getValue() as string] ?? (getValue() as string)}
         </span>
       ),
     },
     {
       accessorKey: 'isActive',
-      header: 'Status',
+      header: 'Статус',
       cell: ({ getValue }) => (
         <span className={cn('px-2 py-0.5 rounded-full text-xs font-medium', getValue() ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800')}>
-          {getValue() ? 'Active' : 'Inactive'}
+          {getValue() ? 'Активен' : 'Неактивен'}
         </span>
       ),
     },
-    { accessorKey: 'lastLoginAt', header: 'Last Login', cell: ({ getValue }) => getValue() ? formatDate(getValue() as string) : 'Never' },
-    { accessorKey: 'createdAt', header: 'Joined', cell: ({ getValue }) => formatDate(getValue() as string) },
+    { accessorKey: 'lastLoginAt', header: 'Последний вход', cell: ({ getValue }) => getValue() ? formatDate(getValue() as string) : 'Никогда' },
+    { accessorKey: 'createdAt', header: 'Зарегистрирован', cell: ({ getValue }) => formatDate(getValue() as string) },
     {
       id: 'actions',
       header: '',
@@ -87,7 +89,7 @@ export function UsersPage() {
           onClick={() => toggle.mutate(row.original.id)}
           className={row.original.isActive ? 'text-red-600 hover:bg-red-50' : 'text-green-600 hover:bg-green-50'}
         >
-          {row.original.isActive ? 'Deactivate' : 'Activate'}
+          {row.original.isActive ? 'Деактивировать' : 'Активировать'}
         </Button>
       ),
     },
@@ -97,11 +99,11 @@ export function UsersPage() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">User Management</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">Manage team members and their access levels</p>
+          <h1 className="text-2xl font-bold">Управление пользователями</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">Управляйте участниками команды и их уровнями доступа</p>
         </div>
         <Button onClick={() => setInviteOpen(true)}>
-          <UserPlus className="h-4 w-4 mr-2" />Invite User
+          <UserPlus className="h-4 w-4 mr-2" />Пригласить пользователя
         </Button>
       </div>
 
@@ -109,34 +111,34 @@ export function UsersPage() {
 
       <Dialog open={inviteOpen} onOpenChange={setInviteOpen}>
         <DialogContent className="max-w-md">
-          <DialogHeader><DialogTitle>Invite User</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>Пригласить пользователя</DialogTitle></DialogHeader>
           <form onSubmit={handleSubmit((d) => invite.mutate(d))} className="space-y-3">
             <div className="space-y-1.5">
-              <Label>Full Name *</Label>
-              <Input {...register('name', { required: true })} placeholder="John Smith" />
+              <Label>Полное имя *</Label>
+              <Input {...register('name', { required: true })} placeholder="Иван Иванов" />
             </div>
             <div className="space-y-1.5">
               <Label>Email *</Label>
               <Input type="email" {...register('email', { required: true })} placeholder="john@example.com" />
             </div>
             <div className="space-y-1.5">
-              <Label>Temporary Password *</Label>
-              <Input type="password" {...register('password', { required: true, minLength: 6 })} placeholder="Min. 6 characters" />
-              <p className="text-xs text-muted-foreground">User can change it after first login</p>
+              <Label>Временный пароль *</Label>
+              <Input type="password" {...register('password', { required: true, minLength: 6 })} placeholder="Не менее 6 символов" />
+              <p className="text-xs text-muted-foreground">Пользователь сможет изменить его после первого входа</p>
             </div>
             <div className="space-y-1.5">
-              <Label>Role</Label>
+              <Label>Роль</Label>
               <Select defaultValue="USER" onValueChange={(v) => setValue('role', v)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="USER">User — standard access</SelectItem>
-                  <SelectItem value="ADMIN">Admin — full access</SelectItem>
+                  <SelectItem value="USER">Пользователь — стандартный доступ</SelectItem>
+                  <SelectItem value="ADMIN">Администратор — полный доступ</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="flex justify-end gap-2 pt-2">
-              <Button type="button" variant="outline" onClick={() => { setInviteOpen(false); reset(); }}>Cancel</Button>
-              <Button type="submit" disabled={invite.isPending}>{invite.isPending ? 'Creating…' : 'Create User'}</Button>
+              <Button type="button" variant="outline" onClick={() => { setInviteOpen(false); reset(); }}>Отмена</Button>
+              <Button type="submit" disabled={invite.isPending}>{invite.isPending ? 'Создание…' : 'Создать пользователя'}</Button>
             </div>
           </form>
         </DialogContent>

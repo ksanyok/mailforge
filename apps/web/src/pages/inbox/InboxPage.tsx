@@ -75,16 +75,16 @@ function initials(name: string, email: string): string {
 function timeAgo(d: string): string {
   const diff = Date.now() - new Date(d).getTime();
   const m = Math.floor(diff / 60000);
-  if (m < 1) return 'now';
-  if (m < 60) return `${m}m`;
+  if (m < 1) return 'сейчас';
+  if (m < 60) return `${m} мин`;
   const h = Math.floor(m / 60);
-  if (h < 24) return `${h}h`;
+  if (h < 24) return `${h} ч`;
   const days = Math.floor(h / 24);
-  if (days < 7) return `${days}d`;
-  return new Date(d).toLocaleDateString('en', { month: 'short', day: 'numeric' });
+  if (days < 7) return `${days} дн`;
+  return new Date(d).toLocaleDateString('ru', { month: 'short', day: 'numeric' });
 }
 function formatTime(d: string): string {
-  return new Date(d).toLocaleTimeString('en', { hour: '2-digit', minute: '2-digit' });
+  return new Date(d).toLocaleTimeString('ru', { hour: '2-digit', minute: '2-digit' });
 }
 
 /* ── Avatar with gradient ───────────────────────────────────────────── */
@@ -152,7 +152,7 @@ function MessageBubble({ msg, isSent, index, onDelete }: {
         {!isSent && onDelete && (
           <button
             onClick={onDelete}
-            title="Delete"
+            title="Удалить"
             className="absolute -right-7 top-2 opacity-0 group-hover:opacity-100 transition-all w-5 h-5 rounded-full bg-white border border-gray-200 flex items-center justify-center text-gray-400 hover:text-red-500 shadow-sm z-10"
           >
             <Trash2 className="h-2.5 w-2.5" />
@@ -172,7 +172,7 @@ function MessageBubble({ msg, isSent, index, onDelete }: {
           {/* Main reply text */}
           {(main || !quoted) && (
             <p className="text-[13.5px] leading-[1.55] whitespace-pre-wrap break-words">
-              {main || '(empty)'}
+              {main || '(пусто)'}
             </p>
           )}
 
@@ -187,7 +187,7 @@ function MessageBubble({ msg, isSent, index, onDelete }: {
                 )}
               >
                 <span className="text-[9px]">{showQuoted ? '▲' : '▼'}</span>
-                {showQuoted ? 'Hide quoted text' : 'Show quoted text'}
+                {showQuoted ? 'Скрыть цитируемый текст' : 'Показать цитируемый текст'}
               </button>
               {showQuoted && (
                 <p className={cn(
@@ -263,9 +263,9 @@ export function InboxPage() {
     onSuccess: () => {
       setReplyText('');
       qc.invalidateQueries({ queryKey: ['inbox-thread', active?.senderId, active?.contactEmail] });
-      toast({ title: '✓ Reply sent' });
+      toast({ title: '✓ Ответ отправлен' });
     },
-    onError: () => toast({ title: 'Failed to send reply', variant: 'destructive' }),
+    onError: () => toast({ title: 'Не удалось отправить ответ', variant: 'destructive' }),
   });
 
   const markConvUnreadMutation = useMutation({
@@ -287,9 +287,9 @@ export function InboxPage() {
         });
         setTimeout(() => qc.invalidateQueries({ queryKey: ['inbox-conversations'] }), 500);
       }
-      toast({ title: '✓ Marked as unread' });
+      toast({ title: '✓ Отмечено как непрочитанное' });
     },
-    onError: () => toast({ title: 'Failed to mark as unread', variant: 'destructive' }),
+    onError: () => toast({ title: 'Не удалось отметить как непрочитанное', variant: 'destructive' }),
   });
 
   const markAllReadMutation = useMutation({
@@ -304,9 +304,9 @@ export function InboxPage() {
       });
       setMarkAllConfirm(false);
       setTimeout(() => qc.invalidateQueries({ queryKey: ['inbox-conversations'] }), 1500);
-      toast({ title: '✓ All conversations marked as read' });
+      toast({ title: '✓ Все переписки отмечены как прочитанные' });
     },
-    onError: () => toast({ title: 'Failed to mark all as read', variant: 'destructive' }),
+    onError: () => toast({ title: 'Не удалось отметить все как прочитанные', variant: 'destructive' }),
   });
 
   const deleteMessageMutation = useMutation({
@@ -315,9 +315,9 @@ export function InboxPage() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['inbox-thread', active?.senderId, active?.contactEmail] });
       qc.invalidateQueries({ queryKey: ['inbox-conversations'] });
-      toast({ title: '✓ Message deleted' });
+      toast({ title: '✓ Письмо удалено' });
     },
-    onError: () => toast({ title: 'Failed to delete message', variant: 'destructive' }),
+    onError: () => toast({ title: 'Не удалось удалить письмо', variant: 'destructive' }),
   });
 
   const deleteConversationMutation = useMutation({
@@ -327,9 +327,9 @@ export function InboxPage() {
       setActive(null);
       setDeleteConvConfirm(false);
       qc.invalidateQueries({ queryKey: ['inbox-conversations'] });
-      toast({ title: '✓ Conversation deleted' });
+      toast({ title: '✓ Переписка удалена' });
     },
-    onError: () => toast({ title: 'Failed to delete conversation', variant: 'destructive' }),
+    onError: () => toast({ title: 'Не удалось удалить переписку', variant: 'destructive' }),
   });
 
   /* ── Browser notifications for new messages ──────────────────────── */
@@ -352,7 +352,7 @@ export function InboxPage() {
         if (isNew) {
           const conv = convs.find(c => convKey(c) === key);
           if (!conv) continue;
-          const title = `New message from ${conv.contactName || conv.contactEmail}`;
+          const title = `Новое письмо от ${conv.contactName || conv.contactEmail}`;
           const body = (conv.lastMessage || '').slice(0, 80);
           if ('Notification' in window && Notification.permission === 'granted' && document.visibilityState !== 'visible') {
             const notif = new Notification(title, { body, icon: '/favicon.ico', tag: key });
@@ -371,7 +371,7 @@ export function InboxPage() {
                   className="text-xs text-indigo-600 underline"
                   onClick={() => openConversation(conv)}
                 >
-                  Open
+                  Открыть
                 </button>
               ) as any,
             });
@@ -505,16 +505,16 @@ export function InboxPage() {
     reply.mutate({
       senderId: active.senderId,
       to: active.contactEmail,
-      subject: lastMsg?.subject ?? 'Re: your message',
+      subject: lastMsg?.subject ?? 'Re: ваше письмо',
       body: replyText.trim(),
       inReplyTo: lastMsg?.messageId,
     });
   };
 
   const TABS: { key: Filter; label: string; icon?: React.ReactNode }[] = [
-    { key: 'all',     label: 'All' },
-    { key: 'unread',  label: 'Unread' },
-    { key: 'starred', label: 'Starred' },
+    { key: 'all',     label: 'Все' },
+    { key: 'unread',  label: 'Непрочитанные' },
+    { key: 'starred', label: 'Избранные' },
   ];
 
   return (
@@ -532,7 +532,7 @@ export function InboxPage() {
               <Inbox className="h-4 w-4 text-white" />
             </div>
             <div className="flex items-center gap-2">
-              <h2 className="font-semibold text-[15px] text-gray-900">Inbox</h2>
+              <h2 className="font-semibold text-[15px] text-gray-900">Входящие</h2>
               {totalUnread > 0 && (
                 <span className="animate-pop-in text-[10px] font-bold bg-indigo-100 text-indigo-600 px-1.5 py-0.5 rounded-full">
                   {totalUnread}
@@ -554,7 +554,7 @@ export function InboxPage() {
                       ? <RefreshCw className="h-3 w-3 animate-spin" />
                       : <CheckCheck className="h-3 w-3" />
                     }
-                    Confirm
+                    Подтвердить
                   </button>
                   <button
                     onClick={() => setMarkAllConfirm(false)}
@@ -566,7 +566,7 @@ export function InboxPage() {
               ) : (
                 <button
                   onClick={() => setMarkAllConfirm(true)}
-                  title="Mark all as read"
+                  title="Отметить все как прочитанные"
                   className="w-8 h-8 rounded-xl hover:bg-indigo-50 flex items-center justify-center text-gray-400 hover:text-indigo-500 transition-all duration-200 hover:scale-110 active:scale-95"
                 >
                   <CheckCheck className="h-3.5 w-3.5" />
@@ -589,7 +589,7 @@ export function InboxPage() {
             <input
               value={search}
               onChange={e => setSearch(e.target.value)}
-              placeholder="Search contacts…"
+              placeholder="Поиск контактов…"
               className="w-full pl-9 pr-3 py-2 text-sm bg-gray-50 border border-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-300 transition-all placeholder:text-gray-400"
             />
             {search && (
@@ -612,7 +612,7 @@ export function InboxPage() {
                 onChange={e => setSenderFilter(e.target.value || null)}
                 className="w-full appearance-none text-xs bg-gray-50/80 border border-gray-100 rounded-xl px-3 py-2 pr-7 text-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-200 cursor-pointer transition-all"
               >
-                <option value="">All senders ({allConvs.length})</option>
+                <option value="">Все отправители ({allConvs.length})</option>
                 {senders.map(s => (
                   <option key={s.id} value={s.id}>{s.email} ({s.count})</option>
                 ))}
@@ -655,10 +655,10 @@ export function InboxPage() {
           ) : filtered.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-48 gap-3 text-gray-400 animate-fade-in">
               {filter === 'starred'
-                ? <><Star className="h-9 w-9 opacity-15 animate-float" /><span className="text-sm font-medium">No starred conversations</span></>
+                ? <><Star className="h-9 w-9 opacity-15 animate-float" /><span className="text-sm font-medium">Нет избранных переписок</span></>
                 : filter === 'unread'
-                ? <><MailOpen className="h-9 w-9 opacity-15 animate-float" /><span className="text-sm font-medium text-gray-500">All caught up!</span><p className="text-xs text-gray-400">No unread messages</p></>
-                : <><Mail className="h-9 w-9 opacity-15 animate-float" /><span className="text-sm font-medium">No conversations yet</span></>
+                ? <><MailOpen className="h-9 w-9 opacity-15 animate-float" /><span className="text-sm font-medium text-gray-500">Всё прочитано!</span><p className="text-xs text-gray-400">Нет непрочитанных писем</p></>
+                : <><Mail className="h-9 w-9 opacity-15 animate-float" /><span className="text-sm font-medium">Пока нет переписок</span></>
               }
             </div>
           ) : (
@@ -753,13 +753,13 @@ export function InboxPage() {
               <Mail className="h-8 w-8 text-indigo-400" />
             </div>
             <div className="text-center space-y-1.5">
-              <p className="text-sm font-semibold text-gray-700">Select a conversation</p>
-              <p className="text-xs text-gray-400">Choose from the list on the left to start reading</p>
+              <p className="text-sm font-semibold text-gray-700">Выберите переписку</p>
+              <p className="text-xs text-gray-400">Выберите переписку из списка слева, чтобы начать чтение</p>
             </div>
             {totalUnread > 0 && (
               <div className="animate-scale-in bg-indigo-50 border border-indigo-100 rounded-2xl px-5 py-3 text-center">
-                <p className="text-[13px] font-semibold text-indigo-700">{totalUnread} unread message{totalUnread > 1 ? 's' : ''}</p>
-                <p className="text-[11px] text-indigo-400 mt-0.5">Waiting for your reply</p>
+                <p className="text-[13px] font-semibold text-indigo-700">Непрочитанных писем: {totalUnread}</p>
+                <p className="text-[11px] text-indigo-400 mt-0.5">Ожидают вашего ответа</p>
               </div>
             )}
           </div>
@@ -801,7 +801,7 @@ export function InboxPage() {
                 <button
                   onClick={() => markConvUnreadMutation.mutate(active)}
                   disabled={markConvUnreadMutation.isPending}
-                  title="Mark as unread"
+                  title="Отметить как непрочитанное"
                   className="w-8 h-8 rounded-xl hover:bg-indigo-50 flex items-center justify-center text-gray-400 hover:text-indigo-500 transition-all duration-200 hover:scale-110 active:scale-95"
                 >
                   {markConvUnreadMutation.isPending
@@ -819,7 +819,7 @@ export function InboxPage() {
                       className="flex items-center gap-1 text-[11px] font-medium bg-red-500 text-white px-2.5 py-1 rounded-lg hover:bg-red-600 transition-all active:scale-95"
                     >
                       {deleteConversationMutation.isPending ? <RefreshCw className="h-3 w-3 animate-spin" /> : <Trash2 className="h-3 w-3" />}
-                      Delete all
+                      Удалить всё
                     </button>
                     <button onClick={() => setDeleteConvConfirm(false)} className="w-6 h-6 rounded-lg hover:bg-gray-100 flex items-center justify-center text-gray-400">
                       <X className="h-3 w-3" />
@@ -828,7 +828,7 @@ export function InboxPage() {
                 ) : (
                   <button
                     onClick={() => setDeleteConvConfirm(true)}
-                    title="Delete all messages in this conversation"
+                    title="Удалить все письма в этой переписке"
                     className="w-8 h-8 rounded-xl hover:bg-red-50 flex items-center justify-center text-gray-400 hover:text-red-500 transition-all duration-200 hover:scale-110 active:scale-95"
                   >
                     <Trash2 className="h-3.5 w-3.5" />
@@ -836,7 +836,7 @@ export function InboxPage() {
                 )}
 
                 <div className="text-right hidden sm:block">
-                  <p className="text-[10px] text-gray-400">via</p>
+                  <p className="text-[10px] text-gray-400">через</p>
                   <p className="text-xs font-semibold text-indigo-600 truncate max-w-[140px]">{active.senderEmail}</p>
                 </div>
               </div>
@@ -858,7 +858,7 @@ export function InboxPage() {
               ) : (thread as Message[]).length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-full gap-3 text-gray-400 animate-fade-in">
                   <Mail className="h-8 w-8 opacity-30 animate-float" />
-                  <span className="text-sm">No messages yet</span>
+                  <span className="text-sm">Пока нет писем</span>
                 </div>
               ) : (
                 (thread as Message[]).map((msg, i) => {
@@ -874,7 +874,7 @@ export function InboxPage() {
                       {showDate && (
                         <div className="flex items-center justify-center my-4 animate-fade-in">
                           <span className="bg-white/90 text-[11px] text-gray-500 font-medium px-3.5 py-1 rounded-full shadow-sm">
-                            {new Date(msg.date).toLocaleDateString('en', { weekday: 'long', month: 'long', day: 'numeric' })}
+                            {new Date(msg.date).toLocaleDateString('ru', { weekday: 'long', month: 'long', day: 'numeric' })}
                           </span>
                         </div>
                       )}
@@ -906,7 +906,7 @@ export function InboxPage() {
                     onKeyDown={e => {
                       if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) handleReply();
                     }}
-                    placeholder="Type a message…"
+                    placeholder="Введите сообщение…"
                     rows={1}
                     style={{ minHeight: '24px', maxHeight: '120px' }}
                     className="flex-1 resize-none text-[14px] text-gray-800 focus:outline-none placeholder:text-gray-400 bg-transparent overflow-hidden leading-relaxed"

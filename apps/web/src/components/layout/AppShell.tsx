@@ -3,22 +3,22 @@ import { Sidebar } from './Sidebar';
 import { Header } from './Header';
 
 const PAGE_TITLES: Record<string, string> = {
-  '/dashboard': 'Dashboard',
-  '/contacts': 'Contacts',
-  '/lists': 'Lists',
-  '/imports': 'Imports',
-  '/campaigns': 'Campaigns',
-  '/templates': 'Email Templates',
-  '/senders': 'Sender Accounts',
-  '/warmup': 'Warmup',
-  '/deliverability': 'Deliverability',
-  '/suppressions': 'Suppressions',
-  '/reports': 'Reports',
-  '/recommendations': 'Recommendations',
-  '/notifications': 'Notifications',
-  '/activity': 'Activity Log',
-  '/users': 'Users',
-  '/settings': 'Settings',
+  '/dashboard': 'Обзор',
+  '/contacts': 'Контакты',
+  '/lists': 'Списки',
+  '/imports': 'Импорт',
+  '/campaigns': 'Кампании',
+  '/templates': 'Шаблоны писем',
+  '/senders': 'Отправители',
+  '/warmup': 'Прогрев',
+  '/deliverability': 'Доставляемость',
+  '/suppressions': 'Стоп-лист',
+  '/reports': 'Отчёты',
+  '/recommendations': 'Рекомендации',
+  '/notifications': 'Уведомления',
+  '/activity': 'Журнал действий',
+  '/users': 'Пользователи',
+  '/settings': 'Настройки',
 };
 
 export function AppShell() {

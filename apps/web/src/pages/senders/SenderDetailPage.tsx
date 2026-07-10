@@ -18,11 +18,11 @@ export function SenderDetailPage() {
   const logsRaw = Array.isArray(healthLogs) ? healthLogs : ((healthLogs as any)?.data ?? []);
   const logs = (Array.isArray(logsRaw) ? logsRaw : []) as { createdAt: string; healthScore: number; sentToday: number; bouncesToday: number }[];
 
-  if (!s) return <div className="text-muted-foreground">Loading...</div>;
+  if (!s) return <div className="text-muted-foreground">Загрузка…</div>;
 
   return (
     <div className="space-y-4 max-w-4xl">
-      <Button variant="ghost" size="sm" onClick={() => navigate(-1)}><ArrowLeft className="h-4 w-4 mr-2" />Back</Button>
+      <Button variant="ghost" size="sm" onClick={() => navigate(-1)}><ArrowLeft className="h-4 w-4 mr-2" />Назад</Button>
       <div className="flex items-center gap-4">
         <div>
           <h2 className="text-xl font-semibold">{s.name as string}</h2>
@@ -34,21 +34,21 @@ export function SenderDetailPage() {
 
       <div className="grid grid-cols-2 gap-4">
         <Card>
-          <CardHeader><CardTitle className="text-sm">SMTP Config</CardTitle></CardHeader>
+          <CardHeader><CardTitle className="text-sm">Настройки SMTP</CardTitle></CardHeader>
           <CardContent className="text-sm space-y-1">
-            <div className="flex justify-between"><span className="text-muted-foreground">Host</span><span>{s.smtpHost as string}:{s.smtpPort as number}</span></div>
-            <div className="flex justify-between"><span className="text-muted-foreground">Encryption</span><span>{s.smtpEncryption as string}</span></div>
-            <div className="flex justify-between"><span className="text-muted-foreground">Username</span><span>{s.smtpUser as string}</span></div>
+            <div className="flex justify-between"><span className="text-muted-foreground">Хост</span><span>{s.smtpHost as string}:{s.smtpPort as number}</span></div>
+            <div className="flex justify-between"><span className="text-muted-foreground">Шифрование</span><span>{s.smtpEncryption as string}</span></div>
+            <div className="flex justify-between"><span className="text-muted-foreground">Пользователь</span><span>{s.smtpUser as string}</span></div>
           </CardContent>
         </Card>
         <Card>
-          <CardHeader><CardTitle className="text-sm">Sending Limits</CardTitle></CardHeader>
+          <CardHeader><CardTitle className="text-sm">Лимиты отправки</CardTitle></CardHeader>
           <CardContent className="text-sm space-y-1">
-            <div className="flex justify-between"><span className="text-muted-foreground">Daily Limit</span><span>{s.dailyLimit as number}</span></div>
-            <div className="flex justify-between"><span className="text-muted-foreground">Hourly Limit</span><span>{s.hourlyLimit as number}</span></div>
+            <div className="flex justify-between"><span className="text-muted-foreground">Дневной лимит</span><span>{s.dailyLimit as number}</span></div>
+            <div className="flex justify-between"><span className="text-muted-foreground">Часовой лимит</span><span>{s.hourlyLimit as number}</span></div>
             {s.warmupEnabled && <>
-              <div className="flex justify-between"><span className="text-muted-foreground">Warmup Stage</span><span>{s.warmupStage as number}</span></div>
-              <div className="flex justify-between"><span className="text-muted-foreground">Warmup Limit</span><span>{s.warmupCurrentDailyLimit as number}/day</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Этап прогрева</span><span>{s.warmupStage as number}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Лимит прогрева</span><span>{s.warmupCurrentDailyLimit as number}/день</span></div>
             </>}
           </CardContent>
         </Card>
@@ -56,7 +56,7 @@ export function SenderDetailPage() {
 
       {logs && logs.length > 0 && (
         <Card>
-          <CardHeader><CardTitle className="text-sm">Health Score History</CardTitle></CardHeader>
+          <CardHeader><CardTitle className="text-sm">История индекса здоровья</CardTitle></CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={200}>
               <LineChart data={[...logs].reverse()}>
@@ -64,7 +64,7 @@ export function SenderDetailPage() {
                 <XAxis dataKey="createdAt" tick={{ fontSize: 11 }} tickFormatter={(v) => v.slice(0, 10)} />
                 <YAxis domain={[0, 100]} tick={{ fontSize: 11 }} />
                 <Tooltip />
-                <Line type="monotone" dataKey="healthScore" stroke="#6366f1" name="Health Score" dot={false} />
+                <Line type="monotone" dataKey="healthScore" stroke="#6366f1" name="Индекс здоровья" dot={false} />
               </LineChart>
             </ResponsiveContainer>
           </CardContent>

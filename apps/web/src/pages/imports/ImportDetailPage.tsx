@@ -55,7 +55,7 @@ export function ImportDetailPage() {
   return (
     <div className="space-y-4 max-w-2xl">
       <Button variant="ghost" size="sm" onClick={() => navigate(-1)}>
-        <ArrowLeft className="h-4 w-4 mr-2" />Back to Imports
+        <ArrowLeft className="h-4 w-4 mr-2" />Назад к импортам
       </Button>
 
       {i && (
@@ -66,7 +66,7 @@ export function ImportDetailPage() {
                 <FileText className="h-5 w-5 text-muted-foreground" />
                 <div>
                   <CardTitle className="text-base">{i.filename as string}</CardTitle>
-                  <p className="text-xs text-muted-foreground mt-0.5">Started {formatDate(i.createdAt as string)}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">Начат {formatDate(i.createdAt as string)}</p>
                 </div>
               </div>
               <Badge variant={STATUS_VARIANT[status] ?? 'outline'} className="flex items-center gap-1">
@@ -78,8 +78,8 @@ export function ImportDetailPage() {
           <CardContent className="space-y-4">
             <div>
               <div className="flex justify-between text-xs text-muted-foreground mb-1">
-                <span>Progress</span>
-                <span>{processedRows} / {totalRows} rows</span>
+                <span>Прогресс</span>
+                <span>{processedRows} / {totalRows} строк</span>
               </div>
               <Progress value={pct} className="h-2" />
             </div>
@@ -87,27 +87,27 @@ export function ImportDetailPage() {
             <div className="grid grid-cols-3 gap-3">
               <div className="rounded-lg border p-3 text-center">
                 <p className="text-2xl font-bold">{totalRows}</p>
-                <p className="text-xs text-muted-foreground">Total rows</p>
+                <p className="text-xs text-muted-foreground">Всего строк</p>
               </div>
               <div className="rounded-lg border p-3 text-center">
                 <p className="text-2xl font-bold text-green-600">{successRows}</p>
-                <p className="text-xs text-muted-foreground">Imported</p>
+                <p className="text-xs text-muted-foreground">Импортировано</p>
               </div>
               <div className="rounded-lg border p-3 text-center">
                 <p className="text-2xl font-bold text-red-600">{errorRows}</p>
-                <p className="text-xs text-muted-foreground">Errors</p>
+                <p className="text-xs text-muted-foreground">Ошибок</p>
               </div>
             </div>
 
             {i.list && (
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <List className="h-4 w-4" />
-                Added to list: <span className="font-medium text-foreground">{(i.list as any).name}</span>
+                Добавлено в список: <span className="font-medium text-foreground">{(i.list as any).name}</span>
               </div>
             )}
 
             {i.completedAt && (
-              <p className="text-xs text-muted-foreground">Completed {formatDate(i.completedAt as string)}</p>
+              <p className="text-xs text-muted-foreground">Завершён {formatDate(i.completedAt as string)}</p>
             )}
           </CardContent>
         </Card>
@@ -118,7 +118,7 @@ export function ImportDetailPage() {
           <CardHeader>
             <CardTitle className="text-sm flex items-center gap-2">
               <XCircle className="h-4 w-4 text-red-600" />
-              Import Errors ({errs.length})
+              Ошибки импорта ({errs.length})
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -126,9 +126,9 @@ export function ImportDetailPage() {
               <table className="w-full text-xs">
                 <thead className="bg-muted/50">
                   <tr>
-                    <th className="text-left px-3 py-2 text-muted-foreground font-medium">Row</th>
+                    <th className="text-left px-3 py-2 text-muted-foreground font-medium">Строка</th>
                     <th className="text-left px-3 py-2 text-muted-foreground font-medium">Email</th>
-                    <th className="text-left px-3 py-2 text-muted-foreground font-medium">Error</th>
+                    <th className="text-left px-3 py-2 text-muted-foreground font-medium">Ошибка</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -143,7 +143,7 @@ export function ImportDetailPage() {
               </table>
             </div>
             {errs.length > 100 && (
-              <p className="text-xs text-muted-foreground mt-2">Showing first 100 of {errs.length} errors.</p>
+              <p className="text-xs text-muted-foreground mt-2">Показаны первые 100 из {errs.length} ошибок.</p>
             )}
           </CardContent>
         </Card>
@@ -152,7 +152,7 @@ export function ImportDetailPage() {
       {i && status === 'COMPLETED' && errs.length === 0 && (
         <div className="flex items-center gap-2 p-4 rounded-lg bg-green-50 border border-green-200 text-green-700 text-sm">
           <CheckCircle className="h-5 w-5 shrink-0" />
-          <span>All {successRows} contacts imported successfully with no errors.</span>
+          <span>Все контакты ({successRows}) импортированы успешно, без ошибок.</span>
         </div>
       )}
     </div>

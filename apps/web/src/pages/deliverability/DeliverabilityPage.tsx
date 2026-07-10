@@ -40,8 +40,8 @@ export function DeliverabilityPage() {
 
   const runChecks = useMutation({
     mutationFn: () => deliverabilityApi.runChecks(selectedSender!),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['deliverability'] }); toast({ title: 'Checks completed' }); },
-    onError: () => toast({ title: 'Checks failed', variant: 'destructive' }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['deliverability'] }); toast({ title: 'Проверки завершены' }); },
+    onError: () => toast({ title: 'Не удалось выполнить проверки', variant: 'destructive' }),
   });
 
   const checkOrder = ['SPF', 'DKIM', 'DMARC', 'MX', 'RDNS', 'SMTP', 'BLACKLIST'];
@@ -64,11 +64,11 @@ export function DeliverabilityPage() {
         <Tabs defaultValue="checks">
           <TabsList>
             <TabsTrigger value="checks">
-              <Mail className="h-3.5 w-3.5 mr-1.5" />Technical Checks
+              <Mail className="h-3.5 w-3.5 mr-1.5" />Технические проверки
             </TabsTrigger>
             <TabsTrigger value="respondents">
               <MessageSquare className="h-3.5 w-3.5 mr-1.5" />
-              Respondents
+              Ответившие
               {senderConvs.length > 0 && (
                 <span className="ml-1.5 px-1.5 py-0.5 rounded-full bg-primary text-primary-foreground text-[10px] font-bold">
                   {senderConvs.length}
@@ -81,7 +81,7 @@ export function DeliverabilityPage() {
             <div className="flex justify-end">
               <Button onClick={() => runChecks.mutate()} disabled={runChecks.isPending}>
                 <RefreshCw className={cn('h-4 w-4 mr-2', runChecks.isPending && 'animate-spin')} />
-                {runChecks.isPending ? 'Running...' : 'Run Checks'}
+                {runChecks.isPending ? 'Выполняется…' : 'Запустить проверки'}
               </Button>
             </div>
             <div className="grid gap-3">
@@ -102,14 +102,14 @@ export function DeliverabilityPage() {
                           {check.recommendation && <p className="text-xs text-orange-600 mt-1">{check.recommendation}</p>}
                         </div>
                       ) : (
-                        <span className="text-xs text-muted-foreground">Not checked yet</span>
+                        <span className="text-xs text-muted-foreground">Ещё не проверено</span>
                       )}
                     </CardContent>
                   </Card>
                 );
               })}
               {checksArr.length === 0 && !runChecks.isPending && (
-                <div className="text-center py-8 text-muted-foreground text-sm">Run checks to see deliverability status for this sender.</div>
+                <div className="text-center py-8 text-muted-foreground text-sm">Запустите проверки, чтобы увидеть статус доставляемости для этого отправителя.</div>
               )}
             </div>
           </TabsContent>
@@ -117,12 +117,12 @@ export function DeliverabilityPage() {
           <TabsContent value="respondents" className="mt-4">
             <Card>
               <CardHeader>
-                <CardTitle className="text-sm">Clients who replied to this sender</CardTitle>
+                <CardTitle className="text-sm">Клиенты, ответившие этому отправителю</CardTitle>
               </CardHeader>
               <CardContent>
                 {senderConvs.length === 0 ? (
                   <div className="text-center py-8 text-muted-foreground text-sm">
-                    No replies received for this sender yet.
+                    Для этого отправителя пока нет ответов.
                   </div>
                 ) : (
                   <div className="divide-y">
@@ -135,13 +135,13 @@ export function DeliverabilityPage() {
                         </div>
                         <div className="flex items-center gap-2 shrink-0">
                           {c.unreadCount > 0 && (
-                            <span className="px-1.5 py-0.5 rounded-full bg-indigo-100 text-indigo-700 text-[10px] font-bold">{c.unreadCount} new</span>
+                            <span className="px-1.5 py-0.5 rounded-full bg-indigo-100 text-indigo-700 text-[10px] font-bold">{c.unreadCount} новых</span>
                           )}
                           <Button
                             size="sm" variant="outline"
                             onClick={() => navigate(`/inbox?senderId=${encodeURIComponent(c.senderId)}&contactEmail=${encodeURIComponent(c.contactEmail)}`)}
                           >
-                            Open
+                            Открыть
                           </Button>
                         </div>
                       </div>
@@ -153,7 +153,7 @@ export function DeliverabilityPage() {
           </TabsContent>
         </Tabs>
       ) : (
-        <div className="text-center py-12 text-muted-foreground">Select a sender account to view deliverability data.</div>
+        <div className="text-center py-12 text-muted-foreground">Выберите отправителя, чтобы посмотреть данные о доставляемости.</div>
       )}
     </div>
   );

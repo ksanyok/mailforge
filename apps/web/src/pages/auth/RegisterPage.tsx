@@ -28,7 +28,7 @@ export function RegisterPage() {
       setAuth(result.user, result.accessToken, result.refreshToken);
       navigate('/dashboard');
     } catch {
-      toast({ title: 'Registration failed', description: 'Please try again', variant: 'destructive' });
+      toast({ title: 'Не удалось зарегистрироваться', description: 'Попробуйте ещё раз', variant: 'destructive' });
     }
   };
 
@@ -39,44 +39,44 @@ export function RegisterPage() {
           <div className="flex justify-center mb-2">
             <Mail className="h-8 w-8 text-primary" />
           </div>
-          <CardTitle className="text-2xl">Create Account</CardTitle>
-          <CardDescription>Get started with MailForge</CardDescription>
+          <CardTitle className="text-2xl">Создание аккаунта</CardTitle>
+          <CardDescription>Начните работу с MailForge</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div className="space-y-1">
-              <Label htmlFor="name">Full Name</Label>
-              <Input id="name" {...register('name', { required: 'Name is required' })} />
+              <Label htmlFor="name">Полное имя</Label>
+              <Input id="name" {...register('name', { required: 'Укажите имя' })} />
               {errors.name && <p className="text-xs text-destructive">{errors.name.message}</p>}
             </div>
             <div className="space-y-1">
               <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" {...register('email', { required: 'Email is required' })} />
+              <Input id="email" type="email" {...register('email', { required: 'Укажите email' })} />
               {errors.email && <p className="text-xs text-destructive">{errors.email.message}</p>}
             </div>
             <div className="space-y-1">
-              <Label htmlFor="password">Password</Label>
-              <Input id="password" type="password" {...register('password', { required: 'Password is required', minLength: { value: 8, message: 'Minimum 8 characters' } })} />
+              <Label htmlFor="password">Пароль</Label>
+              <Input id="password" type="password" {...register('password', { required: 'Укажите пароль', minLength: { value: 8, message: 'Минимум 8 символов' } })} />
               {errors.password && <p className="text-xs text-destructive">{errors.password.message}</p>}
             </div>
             <div className="space-y-1">
-              <Label htmlFor="confirmPassword">Confirm Password</Label>
+              <Label htmlFor="confirmPassword">Подтверждение пароля</Label>
               <Input
                 id="confirmPassword"
                 type="password"
                 {...register('confirmPassword', {
-                  required: 'Please confirm your password',
-                  validate: (v) => v === password || 'Passwords do not match',
+                  required: 'Подтвердите пароль',
+                  validate: (v) => v === password || 'Пароли не совпадают',
                 })}
               />
               {errors.confirmPassword && <p className="text-xs text-destructive">{errors.confirmPassword.message}</p>}
             </div>
             <Button type="submit" className="w-full" disabled={isSubmitting}>
-              {isSubmitting ? 'Creating account...' : 'Create Account'}
+              {isSubmitting ? 'Создание аккаунта…' : 'Создать аккаунт'}
             </Button>
             <p className="text-center text-sm text-muted-foreground">
-              Already have an account?{' '}
-              <Link to="/login" className="text-primary hover:underline">Sign in</Link>
+              Уже есть аккаунт?{' '}
+              <Link to="/login" className="text-primary hover:underline">Войти</Link>
             </p>
           </form>
         </CardContent>

@@ -55,9 +55,9 @@ export function ImportsPage() {
       setListId(res.id);
       setNewListName('');
       setCreatingList(false);
-      toast({ title: `List "${res.name}" created` });
+      toast({ title: `Список «${res.name}» создан` });
     },
-    onError: () => toast({ title: 'Failed to create list', variant: 'destructive' }),
+    onError: () => toast({ title: 'Не удалось создать список', variant: 'destructive' }),
   });
 
   const upload = useMutation({
@@ -71,12 +71,12 @@ export function ImportsPage() {
     onSuccess: (result) => {
       qc.invalidateQueries({ queryKey: ['imports'] });
       setSelectedFile(null);
-      toast({ title: 'Import started', description: 'Processing in the background. Check the import below for progress.' });
+      toast({ title: 'Импорт запущен', description: 'Обработка идёт в фоне. Следите за прогрессом импорта ниже.' });
       navigate(`/imports/${(result as any).id}`);
     },
     onError: (err: any) => {
-      const msg = err?.response?.data?.message ?? 'Upload failed. Check file format.';
-      toast({ title: 'Upload failed', description: msg, variant: 'destructive' });
+      const msg = err?.response?.data?.message ?? 'Не удалось загрузить. Проверьте формат файла.';
+      toast({ title: 'Не удалось загрузить', description: msg, variant: 'destructive' });
     },
   });
 
@@ -90,7 +90,7 @@ export function ImportsPage() {
   const columns: ColumnDef<Import>[] = [
     {
       accessorKey: 'filename',
-      header: 'File',
+      header: 'Файл',
       cell: ({ row }) => (
         <button onClick={() => navigate(`/imports/${row.original.id}`)} className="flex items-center gap-2 text-primary hover:underline text-left">
           <FileText className="h-4 w-4 shrink-0" />
@@ -100,7 +100,7 @@ export function ImportsPage() {
     },
     {
       accessorKey: 'status',
-      header: 'Status',
+      header: 'Статус',
       cell: ({ getValue }) => (
         <span className={cn('px-2 py-0.5 rounded-full text-xs font-medium', STATUS_COLORS[getValue() as string] ?? 'bg-gray-100')}>
           {getValue() as string}
@@ -109,14 +109,14 @@ export function ImportsPage() {
     },
     {
       id: 'list',
-      header: 'List',
+      header: 'Список',
       cell: ({ row }) => row.original.list?.name
         ? <span className="text-xs bg-muted px-2 py-0.5 rounded">{row.original.list.name}</span>
         : <span className="text-xs text-muted-foreground">—</span>,
     },
     {
       id: 'progress',
-      header: 'Progress',
+      header: 'Прогресс',
       cell: ({ row }) => {
         const { totalRows, processedRows, successRows, errorRows } = row.original;
         const pct = totalRows > 0 ? (processedRows / totalRows) * 100 : 0;
@@ -124,22 +124,22 @@ export function ImportsPage() {
           <div className="space-y-1 min-w-36">
             <Progress value={pct} className="h-1.5" />
             <p className="text-xs text-muted-foreground">
-              <span className="text-green-600">{successRows} ok</span>
-              {errorRows > 0 && <span className="text-red-600"> / {errorRows} err</span>}
-              {' '}of {totalRows}
+              <span className="text-green-600">{successRows} успешно</span>
+              {errorRows > 0 && <span className="text-red-600"> / {errorRows} ошибок</span>}
+              {' '}из {totalRows}
             </p>
           </div>
         );
       },
     },
-    { accessorKey: 'createdAt', header: 'Date', cell: ({ getValue }) => formatDate(getValue() as string) },
+    { accessorKey: 'createdAt', header: 'Дата', cell: ({ getValue }) => formatDate(getValue() as string) },
   ];
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Import Contacts</h1>
-        <p className="text-sm text-muted-foreground mt-1">Upload a CSV, XLSX, JSON, or TXT file to add contacts in bulk</p>
+        <h1 className="text-2xl font-bold">Импорт контактов</h1>
+        <p className="text-sm text-muted-foreground mt-1">Загрузите файл CSV, XLSX, JSON или TXT, чтобы добавить контакты массово</p>
       </div>
 
       {/* Upload card */}
@@ -178,8 +178,8 @@ export function ImportsPage() {
           ) : (
             <>
               <Upload className="h-10 w-10 mx-auto mb-3 text-muted-foreground" />
-              <p className="text-sm font-medium mb-1">Drop a file here or click to browse</p>
-              <p className="text-xs text-muted-foreground">CSV, XLSX, JSON, TXT — max 50 MB</p>
+              <p className="text-sm font-medium mb-1">Перетащите файл сюда или нажмите для выбора</p>
+              <p className="text-xs text-muted-foreground">CSV, XLSX, JSON, TXT — до 50 МБ</p>
             </>
           )}
           <input ref={fileRef} type="file" accept=".csv,.xlsx,.json,.txt" className="hidden"
@@ -189,12 +189,12 @@ export function ImportsPage() {
         {/* Options */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-1.5">
-            <Label>Add to list (optional)</Label>
+            <Label>Добавить в список (необязательно)</Label>
             {creatingList ? (
               <div className="flex gap-2">
                 <Input
                   autoFocus
-                  placeholder="New list name…"
+                  placeholder="Название нового списка…"
                   value={newListName}
                   onChange={(e) => setNewListName(e.target.value)}
                   onKeyDown={(e) => {
@@ -209,51 +209,51 @@ export function ImportsPage() {
                   disabled={!newListName.trim() || createList.isPending}
                   onClick={() => newListName.trim() && createList.mutate(newListName.trim())}
                 >
-                  {createList.isPending ? '…' : 'Create'}
+                  {createList.isPending ? '…' : 'Создать'}
                 </Button>
                 <Button type="button" size="sm" variant="ghost" onClick={() => { setCreatingList(false); setNewListName(''); }}>
-                  Cancel
+                  Отмена
                 </Button>
               </div>
             ) : (
               <div className="flex gap-2">
                 <Select value={listId} onValueChange={setListId}>
                   <SelectTrigger className="flex-1">
-                    <SelectValue placeholder="— No list —" />
+                    <SelectValue placeholder="— Без списка —" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="__none__">— No list —</SelectItem>
+                    <SelectItem value="__none__">— Без списка —</SelectItem>
                     {lists.map((l) => (
                       <SelectItem key={l.id} value={l.id}>{l.name} ({l.contactCount})</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
-                <Button type="button" size="sm" variant="outline" onClick={() => setCreatingList(true)} title="Create new list">
+                <Button type="button" size="sm" variant="outline" onClick={() => setCreatingList(true)} title="Создать новый список">
                   <Plus className="h-4 w-4" />
                 </Button>
               </div>
             )}
-            <p className="text-xs text-muted-foreground">Select an existing list or create a new one to group imported contacts</p>
+            <p className="text-xs text-muted-foreground">Выберите существующий список или создайте новый, чтобы сгруппировать импортированные контакты</p>
           </div>
 
           <div className="space-y-1.5">
-            <Label>Duplicate handling</Label>
+            <Label>Обработка дубликатов</Label>
             <Select value={dedupeRule} onValueChange={setDedupeRule}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="SKIP">Skip duplicates — keep existing data</SelectItem>
-                <SelectItem value="UPDATE">Update duplicates — overwrite with new data</SelectItem>
+                <SelectItem value="SKIP">Пропускать дубликаты — сохранить существующие данные</SelectItem>
+                <SelectItem value="UPDATE">Обновлять дубликаты — перезаписать новыми данными</SelectItem>
               </SelectContent>
             </Select>
-            <p className="text-xs text-muted-foreground">What to do when an email already exists in the database</p>
+            <p className="text-xs text-muted-foreground">Что делать, если email уже есть в базе данных</p>
           </div>
         </div>
 
         <Button onClick={startImport} disabled={!selectedFile || upload.isPending} className="w-full sm:w-auto gap-2">
           <Upload className="h-4 w-4" />
-          {upload.isPending ? 'Uploading…' : 'Start Import'}
+          {upload.isPending ? 'Загрузка…' : 'Начать импорт'}
         </Button>
       </div>
 
@@ -266,7 +266,7 @@ export function ImportsPage() {
         >
           <span className="flex items-center gap-2">
             <Info className="h-4 w-4 text-primary" />
-            Expected column names in your file
+            Ожидаемые названия столбцов в файле
           </span>
           {showHints ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
         </button>
@@ -275,9 +275,9 @@ export function ImportsPage() {
             <table className="w-full text-xs">
               <thead>
                 <tr className="text-muted-foreground">
-                  <th className="text-left py-1 font-medium">Field</th>
-                  <th className="text-left py-1 font-medium">Accepted column names</th>
-                  <th className="text-left py-1 font-medium">Required</th>
+                  <th className="text-left py-1 font-medium">Поле</th>
+                  <th className="text-left py-1 font-medium">Допустимые названия столбцов</th>
+                  <th className="text-left py-1 font-medium">Обязательно</th>
                 </tr>
               </thead>
               <tbody>
@@ -285,13 +285,13 @@ export function ImportsPage() {
                   <tr key={h.field} className="border-t">
                     <td className="py-1.5 font-mono font-medium">{h.field}</td>
                     <td className="py-1.5 text-muted-foreground">{h.aliases}</td>
-                    <td className="py-1.5">{h.required ? <span className="text-red-600 font-medium">Yes</span> : 'No'}</td>
+                    <td className="py-1.5">{h.required ? <span className="text-red-600 font-medium">Да</span> : 'Нет'}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
             <p className="text-xs text-muted-foreground mt-2">
-              Column names are case-insensitive. Any extra columns are stored in custom fields.
+              Названия столбцов не чувствительны к регистру. Все лишние столбцы сохраняются в пользовательских полях.
             </p>
           </div>
         )}
@@ -299,7 +299,7 @@ export function ImportsPage() {
 
       {/* History */}
       <div>
-        <h2 className="text-base font-semibold mb-3">Import History</h2>
+        <h2 className="text-base font-semibold mb-3">История импорта</h2>
         <DataTable
           data={result?.data ?? []}
           columns={columns}

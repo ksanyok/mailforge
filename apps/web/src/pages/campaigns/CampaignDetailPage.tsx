@@ -10,6 +10,18 @@ import { cn } from '@/utils/cn';
 import { toast } from '@/hooks/use-toast';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 
+const STATUS_LABELS: Record<string, string> = {
+  DRAFT: 'Черновик',
+  SCHEDULED: 'Запланирована',
+  SENDING: 'Отправляется',
+  SENT: 'Отправлена',
+  PAUSED: 'Приостановлена',
+  COMPLETED: 'Завершена',
+  CANCELLED: 'Отменена',
+  FAILED: 'Ошибка',
+  QUEUED: 'В очереди',
+};
+
 export function CampaignDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -39,18 +51,18 @@ export function CampaignDetailPage() {
 
   const dispatch = useMutation({
     mutationFn: () => campaignsApi.dispatch(id!),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['campaign', id] }); toast({ title: 'Campaign launched' }); refetch(); },
-    onError: (err: any) => toast({ title: err?.response?.data?.message ?? 'Failed to launch campaign', variant: 'destructive' }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['campaign', id] }); toast({ title: 'Кампания запущена' }); refetch(); },
+    onError: (err: any) => toast({ title: err?.response?.data?.message ?? 'Не удалось запустить кампанию', variant: 'destructive' }),
   });
 
   const pause = useMutation({
     mutationFn: () => campaignsApi.pause(id!),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['campaign', id] }); toast({ title: 'Campaign paused' }); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['campaign', id] }); toast({ title: 'Кампания приостановлена' }); },
   });
 
   const resume = useMutation({
     mutationFn: () => campaignsApi.resume(id!),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['campaign', id] }); toast({ title: 'Campaign resumed' }); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['campaign', id] }); toast({ title: 'Кампания возобновлена' }); },
   });
 
   const cancel = useMutation({
@@ -59,45 +71,45 @@ export function CampaignDetailPage() {
       qc.invalidateQueries({ queryKey: ['campaign', id] });
       qc.invalidateQueries({ queryKey: ['campaigns'] });
       setCancelConfirm(false);
-      toast({ title: 'Campaign cancelled' });
+      toast({ title: 'Кампания отменена' });
     },
-    onError: () => toast({ title: 'Failed to cancel campaign', variant: 'destructive' }),
+    onError: () => toast({ title: 'Не удалось отменить кампанию', variant: 'destructive' }),
   });
 
   const remove = useMutation({
     mutationFn: () => campaignsApi.remove(id!),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['campaigns'] });
-      toast({ title: 'Campaign deleted' });
+      toast({ title: 'Кампания удалена' });
       navigate('/campaigns');
     },
-    onError: () => toast({ title: 'Failed to delete campaign', variant: 'destructive' }),
+    onError: () => toast({ title: 'Не удалось удалить кампанию', variant: 'destructive' }),
   });
 
   const createFollowUp = useMutation({
     mutationFn: () => campaignsApi.createFollowUp(id!, followUpSubject ? { subject: followUpSubject } : undefined),
     onSuccess: (res: any) => {
-      toast({ title: `Follow-up campaign created with ${nr?.notResponded ?? 0} recipients` });
+      toast({ title: `Дожимная кампания создана: получателей ${nr?.notResponded ?? 0}` });
       setShowFollowUp(false);
       navigate(`/campaigns/${res.id}`);
     },
-    onError: (err: any) => toast({ title: err?.response?.data?.message ?? 'Failed to create follow-up', variant: 'destructive' }),
+    onError: (err: any) => toast({ title: err?.response?.data?.message ?? 'Не удалось создать дожимную кампанию', variant: 'destructive' }),
   });
 
   const c = campaign as Record<string, unknown> | undefined;
   const funnelData = funnel as { stage: string; count: number }[] | undefined;
 
-  if (!c) return <div className="text-muted-foreground p-4">Loading...</div>;
+  if (!c) return <div className="text-muted-foreground p-4">Загрузка…</div>;
 
   const status = c.status as string;
 
   const stats = [
-    { label: 'Recipients', value: c.totalRecipients as number },
-    { label: 'Sent', value: c.sentCount as number },
-    { label: 'Opened', value: c.uniqueOpenCount as number },
-    { label: 'Clicked', value: c.uniqueClickCount as number },
-    { label: 'Bounced', value: c.bounceCount as number },
-    { label: 'Unsubscribed', value: c.unsubscribeCount as number },
+    { label: 'Получатели', value: c.totalRecipients as number },
+    { label: 'Отправлено', value: c.sentCount as number },
+    { label: 'Открыли', value: c.uniqueOpenCount as number },
+    { label: 'Кликнули', value: c.uniqueClickCount as number },
+    { label: 'Отказы', value: c.bounceCount as number },
+    { label: 'Отписались', value: c.unsubscribeCount as number },
   ];
 
   return (
@@ -105,26 +117,26 @@ export function CampaignDetailPage() {
       {/* Actions bar */}
       <div className="flex items-center gap-2 flex-wrap">
         <Button variant="ghost" size="sm" onClick={() => navigate(-1)}>
-          <ArrowLeft className="h-4 w-4 mr-2" />Back
+          <ArrowLeft className="h-4 w-4 mr-2" />Назад
         </Button>
         <Button variant="outline" size="sm" onClick={() => navigate(`/campaigns/${id}/edit`)}>
-          <Edit2 className="h-4 w-4 mr-2" />Edit
+          <Edit2 className="h-4 w-4 mr-2" />Изменить
         </Button>
 
         {status === 'DRAFT' && (
           <Button size="sm" className="gap-2 bg-green-600 hover:bg-green-700 text-white" onClick={() => dispatch.mutate()} disabled={dispatch.isPending}>
             <Play className="h-4 w-4" />
-            {dispatch.isPending ? 'Launching…' : 'Launch Campaign'}
+            {dispatch.isPending ? 'Запуск…' : 'Запустить кампанию'}
           </Button>
         )}
         {status === 'SENDING' && (
           <Button size="sm" variant="outline" className="gap-2" onClick={() => pause.mutate()} disabled={pause.isPending}>
-            <Pause className="h-4 w-4" />Pause
+            <Pause className="h-4 w-4" />Приостановить
           </Button>
         )}
         {status === 'PAUSED' && (
           <Button size="sm" className="gap-2" onClick={() => resume.mutate()} disabled={resume.isPending}>
-            <RotateCcw className="h-4 w-4" />Resume
+            <RotateCcw className="h-4 w-4" />Возобновить
           </Button>
         )}
 
@@ -133,13 +145,13 @@ export function CampaignDetailPage() {
           cancelConfirm ? (
             <div className="flex items-center gap-1">
               <Button size="sm" variant="destructive" onClick={() => cancel.mutate()} disabled={cancel.isPending}>
-                <XCircle className="h-4 w-4 mr-1" />{cancel.isPending ? 'Cancelling…' : 'Confirm Cancel'}
+                <XCircle className="h-4 w-4 mr-1" />{cancel.isPending ? 'Отмена…' : 'Подтвердить отмену'}
               </Button>
               <Button size="sm" variant="ghost" onClick={() => setCancelConfirm(false)}><X className="h-4 w-4" /></Button>
             </div>
           ) : (
             <Button size="sm" variant="outline" className="gap-2 text-orange-600 border-orange-300 hover:bg-orange-50" onClick={() => setCancelConfirm(true)}>
-              <XCircle className="h-4 w-4" />Cancel Campaign
+              <XCircle className="h-4 w-4" />Отменить кампанию
             </Button>
           )
         )}
@@ -149,13 +161,13 @@ export function CampaignDetailPage() {
           deleteConfirm ? (
             <div className="flex items-center gap-1">
               <Button size="sm" variant="destructive" onClick={() => remove.mutate()} disabled={remove.isPending}>
-                <Trash2 className="h-4 w-4 mr-1" />{remove.isPending ? 'Deleting…' : 'Confirm Delete'}
+                <Trash2 className="h-4 w-4 mr-1" />{remove.isPending ? 'Удаление…' : 'Подтвердить удаление'}
               </Button>
               <Button size="sm" variant="ghost" onClick={() => setDeleteConfirm(false)}><X className="h-4 w-4" /></Button>
             </div>
           ) : (
             <Button size="sm" variant="outline" className="gap-2 text-red-600 border-red-300 hover:bg-red-50" onClick={() => setDeleteConfirm(true)}>
-              <Trash2 className="h-4 w-4" />Delete
+              <Trash2 className="h-4 w-4" />Удалить
             </Button>
           )
         )}
@@ -168,7 +180,7 @@ export function CampaignDetailPage() {
           <p className="text-sm text-muted-foreground">{c.subject as string}</p>
         </div>
         <span className={cn('text-xs px-2.5 py-1 rounded-full font-semibold', STATUS_COLORS[status] ?? 'bg-gray-100')}>
-          {status}
+          {STATUS_LABELS[status] ?? status}
         </span>
       </div>
 
@@ -176,7 +188,7 @@ export function CampaignDetailPage() {
       {status === 'DRAFT' && (
         <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 flex items-center gap-2">
           <Play className="h-4 w-4 shrink-0" />
-          Campaign is ready. Click <strong>Launch Campaign</strong> to start sending.
+          Кампания готова. Нажмите <strong>Запустить кампанию</strong>, чтобы начать отправку.
         </div>
       )}
 
@@ -205,18 +217,18 @@ export function CampaignDetailPage() {
                   <CheckCircle2 className="h-5 w-5 text-green-600" />
                   <div>
                     <p className="text-xl font-bold text-green-700">{nr.responded}</p>
-                    <p className="text-xs text-muted-foreground">Opened / Clicked</p>
+                    <p className="text-xs text-muted-foreground">Открыли / Кликнули</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
                   <UserX className="h-5 w-5 text-gray-400" />
                   <div>
                     <p className="text-xl font-bold text-gray-700">{nr.notResponded}</p>
-                    <p className="text-xs text-muted-foreground">Did not open</p>
+                    <p className="text-xs text-muted-foreground">Не открыли</p>
                   </div>
                 </div>
                 <div className="text-xs text-muted-foreground">
-                  out of {nr.total} sent
+                  из {nr.total} отправленных
                 </div>
               </div>
 
@@ -237,7 +249,7 @@ export function CampaignDetailPage() {
                         disabled={createFollowUp.isPending}
                       >
                         <SendHorizonal className="h-3.5 w-3.5" />
-                        {createFollowUp.isPending ? 'Creating…' : `Send follow-up to ${nr.notResponded} who didn't open`}
+                        {createFollowUp.isPending ? 'Создание…' : `Отправить дожим ${nr.notResponded} не открывшим`}
                       </Button>
                       <Button size="sm" variant="ghost" onClick={() => setShowFollowUp(false)}>
                         <X className="h-3.5 w-3.5" />
@@ -251,7 +263,7 @@ export function CampaignDetailPage() {
                       onClick={() => setShowFollowUp(true)}
                     >
                       <SendHorizonal className="h-3.5 w-3.5" />
-                      Follow-up {nr.notResponded} who didn't open
+                      Дожать {nr.notResponded} не открывших
                     </Button>
                   )}
                 </div>
@@ -266,15 +278,15 @@ export function CampaignDetailPage() {
         <div className="grid grid-cols-3 gap-4 text-sm">
           <Card><CardContent className="p-4 text-center">
             <p className="text-lg font-bold text-green-600">{formatPercent(c.uniqueOpenCount as number, c.sentCount as number)}</p>
-            <p className="text-xs text-muted-foreground">Open Rate</p>
+            <p className="text-xs text-muted-foreground">Процент открытий</p>
           </CardContent></Card>
           <Card><CardContent className="p-4 text-center">
             <p className="text-lg font-bold text-blue-600">{formatPercent(c.uniqueClickCount as number, c.sentCount as number)}</p>
-            <p className="text-xs text-muted-foreground">Click Rate</p>
+            <p className="text-xs text-muted-foreground">Процент кликов</p>
           </CardContent></Card>
           <Card><CardContent className="p-4 text-center">
             <p className="text-lg font-bold text-red-600">{formatPercent(c.bounceCount as number, c.sentCount as number)}</p>
-            <p className="text-xs text-muted-foreground">Bounce Rate</p>
+            <p className="text-xs text-muted-foreground">Процент отказов</p>
           </CardContent></Card>
         </div>
       )}
@@ -282,7 +294,7 @@ export function CampaignDetailPage() {
       {/* Funnel */}
       {funnelData && funnelData.length > 0 && (
         <Card>
-          <CardHeader><CardTitle className="text-sm">Campaign Funnel</CardTitle></CardHeader>
+          <CardHeader><CardTitle className="text-sm">Воронка кампании</CardTitle></CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={200}>
               <BarChart data={funnelData} layout="vertical">
@@ -301,23 +313,23 @@ export function CampaignDetailPage() {
         <Card>
           <CardHeader><CardTitle className="text-sm flex items-center gap-2">
             <RotateCcw className="h-4 w-4 text-indigo-500" />
-            Follow-up configured
+            Дожим настроен
           </CardTitle></CardHeader>
           <CardContent className="text-sm text-muted-foreground">
-            Auto-follow-up after <strong className="text-foreground">{c.followUpDays as number} days</strong> of no reply.
-            {c.followUpSentAt && <span> Last sent: {formatDate(c.followUpSentAt as string)}</span>}
+            Автодожим через <strong className="text-foreground">{c.followUpDays as number} дн.</strong> без ответа.
+            {c.followUpSentAt && <span> Последняя отправка: {formatDate(c.followUpSentAt as string)}</span>}
           </CardContent>
         </Card>
       )}
 
       {/* Details */}
       <Card>
-        <CardHeader><CardTitle className="text-sm">Details</CardTitle></CardHeader>
+        <CardHeader><CardTitle className="text-sm">Детали</CardTitle></CardHeader>
         <CardContent className="text-sm grid grid-cols-2 gap-2">
-          <div className="text-muted-foreground">Created</div><div>{formatDate(c.createdAt as string)}</div>
-          {c.scheduledAt && <><div className="text-muted-foreground">Scheduled</div><div>{formatDate(c.scheduledAt as string)}</div></>}
-          {c.startedAt && <><div className="text-muted-foreground">Started</div><div>{formatDate(c.startedAt as string)}</div></>}
-          {c.completedAt && <><div className="text-muted-foreground">Completed</div><div>{formatDate(c.completedAt as string)}</div></>}
+          <div className="text-muted-foreground">Создана</div><div>{formatDate(c.createdAt as string)}</div>
+          {c.scheduledAt && <><div className="text-muted-foreground">Запланирована</div><div>{formatDate(c.scheduledAt as string)}</div></>}
+          {c.startedAt && <><div className="text-muted-foreground">Запущена</div><div>{formatDate(c.startedAt as string)}</div></>}
+          {c.completedAt && <><div className="text-muted-foreground">Завершена</div><div>{formatDate(c.completedAt as string)}</div></>}
         </CardContent>
       </Card>
     </div>

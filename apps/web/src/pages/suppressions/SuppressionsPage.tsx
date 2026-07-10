@@ -26,7 +26,7 @@ export function SuppressionsPage() {
 
   const create = useMutation({
     mutationFn: (d: unknown) => suppressionsApi.create(d),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['suppressions'] }); setOpen(false); reset(); toast({ title: 'Email suppressed' }); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['suppressions'] }); setOpen(false); reset(); toast({ title: 'Email добавлен в стоп-лист' }); },
   });
 
   const remove = useMutation({
@@ -37,11 +37,11 @@ export function SuppressionsPage() {
   const columns: ColumnDef<Suppression>[] = [
     { accessorKey: 'email', header: 'Email' },
     {
-      accessorKey: 'reason', header: 'Reason',
+      accessorKey: 'reason', header: 'Причина',
       cell: ({ getValue }) => <span className={cn('px-2 py-0.5 rounded-full text-xs font-medium', 'bg-red-100 text-red-800')}>{getValue() as string}</span>,
     },
-    { accessorKey: 'notes', header: 'Notes', cell: ({ getValue }) => (getValue() as string) || '—' },
-    { accessorKey: 'createdAt', header: 'Suppressed', cell: ({ getValue }) => formatDate(getValue() as string) },
+    { accessorKey: 'notes', header: 'Заметки', cell: ({ getValue }) => (getValue() as string) || '—' },
+    { accessorKey: 'createdAt', header: 'В стоп-листе с', cell: ({ getValue }) => formatDate(getValue() as string) },
     {
       id: 'actions', header: '',
       cell: ({ row }) => <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => remove.mutate(row.original.id)}><Trash2 className="h-3.5 w-3.5" /></Button>,
@@ -52,25 +52,25 @@ export function SuppressionsPage() {
     <div className="space-y-4">
       <div className="flex justify-end">
         <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild><Button><Plus className="h-4 w-4 mr-2" />Add Suppression</Button></DialogTrigger>
+          <DialogTrigger asChild><Button><Plus className="h-4 w-4 mr-2" />Добавить в стоп-лист</Button></DialogTrigger>
           <DialogContent>
-            <DialogHeader><DialogTitle>Suppress Email</DialogTitle></DialogHeader>
+            <DialogHeader><DialogTitle>Добавить email в стоп-лист</DialogTitle></DialogHeader>
             <form onSubmit={handleSubmit((d) => create.mutate(d))} className="space-y-4">
               <div className="space-y-1"><Label>Email *</Label><Input type="email" {...register('email', { required: true })} /></div>
               <div className="space-y-1">
-                <Label>Reason</Label>
+                <Label>Причина</Label>
                 <Select defaultValue="MANUAL" onValueChange={(v) => setValue('reason', v)}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="MANUAL">Manual</SelectItem>
-                    <SelectItem value="BOUNCE_HARD">Hard Bounce</SelectItem>
-                    <SelectItem value="COMPLAINT">Complaint</SelectItem>
-                    <SelectItem value="ADMIN">Admin</SelectItem>
+                    <SelectItem value="MANUAL">Вручную</SelectItem>
+                    <SelectItem value="BOUNCE_HARD">Жёсткий отказ</SelectItem>
+                    <SelectItem value="COMPLAINT">Жалоба</SelectItem>
+                    <SelectItem value="ADMIN">Администратор</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
-              <div className="space-y-1"><Label>Notes</Label><Input {...register('notes')} /></div>
-              <Button type="submit" disabled={create.isPending} className="w-full">Suppress</Button>
+              <div className="space-y-1"><Label>Заметки</Label><Input {...register('notes')} /></div>
+              <Button type="submit" disabled={create.isPending} className="w-full">Добавить в стоп-лист</Button>
             </form>
           </DialogContent>
         </Dialog>

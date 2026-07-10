@@ -29,7 +29,7 @@ export function RecommendationsPage() {
   return (
     <div className="space-y-3 max-w-3xl">
       {sorted.length === 0 && (
-        <div className="text-center py-16 text-muted-foreground">No recommendations — your setup looks good!</div>
+        <div className="text-center py-16 text-muted-foreground">Рекомендаций нет — с настройкой всё в порядке!</div>
       )}
       {sorted.map((r) => (
         <Card key={r.id} className={cn(!r.isRead && 'border-l-4 border-l-primary', r.severity === 'CRITICAL' && 'border-l-red-500')}>
@@ -43,7 +43,7 @@ export function RecommendationsPage() {
                 <p className="font-medium text-sm">{r.title}</p>
                 <p className="text-sm text-muted-foreground mt-0.5">{r.message}</p>
                 {!r.isRead && (
-                  <Button variant="link" size="sm" className="h-auto p-0 mt-1 text-xs" onClick={() => markRead.mutate(r.id)}>Mark as read</Button>
+                  <Button variant="link" size="sm" className="h-auto p-0 mt-1 text-xs" onClick={() => markRead.mutate(r.id)}>Отметить прочитанным</Button>
                 )}
               </div>
               <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={() => dismiss.mutate(r.id)}>

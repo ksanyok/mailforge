@@ -9,9 +9,9 @@ export interface DemoTemplate {
 export const DEMO_TEMPLATES: DemoTemplate[] = [
   {
     id: 'demo-newsletter',
-    name: 'Newsletter',
+    name: 'Рассылка',
     category: 'newsletter',
-    description: 'Standard newsletter with header, content block, and footer',
+    description: 'Стандартная рассылка с шапкой, блоком контента и подвалом',
     htmlContent: `<!DOCTYPE html>
 <html lang="en">
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
@@ -21,20 +21,20 @@ export const DEMO_TEMPLATES: DemoTemplate[] = [
 <tr><td align="center" style="padding:40px 16px">
   <table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08)">
     <tr><td style="background:linear-gradient(135deg,#6366f1,#8b5cf6);padding:40px 40px 36px;text-align:center">
-      <p style="margin:0;color:rgba(255,255,255,0.8);font-size:13px;letter-spacing:2px;text-transform:uppercase">MONTHLY NEWSLETTER</p>
-      <h1 style="margin:8px 0 0;color:#ffffff;font-size:28px;font-weight:700;line-height:1.2">Your Company Name</h1>
+      <p style="margin:0;color:rgba(255,255,255,0.8);font-size:13px;letter-spacing:2px;text-transform:uppercase">ЕЖЕМЕСЯЧНАЯ РАССЫЛКА</p>
+      <h1 style="margin:8px 0 0;color:#ffffff;font-size:28px;font-weight:700;line-height:1.2">Название вашей компании</h1>
     </td></tr>
     <tr><td style="padding:36px 40px 0">
-      <p style="margin:0;color:#374151;font-size:16px;line-height:1.7">Hi {{firstName}}! 👋</p>
-      <p style="margin:16px 0 0;color:#374151;font-size:16px;line-height:1.7">We're excited to share the latest updates with you. Here's what happened this month:</p>
+      <p style="margin:0;color:#374151;font-size:16px;line-height:1.7">Здравствуйте, {{firstName}}! 👋</p>
+      <p style="margin:16px 0 0;color:#374151;font-size:16px;line-height:1.7">Рады поделиться свежими новостями. Вот что произошло за этот месяц:</p>
     </td></tr>
     <tr><td style="padding:28px 40px 0">
       <table width="100%" cellpadding="0" cellspacing="0" style="background:#f8f9fa;border-radius:8px;overflow:hidden">
         <tr><td style="padding:24px">
-          <p style="margin:0 0 8px;color:#6366f1;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px">Top Story</p>
-          <h2 style="margin:0 0 12px;color:#111827;font-size:20px;font-weight:700">Your Content Headline Here</h2>
-          <p style="margin:0 0 20px;color:#4b5563;font-size:15px;line-height:1.7">Describe your main news or update here. Keep it concise and specific — readers have limited time.</p>
-          <a href="#" style="display:inline-block;background:#6366f1;color:#ffffff;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:600;font-size:14px">Read More →</a>
+          <p style="margin:0 0 8px;color:#6366f1;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px">Главная новость</p>
+          <h2 style="margin:0 0 12px;color:#111827;font-size:20px;font-weight:700">Заголовок вашего материала</h2>
+          <p style="margin:0 0 20px;color:#4b5563;font-size:15px;line-height:1.7">Опишите здесь главную новость или обновление. Пишите кратко и по существу — у читателей мало времени.</p>
+          <a href="#" style="display:inline-block;background:#6366f1;color:#ffffff;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:600;font-size:14px">Читать далее →</a>
         </td></tr>
       </table>
     </td></tr>
@@ -43,26 +43,26 @@ export const DEMO_TEMPLATES: DemoTemplate[] = [
         <tr>
           <td width="48%" style="background:#f0fdf4;border-radius:8px;padding:20px;vertical-align:top">
             <p style="margin:0 0 8px;font-size:20px">📈</p>
-            <h3 style="margin:0 0 8px;color:#111827;font-size:15px;font-weight:700">Feature One</h3>
-            <p style="margin:0;color:#4b5563;font-size:13px;line-height:1.6">Brief description of the first additional content block.</p>
+            <h3 style="margin:0 0 8px;color:#111827;font-size:15px;font-weight:700">Функция один</h3>
+            <p style="margin:0;color:#4b5563;font-size:13px;line-height:1.6">Краткое описание первого дополнительного блока.</p>
           </td>
           <td width="4%"></td>
           <td width="48%" style="background:#eff6ff;border-radius:8px;padding:20px;vertical-align:top">
             <p style="margin:0 0 8px;font-size:20px">🚀</p>
-            <h3 style="margin:0 0 8px;color:#111827;font-size:15px;font-weight:700">Feature Two</h3>
-            <p style="margin:0;color:#4b5563;font-size:13px;line-height:1.6">Brief description of the second additional content block.</p>
+            <h3 style="margin:0 0 8px;color:#111827;font-size:15px;font-weight:700">Функция два</h3>
+            <p style="margin:0;color:#4b5563;font-size:13px;line-height:1.6">Краткое описание второго дополнительного блока.</p>
           </td>
         </tr>
       </table>
     </td></tr>
     <tr><td style="padding:32px 40px;text-align:center">
-      <a href="#" style="display:inline-block;background:#111827;color:#ffffff;padding:14px 32px;border-radius:8px;text-decoration:none;font-weight:600;font-size:15px">Visit Our Website</a>
+      <a href="#" style="display:inline-block;background:#111827;color:#ffffff;padding:14px 32px;border-radius:8px;text-decoration:none;font-weight:600;font-size:15px">Перейти на сайт</a>
     </td></tr>
     <tr><td style="background:#f9fafb;border-top:1px solid #e5e7eb;padding:24px 40px;text-align:center">
-      <p style="margin:0 0 8px;color:#9ca3af;font-size:12px">© 2025 Your Company. All rights reserved.</p>
+      <p style="margin:0 0 8px;color:#9ca3af;font-size:12px">© 2025 Ваша компания. Все права защищены.</p>
       <p style="margin:0;color:#9ca3af;font-size:12px">
-        You received this email because you subscribed to our newsletter.<br>
-        <a href="{{unsubscribeUrl}}" style="color:#6b7280;text-decoration:underline">Unsubscribe</a>
+        Вы получили это письмо, потому что подписались на нашу рассылку.<br>
+        <a href="{{unsubscribeUrl}}" style="color:#6b7280;text-decoration:underline">Отписаться</a>
       </p>
     </td></tr>
   </table>
@@ -72,9 +72,9 @@ export const DEMO_TEMPLATES: DemoTemplate[] = [
   },
   {
     id: 'demo-promo',
-    name: 'Promo / Sale',
+    name: 'Промо / Распродажа',
     category: 'promotional',
-    description: 'Promotional email with offer, discount, and strong call to action',
+    description: 'Промо-письмо с предложением, скидкой и сильным призывом к действию',
     htmlContent: `<!DOCTYPE html>
 <html lang="en">
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
@@ -83,34 +83,34 @@ export const DEMO_TEMPLATES: DemoTemplate[] = [
 <tr><td align="center" style="padding:40px 16px">
   <table width="560" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:16px;overflow:hidden">
     <tr><td style="background:linear-gradient(135deg,#f59e0b,#ef4444);padding:48px 40px;text-align:center">
-      <p style="margin:0 0 12px;color:rgba(255,255,255,0.9);font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:3px">⚡ Special Offer</p>
-      <h1 style="margin:0 0 16px;color:#ffffff;font-size:48px;font-weight:900;line-height:1">50% OFF</h1>
-      <p style="margin:0;color:rgba(255,255,255,0.9);font-size:17px">This week only</p>
+      <p style="margin:0 0 12px;color:rgba(255,255,255,0.9);font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:3px">⚡ Специальное предложение</p>
+      <h1 style="margin:0 0 16px;color:#ffffff;font-size:48px;font-weight:900;line-height:1">СКИДКА 50%</h1>
+      <p style="margin:0;color:rgba(255,255,255,0.9);font-size:17px">Только на этой неделе</p>
     </td></tr>
     <tr><td style="padding:40px">
-      <p style="margin:0 0 20px;color:#374151;font-size:16px;line-height:1.7">Hi {{firstName}}!</p>
+      <p style="margin:0 0 20px;color:#374151;font-size:16px;line-height:1.7">Здравствуйте, {{firstName}}!</p>
       <p style="margin:0 0 24px;color:#374151;font-size:16px;line-height:1.7">
-        We've prepared an exclusive offer just for you. Don't miss the chance to get our product at 50% off — this is a limited-time deal for our subscribers.
+        Мы подготовили эксклюзивное предложение специально для вас. Не упустите шанс получить наш продукт со скидкой 50% — это ограниченное предложение для наших подписчиков.
       </p>
       <table width="100%" cellpadding="0" cellspacing="0" style="background:#fff7ed;border:2px dashed #f59e0b;border-radius:8px;margin-bottom:24px">
         <tr><td style="padding:20px;text-align:center">
-          <p style="margin:0 0 4px;color:#9ca3af;font-size:13px;text-decoration:line-through">Regular price: $99</p>
+          <p style="margin:0 0 4px;color:#9ca3af;font-size:13px;text-decoration:line-through">Обычная цена: $99</p>
           <p style="margin:0 0 8px;color:#f59e0b;font-size:36px;font-weight:900">$49</p>
-          <p style="margin:0;color:#6b7280;font-size:13px">Use code: <strong style="color:#111827;font-size:15px">SAVE50</strong></p>
+          <p style="margin:0;color:#6b7280;font-size:13px">Промокод: <strong style="color:#111827;font-size:15px">SAVE50</strong></p>
         </td></tr>
       </table>
       <table width="100%" cellpadding="0" cellspacing="0">
         <tr><td align="center">
           <a href="#" style="display:inline-block;background:linear-gradient(135deg,#f59e0b,#ef4444);color:#ffffff;padding:16px 40px;border-radius:8px;text-decoration:none;font-weight:700;font-size:16px">
-            Claim Your Discount →
+            Получить скидку →
           </a>
         </td></tr>
       </table>
-      <p style="margin:20px 0 0;color:#9ca3af;font-size:12px;text-align:center">⏰ Offer expires in 72 hours</p>
+      <p style="margin:20px 0 0;color:#9ca3af;font-size:12px;text-align:center">⏰ Предложение действует ещё 72 часа</p>
     </td></tr>
     <tr><td style="background:#f9fafb;border-top:1px solid #e5e7eb;padding:20px 40px;text-align:center">
       <p style="margin:0;color:#9ca3af;font-size:12px">
-        <a href="{{unsubscribeUrl}}" style="color:#9ca3af">Unsubscribe from this list</a>
+        <a href="{{unsubscribeUrl}}" style="color:#9ca3af">Отписаться от этой рассылки</a>
       </p>
     </td></tr>
   </table>
@@ -120,9 +120,9 @@ export const DEMO_TEMPLATES: DemoTemplate[] = [
   },
   {
     id: 'demo-welcome',
-    name: 'Welcome Email',
+    name: 'Приветственное письмо',
     category: 'transactional',
-    description: 'Welcome email for new subscribers with onboarding steps',
+    description: 'Приветственное письмо для новых подписчиков с шагами онбординга',
     htmlContent: `<!DOCTYPE html>
 <html lang="en">
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
@@ -134,18 +134,18 @@ export const DEMO_TEMPLATES: DemoTemplate[] = [
       <div style="width:72px;height:72px;background:linear-gradient(135deg,#6366f1,#8b5cf6);border-radius:50%;margin:0 auto 20px">
         <span style="font-size:32px;line-height:72px;display:block">🎉</span>
       </div>
-      <h1 style="margin:0 0 12px;color:#111827;font-size:26px;font-weight:700">Welcome, {{firstName}}!</h1>
-      <p style="margin:0;color:#6b7280;font-size:16px;line-height:1.6">We're thrilled to have you in our community</p>
+      <h1 style="margin:0 0 12px;color:#111827;font-size:26px;font-weight:700">Добро пожаловать, {{firstName}}!</h1>
+      <p style="margin:0;color:#6b7280;font-size:16px;line-height:1.6">Мы очень рады видеть вас в нашем сообществе</p>
     </td></tr>
     <tr><td style="padding:0 40px"><div style="height:1px;background:#e5e7eb"></div></td></tr>
     <tr><td style="padding:32px 40px">
-      <p style="margin:0 0 20px;color:#374151;font-size:15px;font-weight:600">Get started in 3 steps:</p>
+      <p style="margin:0 0 20px;color:#374151;font-size:15px;font-weight:600">Начните за 3 шага:</p>
       <table width="100%" cellpadding="0" cellspacing="0">
         <tr><td style="padding:0 0 16px">
           <table cellpadding="0" cellspacing="0">
             <tr>
               <td style="width:36px;height:36px;background:#ede9fe;border-radius:50%;text-align:center;vertical-align:middle;font-size:16px">1</td>
-              <td style="padding-left:12px;color:#374151;font-size:14px;line-height:1.5"><strong>Complete your profile</strong> — add your details to personalise your experience</td>
+              <td style="padding-left:12px;color:#374151;font-size:14px;line-height:1.5"><strong>Заполните профиль</strong> — добавьте данные, чтобы персонализировать работу</td>
             </tr>
           </table>
         </td></tr>
@@ -153,7 +153,7 @@ export const DEMO_TEMPLATES: DemoTemplate[] = [
           <table cellpadding="0" cellspacing="0">
             <tr>
               <td style="width:36px;height:36px;background:#dbeafe;border-radius:50%;text-align:center;vertical-align:middle;font-size:16px">2</td>
-              <td style="padding-left:12px;color:#374151;font-size:14px;line-height:1.5"><strong>Explore features</strong> — see everything we can do for you</td>
+              <td style="padding-left:12px;color:#374151;font-size:14px;line-height:1.5"><strong>Изучите возможности</strong> — узнайте всё, что мы можем для вас сделать</td>
             </tr>
           </table>
         </td></tr>
@@ -161,7 +161,7 @@ export const DEMO_TEMPLATES: DemoTemplate[] = [
           <table cellpadding="0" cellspacing="0">
             <tr>
               <td style="width:36px;height:36px;background:#dcfce7;border-radius:50%;text-align:center;vertical-align:middle;font-size:16px">3</td>
-              <td style="padding-left:12px;color:#374151;font-size:14px;line-height:1.5"><strong>Get started</strong> — create your first project today</td>
+              <td style="padding-left:12px;color:#374151;font-size:14px;line-height:1.5"><strong>Приступайте</strong> — создайте свой первый проект уже сегодня</td>
             </tr>
           </table>
         </td></tr>
@@ -169,13 +169,13 @@ export const DEMO_TEMPLATES: DemoTemplate[] = [
     </td></tr>
     <tr><td style="padding:0 40px 40px;text-align:center">
       <a href="#" style="display:inline-block;background:#6366f1;color:#ffffff;padding:14px 36px;border-radius:8px;text-decoration:none;font-weight:700;font-size:15px">
-        Get Started →
+        Начать →
       </a>
-      <p style="margin:16px 0 0;color:#9ca3af;font-size:13px">Questions? We're always here to help: support@company.com</p>
+      <p style="margin:16px 0 0;color:#9ca3af;font-size:13px">Есть вопросы? Мы всегда готовы помочь: support@company.com</p>
     </td></tr>
     <tr><td style="background:#f9fafb;border-top:1px solid #e5e7eb;padding:20px 40px;text-align:center">
       <p style="margin:0;color:#9ca3af;font-size:12px">
-        <a href="{{unsubscribeUrl}}" style="color:#9ca3af">Unsubscribe</a>
+        <a href="{{unsubscribeUrl}}" style="color:#9ca3af">Отписаться</a>
       </p>
     </td></tr>
   </table>
@@ -185,9 +185,9 @@ export const DEMO_TEMPLATES: DemoTemplate[] = [
   },
   {
     id: 'demo-cold-outreach',
-    name: 'Cold B2B Outreach',
+    name: 'Холодная B2B-рассылка',
     category: 'promotional',
-    description: 'Professional cold outreach email for B2B proposals and partnerships',
+    description: 'Профессиональное холодное письмо для B2B-предложений и партнёрств',
     htmlContent: `<!DOCTYPE html>
 <html lang="en">
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
@@ -205,7 +205,7 @@ export const DEMO_TEMPLATES: DemoTemplate[] = [
             <h2 style="margin:0;color:#111827;font-size:22px;font-weight:700;line-height:1.3">{{subject}}</h2>
           </td>
           <td style="text-align:right;white-space:nowrap;padding-left:16px">
-            <span style="display:inline-block;background:#ede9fe;color:#6366f1;font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:4px 10px;border-radius:20px">Proposal</span>
+            <span style="display:inline-block;background:#ede9fe;color:#6366f1;font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:4px 10px;border-radius:20px">Предложение</span>
           </td>
         </tr>
       </table>
@@ -214,12 +214,12 @@ export const DEMO_TEMPLATES: DemoTemplate[] = [
     <tr><td style="padding:0 44px"><div style="height:1px;background:#e5e7eb"></div></td></tr>
     <!-- Body -->
     <tr><td style="padding:28px 44px">
-      <p style="margin:0 0 18px;color:#374151;font-size:15px;line-height:1.8">Hi {{firstName}},</p>
+      <p style="margin:0 0 18px;color:#374151;font-size:15px;line-height:1.8">Здравствуйте, {{firstName}},</p>
       <p style="margin:0 0 18px;color:#374151;font-size:15px;line-height:1.8">
-        I hope this message finds you well. I'm reaching out because I believe there's a strong opportunity for us to collaborate and create real value for your business.
+        Надеюсь, у вас всё хорошо. Пишу вам, потому что вижу отличную возможность для сотрудничества, которое принесёт реальную пользу вашему бизнесу.
       </p>
       <p style="margin:0 0 24px;color:#374151;font-size:15px;line-height:1.8">
-        [Describe your proposal or service in 2–3 sentences. Be specific about the value you bring.]
+        [Опишите ваше предложение или услугу в 2–3 предложениях. Чётко укажите, какую ценность вы приносите.]
       </p>
       <!-- Value highlight box -->
       <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px">
@@ -228,7 +228,7 @@ export const DEMO_TEMPLATES: DemoTemplate[] = [
             <table width="100%" cellpadding="0" cellspacing="0" style="background:#f0fdf4;border-radius:8px">
               <tr><td style="padding:16px;text-align:center">
                 <p style="margin:0 0 6px;font-size:22px">✅</p>
-                <p style="margin:0;color:#166534;font-size:13px;font-weight:600;line-height:1.4">Quality Result</p>
+                <p style="margin:0;color:#166534;font-size:13px;font-weight:600;line-height:1.4">Качественный результат</p>
               </td></tr>
             </table>
           </td>
@@ -236,7 +236,7 @@ export const DEMO_TEMPLATES: DemoTemplate[] = [
             <table width="100%" cellpadding="0" cellspacing="0" style="background:#eff6ff;border-radius:8px">
               <tr><td style="padding:16px;text-align:center">
                 <p style="margin:0 0 6px;font-size:22px">⚡</p>
-                <p style="margin:0;color:#1e40af;font-size:13px;font-weight:600;line-height:1.4">Fast Delivery</p>
+                <p style="margin:0;color:#1e40af;font-size:13px;font-weight:600;line-height:1.4">Быстрые сроки</p>
               </td></tr>
             </table>
           </td>
@@ -244,19 +244,19 @@ export const DEMO_TEMPLATES: DemoTemplate[] = [
             <table width="100%" cellpadding="0" cellspacing="0" style="background:#fdf4ff;border-radius:8px">
               <tr><td style="padding:16px;text-align:center">
                 <p style="margin:0 0 6px;font-size:22px">🤝</p>
-                <p style="margin:0;color:#6b21a8;font-size:13px;font-weight:600;line-height:1.4">Full Support</p>
+                <p style="margin:0;color:#6b21a8;font-size:13px;font-weight:600;line-height:1.4">Полная поддержка</p>
               </td></tr>
             </table>
           </td>
         </tr>
       </table>
       <p style="margin:0 0 28px;color:#374151;font-size:15px;line-height:1.8">
-        I'd love to schedule a quick 15-minute call to discuss whether this could be a fit. Would you be open to that?
+        Буду рад созвониться на 15 минут и обсудить, подходит ли это вам. Вам было бы удобно?
       </p>
       <table cellpadding="0" cellspacing="0">
         <tr><td>
           <a href="#" style="display:inline-block;background:#6366f1;color:#ffffff;padding:13px 28px;border-radius:7px;text-decoration:none;font-weight:600;font-size:14px">
-            Schedule a Call →
+            Назначить звонок →
           </a>
         </td></tr>
       </table>
@@ -280,8 +280,8 @@ export const DEMO_TEMPLATES: DemoTemplate[] = [
     <!-- Footer -->
     <tr><td style="background:#f9fafb;border-top:1px solid #e5e7eb;padding:16px 44px;text-align:center">
       <p style="margin:0;color:#9ca3af;font-size:11px">
-        <a href="{{unsubscribeUrl}}" style="color:#9ca3af;text-decoration:underline">Unsubscribe</a>
-        &nbsp;·&nbsp; You're receiving this because of your professional profile
+        <a href="{{unsubscribeUrl}}" style="color:#9ca3af;text-decoration:underline">Отписаться</a>
+        &nbsp;·&nbsp; Вы получили это письмо из-за вашего профессионального профиля
       </p>
     </td></tr>
   </table>
@@ -291,9 +291,9 @@ export const DEMO_TEMPLATES: DemoTemplate[] = [
   },
   {
     id: 'demo-freelancer',
-    name: 'Freelancer / Agency',
+    name: 'Фрилансер / Агентство',
     category: 'promotional',
-    description: 'Sleek outreach email for freelancers and agencies pitching services',
+    description: 'Стильное письмо для фрилансеров и агентств, предлагающих услуги',
     htmlContent: `<!DOCTYPE html>
 <html lang="en">
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
@@ -308,14 +308,14 @@ export const DEMO_TEMPLATES: DemoTemplate[] = [
           <span style="font-size:28px;line-height:64px;display:block">💼</span>
         </div>
       </div>
-      <h1 style="margin:0 0 8px;color:#f1f5f9;font-size:24px;font-weight:700">Available for New Projects</h1>
-      <p style="margin:0;color:#94a3b8;font-size:15px;line-height:1.6">Let's build something great together</p>
+      <h1 style="margin:0 0 8px;color:#f1f5f9;font-size:24px;font-weight:700">Открыт для новых проектов</h1>
+      <p style="margin:0;color:#94a3b8;font-size:15px;line-height:1.6">Давайте создадим что-то классное вместе</p>
     </td></tr>
     <!-- Body -->
     <tr><td style="padding:0 44px 36px">
-      <p style="margin:0 0 16px;color:#cbd5e1;font-size:15px;line-height:1.8">Hi {{firstName}},</p>
+      <p style="margin:0 0 16px;color:#cbd5e1;font-size:15px;line-height:1.8">Здравствуйте, {{firstName}},</p>
       <p style="margin:0 0 24px;color:#cbd5e1;font-size:15px;line-height:1.8">
-        I came across your company and I'm impressed by what you're building. I specialize in [your skill / service] and I'm currently taking on new clients.
+        Я познакомился с вашей компанией, и меня впечатлило то, что вы создаёте. Я специализируюсь на [ваш навык / услуга] и сейчас беру новых клиентов.
       </p>
       <!-- Skills / services -->
       <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:28px">
@@ -349,23 +349,23 @@ export const DEMO_TEMPLATES: DemoTemplate[] = [
           <td style="padding:0 0 0 8px;vertical-align:top">
             <table width="100%" cellpadding="0" cellspacing="0" style="background:#0f172a;border-radius:8px;border:1px solid #334155">
               <tr><td style="padding:16px">
-                <p style="margin:0 0 6px;color:#f59e0b;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px">Experience</p>
-                <p style="margin:0;color:#94a3b8;font-size:13px;line-height:1.5">12+ years · End-to-end delivery</p>
+                <p style="margin:0 0 6px;color:#f59e0b;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px">Опыт</p>
+                <p style="margin:0;color:#94a3b8;font-size:13px;line-height:1.5">12+ лет · Проекты под ключ</p>
               </td></tr>
             </table>
           </td>
         </tr>
       </table>
       <p style="margin:0 0 28px;color:#cbd5e1;font-size:15px;line-height:1.8">
-        I can start immediately and integrate with your existing team and workflow. Let me know if you'd like to see my portfolio or have a quick chat.
+        Я могу приступить сразу и легко влиться в вашу команду и процессы. Дайте знать, если хотите посмотреть портфолио или коротко пообщаться.
       </p>
       <table width="100%" cellpadding="0" cellspacing="0">
         <tr>
           <td style="padding-right:10px">
-            <a href="#" style="display:block;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#ffffff;padding:13px 0;border-radius:7px;text-decoration:none;font-weight:600;font-size:14px;text-align:center">View Portfolio</a>
+            <a href="#" style="display:block;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#ffffff;padding:13px 0;border-radius:7px;text-decoration:none;font-weight:600;font-size:14px;text-align:center">Смотреть портфолио</a>
           </td>
           <td style="padding-left:10px">
-            <a href="#" style="display:block;background:#0f172a;border:1px solid #334155;color:#f1f5f9;padding:13px 0;border-radius:7px;text-decoration:none;font-weight:600;font-size:14px;text-align:center">Schedule Call</a>
+            <a href="#" style="display:block;background:#0f172a;border:1px solid #334155;color:#f1f5f9;padding:13px 0;border-radius:7px;text-decoration:none;font-weight:600;font-size:14px;text-align:center">Назначить звонок</a>
           </td>
         </tr>
       </table>
@@ -373,8 +373,8 @@ export const DEMO_TEMPLATES: DemoTemplate[] = [
     <!-- Footer -->
     <tr><td style="background:#0f172a;padding:20px 44px;text-align:center">
       <p style="margin:0;color:#475569;font-size:11px">
-        <a href="{{unsubscribeUrl}}" style="color:#475569;text-decoration:underline">Unsubscribe</a>
-        &nbsp;·&nbsp; Sent via MailForge
+        <a href="{{unsubscribeUrl}}" style="color:#475569;text-decoration:underline">Отписаться</a>
+        &nbsp;·&nbsp; Отправлено через MailForge
       </p>
     </td></tr>
   </table>
@@ -384,9 +384,9 @@ export const DEMO_TEMPLATES: DemoTemplate[] = [
   },
   {
     id: 'demo-followup',
-    name: 'Follow-up',
+    name: 'Дожим',
     category: 'promotional',
-    description: 'Short follow-up email for unanswered outreach',
+    description: 'Короткое письмо-дожим для неотвеченной рассылки',
     htmlContent: `<!DOCTYPE html>
 <html lang="en">
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
@@ -398,44 +398,44 @@ export const DEMO_TEMPLATES: DemoTemplate[] = [
     <tr><td style="background:#6366f1;height:3px;font-size:0;line-height:0">&nbsp;</td></tr>
     <!-- Body -->
     <tr><td style="padding:40px 44px">
-      <p style="margin:0 0 20px;color:#374151;font-size:15px;line-height:1.8">Hi {{firstName}},</p>
+      <p style="margin:0 0 20px;color:#374151;font-size:15px;line-height:1.8">Здравствуйте, {{firstName}},</p>
       <p style="margin:0 0 18px;color:#374151;font-size:15px;line-height:1.8">
-        I wanted to follow up on my previous message — I know inboxes get busy, so I'll keep this short.
+        Хотел напомнить о своём предыдущем письме — понимаю, что почта бывает загружена, поэтому буду краток.
       </p>
       <!-- Quote / reminder box -->
       <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:20px">
         <tr><td style="background:#f8fafc;border-left:3px solid #6366f1;border-radius:0 8px 8px 0;padding:16px 20px">
           <p style="margin:0;color:#6b7280;font-size:13px;line-height:1.6;font-style:italic">
-            "In my last email I mentioned [brief reminder of your proposal]. I believe this could help {{company}} achieve [specific outcome]."
+            «В прошлом письме я упоминал [краткое напоминание о вашем предложении]. Уверен, это поможет {{company}} достичь [конкретный результат].»
           </p>
         </td></tr>
       </table>
       <p style="margin:0 0 28px;color:#374151;font-size:15px;line-height:1.8">
-        Would a quick 15-minute call this week work for you? I'm flexible on timing.
+        Удобно ли вам созвониться на 15 минут на этой неделе? Я гибок по времени.
       </p>
       <table cellpadding="0" cellspacing="0">
         <tr><td>
           <a href="#" style="display:inline-block;background:#6366f1;color:#ffffff;padding:12px 26px;border-radius:7px;text-decoration:none;font-weight:600;font-size:14px">
-            Book a Time →
+            Выбрать время →
           </a>
         </td></tr>
       </table>
       <p style="margin:24px 0 0;color:#9ca3af;font-size:13px;line-height:1.6">
-        No worries if now isn't the right time — just let me know and I'll reach out later. 🙂
+        Если сейчас неподходящий момент — просто дайте знать, и я напишу позже. 🙂
       </p>
     </td></tr>
     <!-- Signature line -->
     <tr><td style="padding:0 44px"><div style="height:1px;background:#f1f5f9"></div></td></tr>
     <tr><td style="padding:20px 44px">
       <p style="margin:0;color:#6b7280;font-size:13px;line-height:1.6">
-        Best,<br>
+        С уважением,<br>
         <strong style="color:#111827">{{firstName}}</strong>
       </p>
     </td></tr>
     <!-- Footer -->
     <tr><td style="background:#f9fafb;border-top:1px solid #f1f5f9;padding:14px 44px;text-align:center">
       <p style="margin:0;color:#9ca3af;font-size:11px">
-        <a href="{{unsubscribeUrl}}" style="color:#9ca3af;text-decoration:underline">Unsubscribe</a>
+        <a href="{{unsubscribeUrl}}" style="color:#9ca3af;text-decoration:underline">Отписаться</a>
       </p>
     </td></tr>
   </table>
@@ -445,9 +445,9 @@ export const DEMO_TEMPLATES: DemoTemplate[] = [
   },
   {
     id: 'demo-saas-trial',
-    name: 'SaaS Trial / Demo',
+    name: 'SaaS триал / Демо',
     category: 'promotional',
-    description: 'SaaS product demo invite or free trial activation email',
+    description: 'Письмо-приглашение на демо SaaS-продукта или активацию бесплатного триала',
     htmlContent: `<!DOCTYPE html>
 <html lang="en">
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
@@ -457,15 +457,15 @@ export const DEMO_TEMPLATES: DemoTemplate[] = [
   <table width="560" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.06)">
     <!-- Hero -->
     <tr><td style="background:linear-gradient(135deg,#059669,#0891b2);padding:44px 40px 36px;text-align:center">
-      <p style="margin:0 0 10px;background:rgba(255,255,255,0.15);display:inline-block;color:#ffffff;font-size:12px;font-weight:700;letter-spacing:2px;text-transform:uppercase;padding:5px 14px;border-radius:20px">🎁 Free Trial</p>
-      <h1 style="margin:14px 0 10px;color:#ffffff;font-size:28px;font-weight:800;line-height:1.2">Try [Product] Free<br>for 14 Days</h1>
-      <p style="margin:0;color:rgba(255,255,255,0.85);font-size:15px">No credit card required</p>
+      <p style="margin:0 0 10px;background:rgba(255,255,255,0.15);display:inline-block;color:#ffffff;font-size:12px;font-weight:700;letter-spacing:2px;text-transform:uppercase;padding:5px 14px;border-radius:20px">🎁 Бесплатный триал</p>
+      <h1 style="margin:14px 0 10px;color:#ffffff;font-size:28px;font-weight:800;line-height:1.2">Попробуйте [Продукт] бесплатно<br>14 дней</h1>
+      <p style="margin:0;color:rgba(255,255,255,0.85);font-size:15px">Без привязки карты</p>
     </td></tr>
     <!-- Body -->
     <tr><td style="padding:36px 44px 0">
-      <p style="margin:0 0 16px;color:#374151;font-size:15px;line-height:1.8">Hi {{firstName}},</p>
+      <p style="margin:0 0 16px;color:#374151;font-size:15px;line-height:1.8">Здравствуйте, {{firstName}},</p>
       <p style="margin:0 0 24px;color:#374151;font-size:15px;line-height:1.8">
-        I'd love to show you how [Product] helps teams like {{company}} [achieve key outcome] — in less time and with fewer headaches.
+        Хочу показать, как [Продукт] помогает командам вроде {{company}} [достичь ключевого результата] — быстрее и без лишней головной боли.
       </p>
       <!-- Features list -->
       <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:28px">
@@ -473,7 +473,7 @@ export const DEMO_TEMPLATES: DemoTemplate[] = [
           <table cellpadding="0" cellspacing="0">
             <tr>
               <td style="width:28px;height:28px;background:#d1fae5;border-radius:50%;text-align:center;vertical-align:middle;font-size:13px">✓</td>
-              <td style="padding-left:12px;color:#374151;font-size:14px;line-height:1.5">Feature one — brief description of main benefit</td>
+              <td style="padding-left:12px;color:#374151;font-size:14px;line-height:1.5">Функция один — краткое описание главного преимущества</td>
             </tr>
           </table>
         </td></tr>
@@ -481,7 +481,7 @@ export const DEMO_TEMPLATES: DemoTemplate[] = [
           <table cellpadding="0" cellspacing="0">
             <tr>
               <td style="width:28px;height:28px;background:#d1fae5;border-radius:50%;text-align:center;vertical-align:middle;font-size:13px">✓</td>
-              <td style="padding-left:12px;color:#374151;font-size:14px;line-height:1.5">Feature two — another key advantage</td>
+              <td style="padding-left:12px;color:#374151;font-size:14px;line-height:1.5">Функция два — ещё одно ключевое преимущество</td>
             </tr>
           </table>
         </td></tr>
@@ -489,7 +489,7 @@ export const DEMO_TEMPLATES: DemoTemplate[] = [
           <table cellpadding="0" cellspacing="0">
             <tr>
               <td style="width:28px;height:28px;background:#d1fae5;border-radius:50%;text-align:center;vertical-align:middle;font-size:13px">✓</td>
-              <td style="padding-left:12px;color:#374151;font-size:14px;line-height:1.5">Feature three — integration or time-saving aspect</td>
+              <td style="padding-left:12px;color:#374151;font-size:14px;line-height:1.5">Функция три — интеграция или экономия времени</td>
             </tr>
           </table>
         </td></tr>
@@ -498,24 +498,24 @@ export const DEMO_TEMPLATES: DemoTemplate[] = [
     <!-- CTA -->
     <tr><td style="padding:0 44px 40px;text-align:center">
       <a href="#" style="display:inline-block;background:linear-gradient(135deg,#059669,#0891b2);color:#ffffff;padding:15px 40px;border-radius:8px;text-decoration:none;font-weight:700;font-size:15px">
-        Start Free Trial →
+        Начать бесплатный триал →
       </a>
-      <p style="margin:16px 0 0;color:#9ca3af;font-size:12px">Setup takes under 5 minutes</p>
+      <p style="margin:16px 0 0;color:#9ca3af;font-size:12px">Настройка займёт меньше 5 минут</p>
     </td></tr>
     <!-- Social proof -->
     <tr><td style="padding:0 44px 36px">
       <table width="100%" cellpadding="0" cellspacing="0" style="background:#f8fafc;border-radius:8px">
         <tr><td style="padding:20px 24px">
-          <p style="margin:0 0 8px;color:#374151;font-size:14px;font-style:italic;line-height:1.6">"[Product] saved our team 10+ hours per week. The setup was seamless and the results were immediate."</p>
-          <p style="margin:0;color:#6b7280;font-size:12px;font-weight:600">— Customer Name, Company</p>
+          <p style="margin:0 0 8px;color:#374151;font-size:14px;font-style:italic;line-height:1.6">«[Продукт] сэкономил нашей команде 10+ часов в неделю. Настройка прошла легко, а результат был мгновенным.»</p>
+          <p style="margin:0;color:#6b7280;font-size:12px;font-weight:600">— Имя клиента, Компания</p>
         </td></tr>
       </table>
     </td></tr>
     <!-- Footer -->
     <tr><td style="background:#f9fafb;border-top:1px solid #e5e7eb;padding:18px 44px;text-align:center">
       <p style="margin:0;color:#9ca3af;font-size:11px">
-        <a href="{{unsubscribeUrl}}" style="color:#9ca3af;text-decoration:underline">Unsubscribe</a>
-        &nbsp;·&nbsp; Questions? Reply to this email anytime
+        <a href="{{unsubscribeUrl}}" style="color:#9ca3af;text-decoration:underline">Отписаться</a>
+        &nbsp;·&nbsp; Есть вопросы? Ответьте на это письмо в любое время
       </p>
     </td></tr>
   </table>

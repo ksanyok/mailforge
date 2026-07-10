@@ -13,11 +13,11 @@ export function ActivityPage() {
   const result = data as { data: Activity[]; total: number } | undefined;
 
   const columns: ColumnDef<Activity>[] = [
-    { accessorKey: 'user.name', header: 'User', cell: ({ row }) => <div><p className="font-medium text-sm">{row.original.user?.name}</p><p className="text-xs text-muted-foreground">{row.original.user?.email}</p></div> },
-    { accessorKey: 'action', header: 'Action', cell: ({ getValue }) => <span className="font-mono text-xs bg-muted px-1.5 py-0.5 rounded">{getValue() as string}</span> },
-    { accessorKey: 'resourceType', header: 'Resource' },
+    { accessorKey: 'user.name', header: 'Пользователь', cell: ({ row }) => <div><p className="font-medium text-sm">{row.original.user?.name}</p><p className="text-xs text-muted-foreground">{row.original.user?.email}</p></div> },
+    { accessorKey: 'action', header: 'Действие', cell: ({ getValue }) => <span className="font-mono text-xs bg-muted px-1.5 py-0.5 rounded">{getValue() as string}</span> },
+    { accessorKey: 'resourceType', header: 'Ресурс' },
     { accessorKey: 'ipAddress', header: 'IP', cell: ({ getValue }) => (getValue() as string) || '—' },
-    { accessorKey: 'createdAt', header: 'Time', cell: ({ getValue }) => formatDateTime(getValue() as string) },
+    { accessorKey: 'createdAt', header: 'Время', cell: ({ getValue }) => formatDateTime(getValue() as string) },
   ];
 
   return (

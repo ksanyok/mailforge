@@ -55,26 +55,26 @@ export function ContactDetailPage() {
       qc.invalidateQueries({ queryKey: ['contact', id] });
       qc.invalidateQueries({ queryKey: ['contacts'] });
       setEditing(false);
-      toast({ title: 'Contact updated' });
+      toast({ title: 'Контакт обновлён' });
     },
-    onError: (err: any) => toast({ title: err?.response?.data?.message ?? 'Failed to update', variant: 'destructive' }),
+    onError: (err: any) => toast({ title: err?.response?.data?.message ?? 'Не удалось обновить', variant: 'destructive' }),
   });
 
   const remove = useMutation({
     mutationFn: () => contactsApi.remove(id!),
-    onSuccess: () => { navigate('/contacts'); toast({ title: 'Contact deleted' }); },
+    onSuccess: () => { navigate('/contacts'); toast({ title: 'Контакт удалён' }); },
   });
 
-  if (isLoading) return <div className="text-muted-foreground">Loading...</div>;
-  if (!c) return <div className="text-muted-foreground">Contact not found</div>;
+  if (isLoading) return <div className="text-muted-foreground">Загрузка...</div>;
+  if (!c) return <div className="text-muted-foreground">Контакт не найден</div>;
 
   if (editing) {
     return (
       <div className="space-y-4 max-w-2xl">
         <Button variant="ghost" size="sm" onClick={() => setEditing(false)}>
-          <ArrowLeft className="h-4 w-4 mr-2" /> Back
+          <ArrowLeft className="h-4 w-4 mr-2" /> Назад
         </Button>
-        <h2 className="text-xl font-semibold">Edit Contact</h2>
+        <h2 className="text-xl font-semibold">Изменить контакт</h2>
         <form onSubmit={handleSubmit((d) => update.mutate(d))} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
@@ -82,7 +82,7 @@ export function ContactDetailPage() {
               <Input type="email" {...register('email', { required: true })} />
             </div>
             <div className="space-y-1.5">
-              <Label>Status</Label>
+              <Label>Статус</Label>
               <Select defaultValue={c.status as string} onValueChange={(v) => setValue('status', v)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -91,25 +91,25 @@ export function ContactDetailPage() {
               </Select>
             </div>
             <div className="space-y-1.5">
-              <Label>First Name</Label>
+              <Label>Имя</Label>
               <Input {...register('firstName')} />
             </div>
             <div className="space-y-1.5">
-              <Label>Last Name</Label>
+              <Label>Фамилия</Label>
               <Input {...register('lastName')} />
             </div>
             <div className="space-y-1.5">
-              <Label>Phone</Label>
+              <Label>Телефон</Label>
               <Input {...register('phone')} />
             </div>
             <div className="space-y-1.5">
-              <Label>Company</Label>
+              <Label>Компания</Label>
               <Input {...register('company')} />
             </div>
           </div>
           <div className="flex gap-2">
-            <Button type="submit" disabled={update.isPending}>{update.isPending ? 'Saving…' : 'Save Changes'}</Button>
-            <Button type="button" variant="outline" onClick={() => setEditing(false)}>Cancel</Button>
+            <Button type="submit" disabled={update.isPending}>{update.isPending ? 'Сохранение…' : 'Сохранить изменения'}</Button>
+            <Button type="button" variant="outline" onClick={() => setEditing(false)}>Отмена</Button>
           </div>
         </form>
       </div>
@@ -120,18 +120,18 @@ export function ContactDetailPage() {
     <div className="space-y-4 max-w-3xl">
       <div className="flex items-center justify-between">
         <Button variant="ghost" size="sm" onClick={() => navigate(-1)}>
-          <ArrowLeft className="h-4 w-4 mr-2" /> Back
+          <ArrowLeft className="h-4 w-4 mr-2" /> Назад
         </Button>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" onClick={startEdit}>
-            <Edit className="h-3.5 w-3.5 mr-1" /> Edit
+            <Edit className="h-3.5 w-3.5 mr-1" /> Изменить
           </Button>
           <Button
             variant="ghost" size="sm"
             className="text-destructive hover:bg-destructive/10"
-            onClick={() => { if (confirm('Delete this contact?')) remove.mutate(); }}
+            onClick={() => { if (confirm('Удалить этот контакт?')) remove.mutate(); }}
           >
-            <Trash2 className="h-3.5 w-3.5 mr-1" /> Delete
+            <Trash2 className="h-3.5 w-3.5 mr-1" /> Удалить
           </Button>
         </div>
       </div>
@@ -152,24 +152,24 @@ export function ContactDetailPage() {
 
       <div className="grid grid-cols-2 gap-4">
         <Card>
-          <CardHeader><CardTitle className="text-sm">Contact Info</CardTitle></CardHeader>
+          <CardHeader><CardTitle className="text-sm">Контактные данные</CardTitle></CardHeader>
           <CardContent className="space-y-2 text-sm">
             <div className="flex items-center gap-2"><Mail className="h-4 w-4 text-muted-foreground" />{c.email as string}</div>
             {c.phone && <div className="flex items-center gap-2"><Phone className="h-4 w-4 text-muted-foreground" />{c.phone as string}</div>}
             {c.company && <div className="flex items-center gap-2"><Building className="h-4 w-4 text-muted-foreground" />{c.company as string}</div>}
-            <div className="text-muted-foreground">Added {formatDate(c.createdAt as string)}</div>
+            <div className="text-muted-foreground">Добавлен {formatDate(c.createdAt as string)}</div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardHeader><CardTitle className="text-sm">Engagement</CardTitle></CardHeader>
+          <CardHeader><CardTitle className="text-sm">Вовлечённость</CardTitle></CardHeader>
           <CardContent className="space-y-2 text-sm">
-            <div className="flex justify-between"><span className="text-muted-foreground">Score</span><span className="font-medium">{c.engagementScore as number}</span></div>
-            <div className="flex justify-between"><span className="text-muted-foreground">Risk</span><span className="font-medium">{c.riskScore as number}</span></div>
-            <div className="flex justify-between"><span className="text-muted-foreground">Total Sent</span><span>{c.totalSent as number}</span></div>
-            <div className="flex justify-between"><span className="text-muted-foreground">Total Opened</span><span>{c.totalOpened as number}</span></div>
-            <div className="flex justify-between"><span className="text-muted-foreground">Total Clicked</span><span>{c.totalClicked as number}</span></div>
-            {c.lastOpenedAt && <div className="flex justify-between"><span className="text-muted-foreground">Last Opened</span><span>{formatDate(c.lastOpenedAt as string)}</span></div>}
+            <div className="flex justify-between"><span className="text-muted-foreground">Индекс</span><span className="font-medium">{c.engagementScore as number}</span></div>
+            <div className="flex justify-between"><span className="text-muted-foreground">Риск</span><span className="font-medium">{c.riskScore as number}</span></div>
+            <div className="flex justify-between"><span className="text-muted-foreground">Всего отправлено</span><span>{c.totalSent as number}</span></div>
+            <div className="flex justify-between"><span className="text-muted-foreground">Всего открытий</span><span>{c.totalOpened as number}</span></div>
+            <div className="flex justify-between"><span className="text-muted-foreground">Всего кликов</span><span>{c.totalClicked as number}</span></div>
+            {c.lastOpenedAt && <div className="flex justify-between"><span className="text-muted-foreground">Последнее открытие</span><span>{formatDate(c.lastOpenedAt as string)}</span></div>}
           </CardContent>
         </Card>
       </div>

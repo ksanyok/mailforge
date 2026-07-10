@@ -25,7 +25,7 @@ export function LoginPage() {
       setAuth(result.user, result.accessToken, result.refreshToken);
       navigate('/dashboard');
     } catch {
-      toast({ title: 'Login failed', description: 'Invalid email or password', variant: 'destructive' });
+      toast({ title: 'Не удалось войти', description: 'Неверный email или пароль', variant: 'destructive' });
     }
   };
 
@@ -37,7 +37,7 @@ export function LoginPage() {
             <Mail className="h-8 w-8 text-primary" />
           </div>
           <CardTitle className="text-2xl">MailForge</CardTitle>
-          <CardDescription>Sign in to your account</CardDescription>
+          <CardDescription>Войдите в свой аккаунт</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
@@ -47,25 +47,25 @@ export function LoginPage() {
                 id="email"
                 type="email"
                 placeholder="admin@mailforge.local"
-                {...register('email', { required: 'Email is required' })}
+                {...register('email', { required: 'Укажите email' })}
               />
               {errors.email && <p className="text-xs text-destructive">{errors.email.message}</p>}
             </div>
             <div className="space-y-1">
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password">Пароль</Label>
               <Input
                 id="password"
                 type="password"
-                {...register('password', { required: 'Password is required' })}
+                {...register('password', { required: 'Укажите пароль' })}
               />
               {errors.password && <p className="text-xs text-destructive">{errors.password.message}</p>}
             </div>
             <Button type="submit" className="w-full" disabled={isSubmitting}>
-              {isSubmitting ? 'Signing in...' : 'Sign In'}
+              {isSubmitting ? 'Вход…' : 'Войти'}
             </Button>
             <p className="text-center text-sm text-muted-foreground">
-              Don't have an account?{' '}
-              <Link to="/register" className="text-primary hover:underline">Register</Link>
+              Нет аккаунта?{' '}
+              <Link to="/register" className="text-primary hover:underline">Зарегистрироваться</Link>
             </p>
           </form>
         </CardContent>

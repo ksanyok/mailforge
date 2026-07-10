@@ -43,14 +43,14 @@ export function NotificationsPage() {
   return (
     <div className="space-y-3 max-w-3xl">
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold">Notifications</h2>
+        <h2 className="text-lg font-semibold">Уведомления</h2>
         {unread > 0 && (
           <Button variant="outline" size="sm" onClick={() => markAllRead.mutate()} disabled={markAllRead.isPending}>
-            <Check className="h-4 w-4 mr-2" />Mark all read ({unread})
+            <Check className="h-4 w-4 mr-2" />Отметить все прочитанными ({unread})
           </Button>
         )}
       </div>
-      {notifs.length === 0 && <div className="text-center py-16 text-muted-foreground">No notifications</div>}
+      {notifs.length === 0 && <div className="text-center py-16 text-muted-foreground">Уведомлений нет</div>}
       {notifs.map((n) => (
         <Card
           key={n.id}
@@ -69,13 +69,13 @@ export function NotificationsPage() {
               </div>
               <p className="text-sm text-muted-foreground mt-0.5">{n.message}</p>
               {n.type === 'INBOX_REPLY' && (
-                <p className="text-xs text-primary mt-1">Click to open conversation →</p>
+                <p className="text-xs text-primary mt-1">Нажмите, чтобы открыть диалог →</p>
               )}
             </div>
             {!n.isRead && (
               <button
                 className="shrink-0 w-6 h-6 rounded-full hover:bg-muted flex items-center justify-center text-muted-foreground hover:text-primary transition-colors"
-                title="Mark as read"
+                title="Отметить прочитанным"
                 onClick={(e) => { e.stopPropagation(); markRead.mutate(n.id); }}
               >
                 <Check className="h-3 w-3" />

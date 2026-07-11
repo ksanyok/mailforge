@@ -10,8 +10,9 @@ import { cn } from '@/utils/cn';
 import { useAuthStore } from '@/stores/auth.store';
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  BarChart, Bar, PieChart, Pie, Cell, Legend,
+  PieChart, Pie, Cell,
 } from 'recharts';
+import { ChartTooltip, ChartGradients, axisProps, gridProps } from '@/components/charts/chart-kit';
 
 const PIE_COLORS = ['#0f9d58', '#8b93a1', '#e0483d', '#c77700', '#5b54ec'];
 
@@ -125,17 +126,33 @@ export function DashboardPage() {
             <CardTitle className="text-sm">Активность писем (30 дней)</CardTitle>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={220}>
-              <AreaChart data={dailyData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="date" tick={{ fontSize: 11 }} tickFormatter={(v) => v.slice(5)} />
-                <YAxis tick={{ fontSize: 11 }} />
-                <Tooltip />
-                <Legend />
-                <Area type="monotone" dataKey="sent" stroke="#6366f1" fill="#6366f120" name="Отправлено" />
-                <Area type="monotone" dataKey="opened" stroke="#22c55e" fill="#22c55e20" name="Открыто" />
-                <Area type="monotone" dataKey="clicked" stroke="#3b82f6" fill="#3b82f620" name="Кликнуто" />
-                <Area type="monotone" dataKey="bounced" stroke="#ef4444" fill="#ef444420" name="Отказы" />
+            <div className="flex items-center gap-4 mb-3 flex-wrap">
+              {[
+                { c: 'var(--accent)', l: 'Отправлено' },
+                { c: 'var(--success)', l: 'Открыто' },
+                { c: 'var(--info)', l: 'Кликнуто' },
+                { c: 'var(--danger)', l: 'Отказы' },
+              ].map((x) => (
+                <span key={x.l} className="flex items-center gap-1.5 text-[12px] text-ink-2">
+                  <span className="w-2.5 h-2.5 rounded-[3px]" style={{ background: x.c }} />
+                  {x.l}
+                </span>
+              ))}
+            </div>
+            <ResponsiveContainer width="100%" height={240}>
+              <AreaChart data={dailyData} margin={{ top: 4, right: 8, left: -18, bottom: 0 }}>
+                <ChartGradients ids={[
+                  { id: 'gSent', color: 'var(--accent)' },
+                  { id: 'gOpened', color: 'var(--success)' },
+                ]} />
+                <CartesianGrid {...gridProps} />
+                <XAxis dataKey="date" {...axisProps} tickFormatter={(v) => v.slice(5)} minTickGap={24} />
+                <YAxis {...axisProps} width={40} allowDecimals={false} />
+                <Tooltip content={<ChartTooltip />} cursor={{ stroke: 'var(--border-2)', strokeWidth: 1 }} />
+                <Area type="monotone" dataKey="sent" stroke="var(--accent)" strokeWidth={2.5} fill="url(#gSent)" name="Отправлено" />
+                <Area type="monotone" dataKey="opened" stroke="var(--success)" strokeWidth={2} fill="url(#gOpened)" name="Открыто" />
+                <Area type="monotone" dataKey="clicked" stroke="var(--info)" strokeWidth={2} fill="transparent" name="Кликнуто" />
+                <Area type="monotone" dataKey="bounced" stroke="var(--danger)" strokeWidth={1.6} strokeDasharray="4 3" fill="transparent" name="Отказы" />
               </AreaChart>
             </ResponsiveContainer>
           </CardContent>
@@ -147,14 +164,23 @@ export function DashboardPage() {
             <CardTitle className="text-sm">Статусы контактов</CardTitle>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={220}>
+            <ResponsiveContainer width="100%" height={200}>
               <PieChart>
-                <Pie data={pieData} cx="50%" cy="50%" outerRadius={70} dataKey="value" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`} labelLine={false}>
+                <Pie data={pieData} cx="50%" cy="50%" innerRadius={52} outerRadius={78} paddingAngle={2} dataKey="value" stroke="var(--surface)" strokeWidth={2}>
                   {pieData.map((_, i) => <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />)}
                 </Pie>
-                <Tooltip />
+                <Tooltip content={<ChartTooltip />} />
               </PieChart>
             </ResponsiveContainer>
+            <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 mt-3">
+              {pieData.map((p, i) => (
+                <span key={p.name} className="flex items-center gap-2 text-[12px] text-ink-2">
+                  <span className="w-2.5 h-2.5 rounded-[3px] shrink-0" style={{ background: PIE_COLORS[i % PIE_COLORS.length] }} />
+                  <span className="flex-1 truncate">{p.name}</span>
+                  <span className="font-mono font-semibold text-ink">{formatNumber(p.value)}</span>
+                </span>
+              ))}
+            </div>
           </CardContent>
         </Card>
       </div>

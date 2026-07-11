@@ -8,6 +8,7 @@ import { warmupApi, sendersApi } from '@/api/index';
 import { useForm } from 'react-hook-form';
 import { toast } from '@/hooks/use-toast';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { ChartTooltip, ChartGradients, axisProps, gridProps } from '@/components/charts/chart-kit';
 import { useState } from 'react';
 
 interface WarmupEntry { senderId: string; sender: { name: string; fromEmail: string }; warmupRule?: Record<string, unknown>; warmupCurrentDailyLimit: number; warmupStage: number; }
@@ -74,14 +75,15 @@ export function WarmupPage() {
             <Card>
               <CardHeader><CardTitle className="text-sm">Прогресс прогрева (30 дней)</CardTitle></CardHeader>
               <CardContent>
-                <ResponsiveContainer width="100%" height={200}>
-                  <AreaChart data={logsData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-                    <XAxis dataKey="date" tick={{ fontSize: 11 }} tickFormatter={(v) => v.slice(5)} />
-                    <YAxis tick={{ fontSize: 11 }} />
-                    <Tooltip />
-                    <Area type="monotone" dataKey="targetVolume" stroke="var(--text-3)" fill="var(--surface-3)" name="Целевой" />
-                    <Area type="monotone" dataKey="actualVolume" stroke="var(--accent)" fill="var(--accent-soft)" name="Фактический" />
+                <ResponsiveContainer width="100%" height={210}>
+                  <AreaChart data={logsData} margin={{ top: 4, right: 8, left: -18, bottom: 0 }}>
+                    <ChartGradients ids={[{ id: 'gActual', color: 'var(--accent)' }]} />
+                    <CartesianGrid {...gridProps} />
+                    <XAxis dataKey="date" {...axisProps} tickFormatter={(v) => v.slice(5)} minTickGap={24} />
+                    <YAxis {...axisProps} width={40} allowDecimals={false} />
+                    <Tooltip content={<ChartTooltip />} cursor={{ stroke: 'var(--border-2)', strokeWidth: 1 }} />
+                    <Area type="monotone" dataKey="targetVolume" stroke="var(--text-3)" strokeWidth={1.6} strokeDasharray="4 3" fill="transparent" name="Целевой" />
+                    <Area type="monotone" dataKey="actualVolume" stroke="var(--accent)" strokeWidth={2.5} fill="url(#gActual)" name="Фактический" />
                   </AreaChart>
                 </ResponsiveContainer>
               </CardContent>

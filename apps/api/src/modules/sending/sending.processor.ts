@@ -75,11 +75,14 @@ export class SendingProcessor {
       const unsubscribeToken = await this.getToken(campaignId, contactId, 'UNSUBSCRIBE');
       const openToken = campaign.trackOpens ? await this.getToken(campaignId, contactId, 'OPEN') : null;
 
+      const cf = (contact.customFields ?? {}) as Record<string, unknown>;
       const variables = {
         firstName: contact.firstName ?? '',
         lastName: contact.lastName ?? '',
         email: contact.email,
         company: contact.company ?? '',
+        website: contact.website ?? (typeof cf.website === 'string' ? cf.website : '') ?? '',
+        region: typeof cf.region === 'string' ? cf.region : '',
         unsubscribeUrl: `${appUrl}/t/u/${unsubscribeToken?.token ?? ''}`,
       };
 

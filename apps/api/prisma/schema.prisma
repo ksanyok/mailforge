@@ -236,6 +236,9 @@ model Contact {
   engagementScore  Int              @default(50)
   riskScore        Int              @default(0)
   validationStatus ValidationStatus @default(UNKNOWN)
+  website          String?
+  emailDomain      String?
+  emailType        String?
   sourceType       String?
   sourceId         String?
   customFields     Json             @default("{}")
@@ -265,6 +268,8 @@ model Contact {
   @@index([lastOpenedAt])
   @@index([engagementScore])
   @@index([validationStatus])
+  @@index([emailType])
+  @@index([emailDomain])
   @@map("contacts")
 }
 

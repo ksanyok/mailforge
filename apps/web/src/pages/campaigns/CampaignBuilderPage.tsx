@@ -41,6 +41,9 @@ const STEPS = [
 const VARIABLES = [
   { v: '{{firstName}}',    label: 'Имя' },
   { v: '{{lastName}}',     label: 'Фамилия' },
+  { v: '{{company}}',      label: 'Компания' },
+  { v: '{{website}}',      label: 'Сайт клиента' },
+  { v: '{{region}}',       label: 'Регион' },
   { v: '{{email}}',        label: 'Email' },
   { v: '{{unsubscribeUrl}}', label: 'Отписка ⚠️', required: true },
 ];

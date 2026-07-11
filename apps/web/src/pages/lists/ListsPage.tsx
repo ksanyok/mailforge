@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Trash2, List, Users, ChevronRight } from 'lucide-react';
+import { Plus, Trash2, List, Users, ChevronRight, Filter } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,6 +10,7 @@ import { listsApi } from '@/api/index';
 import { formatDate, formatNumber } from '@/utils/format';
 import { toast } from '@/hooks/use-toast';
 import { useState } from 'react';
+import { SmartListDialog } from './SmartListDialog';
 
 interface ContactList { id: string; name: string; description?: string; contactCount: number; createdAt: string; }
 
@@ -42,6 +43,9 @@ export function ListsPage() {
           </p>
         </div>
         <div className="flex-1" />
+        <SmartListDialog onCreated={() => qc.invalidateQueries({ queryKey: ['lists'] })}>
+          <Button variant="outline"><Filter className="h-4 w-4 mr-2" />Умный список</Button>
+        </SmartListDialog>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
             <Button><Plus className="h-4 w-4 mr-2" />Новый список</Button>

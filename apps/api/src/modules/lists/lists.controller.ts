@@ -2,7 +2,7 @@ import {
   Controller, Get, Post, Patch, Delete, Body, Param, Query, HttpCode, HttpStatus,
 } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
-import { ListsService } from './lists.service';
+import { ListsService, SmartListFilter } from './lists.service';
 
 @ApiTags('Lists')
 @ApiBearerAuth()
@@ -38,6 +38,17 @@ export class ListsController {
   @Post()
   create(@Body() dto: { name: string; description?: string }) {
     return this.listsService.create(dto);
+  }
+
+  @Post('preview-filter')
+  @HttpCode(HttpStatus.OK)
+  previewFilter(@Body() filter: SmartListFilter) {
+    return this.listsService.previewFilter(filter);
+  }
+
+  @Post('from-filter')
+  createFromFilter(@Body() dto: { name: string; description?: string; filter: SmartListFilter }) {
+    return this.listsService.createFromFilter(dto);
   }
 
   @Patch(':id')

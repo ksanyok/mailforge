@@ -17,6 +17,23 @@ import { toast } from '@/hooks/use-toast';
 interface Contact {
   id: string; email: string; firstName?: string; lastName?: string;
   status: string; engagementScore: number; riskScore: number; createdAt: string;
+  emailType?: string | null; website?: string | null;
+}
+
+function EmailTypeChip({ type }: { type?: string | null }) {
+  if (type !== 'CORPORATE' && type !== 'FREE') return null;
+  const corp = type === 'CORPORATE';
+  return (
+    <span
+      className="text-[10px] font-semibold px-1.5 py-px rounded"
+      style={{
+        background: corp ? 'var(--success-soft)' : 'var(--surface-3)',
+        color: corp ? 'var(--success)' : 'var(--text-2)',
+      }}
+    >
+      {corp ? 'корп.' : 'беспл.'}
+    </span>
+  );
 }
 
 const STATUSES = ['SUBSCRIBED', 'UNSUBSCRIBED', 'BOUNCED', 'COMPLAINED', 'SUPPRESSED'];
@@ -126,8 +143,11 @@ export function ContactsPage() {
               {contactInitials(c.firstName, c.lastName, c.email)}
             </span>
             <span className="min-w-0">
-              <span className="block font-semibold text-[12.5px] text-ink truncate group-hover:text-brand transition-colors">
-                {name || c.email}
+              <span className="flex items-center gap-1.5">
+                <span className="font-semibold text-[12.5px] text-ink truncate group-hover:text-brand transition-colors">
+                  {name || c.email}
+                </span>
+                <EmailTypeChip type={c.emailType} />
               </span>
               <span className="block text-[11.5px] text-ink-3 truncate">{c.email}</span>
             </span>

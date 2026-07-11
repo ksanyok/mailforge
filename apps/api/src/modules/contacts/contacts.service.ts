@@ -9,6 +9,7 @@ import * as net from 'net';
 import { PrismaService } from '../../core/database/prisma.service';
 import { getPaginationParams, buildPaginatedResponse } from '../../shared/utils/pagination.util';
 import { generateUnsubscribeToken } from '../../shared/utils/tokens.util';
+import { classifyEmail } from '../../shared/utils/email-domain.util';
 import { ContactStatus, ValidationStatus } from '@mailforge/shared';
 
 const ROLE_BASED_PREFIXES = [
@@ -130,6 +131,8 @@ export class ContactsService {
 
     const validationStatus = this.validateEmail(dto.email);
     const unsubscribeToken = generateUnsubscribeToken();
+    const cls = classifyEmail(dto.email);
+    const website = typeof dto.customFields?.website === 'string' ? (dto.customFields.website as string) : undefined;
 
     const contact = await this.prisma.contact.create({
       data: {
@@ -138,6 +141,9 @@ export class ContactsService {
         lastName: dto.lastName,
         phone: dto.phone,
         company: dto.company,
+        website,
+        emailDomain: cls.domain,
+        emailType: cls.type,
         customFields: dto.customFields ?? {},
         validationStatus,
         riskScore: this.calculateRiskScore(validationStatus),

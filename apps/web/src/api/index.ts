@@ -16,6 +16,10 @@ export const listsApi = {
     api.post(`/lists/${id}/members`, { contactIds }).then(extractData),
   removeMembers: (id: string, contactIds: string[]) =>
     api.delete(`/lists/${id}/members`, { data: { contactIds } }).then(extractData),
+  previewFilter: (filter: unknown) =>
+    api.post('/lists/preview-filter', filter).then(extractData),
+  createFromFilter: (data: unknown) =>
+    api.post('/lists/from-filter', data).then(extractData),
 };
 
 export const tagsApi = {

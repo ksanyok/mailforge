@@ -1,19 +1,23 @@
 import { useQuery } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
 import {
-  Users, UserCheck, UserX, Mail, Send, TrendingUp, AlertTriangle, Ban, MessageSquare, MousePointerClick, ThumbsDown,
+  Users, UserCheck, Mail, Send, TrendingUp, AlertTriangle, MessageSquare, MousePointerClick, ThumbsDown, Plus,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { analyticsApi, recommendationsApi, inboxApi } from '@/api/index';
-import { formatNumber, formatPercent, STATUS_COLORS } from '@/utils/format';
+import { formatNumber, STATUS_COLORS } from '@/utils/format';
 import { cn } from '@/utils/cn';
+import { useAuthStore } from '@/stores/auth.store';
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   BarChart, Bar, PieChart, Pie, Cell, Legend,
 } from 'recharts';
 
-const PIE_COLORS = ['#6366f1', '#94a3b8', '#ef4444', '#f97316', '#8b5cf6'];
+const PIE_COLORS = ['#0f9d58', '#8b93a1', '#e0483d', '#c77700', '#5b54ec'];
 
 export function DashboardPage() {
+  const navigate = useNavigate();
+  const firstName = (useAuthStore((st) => st.user?.name) ?? '').split(' ')[0];
   const { data: stats } = useQuery({ queryKey: ['dashboard'], queryFn: analyticsApi.dashboard });
   const { data: daily } = useQuery({ queryKey: ['daily-metrics'], queryFn: () => analyticsApi.dailyMetrics(30) });
   const { data: recs } = useQuery({ queryKey: ['recommendations'], queryFn: () => recommendationsApi.findAll({ limit: 5 }) });
@@ -30,14 +34,14 @@ export function DashboardPage() {
   const conversations = Array.isArray(inboxStats) ? (inboxStats as any[]).length : 0;
 
   const kpiCards = [
-    { label: 'Всего контактов', value: s?.contacts?.total ?? 0, icon: Users, color: 'text-blue-600' },
-    { label: 'Подписаны', value: s?.contacts?.subscribed ?? 0, icon: UserCheck, color: 'text-green-600' },
-    { label: 'Открыто (30 дн.)', value: (s?.sending as any)?.openedLast30 ?? 0, icon: TrendingUp, color: 'text-emerald-600' },
-    { label: 'Кликнуто (30 дн.)', value: (s?.sending as any)?.clickedLast30 ?? 0, icon: MousePointerClick, color: 'text-blue-500' },
-    { label: 'Ответы / Диалоги', value: conversations, icon: MessageSquare, color: 'text-violet-600' },
-    { label: 'Не интересно', value: s?.contacts?.unsubscribed ?? 0, icon: ThumbsDown, color: 'text-gray-600' },
-    { label: 'Всего кампаний', value: s?.campaigns?.total ?? 0, icon: Mail, color: 'text-indigo-600' },
-    { label: 'Отправлено сегодня', value: s?.sending?.sentToday ?? 0, icon: Send, color: 'text-cyan-600' },
+    { label: 'Всего контактов', value: s?.contacts?.total ?? 0, icon: Users, softbg: 'var(--info-soft)', color: 'var(--info)' },
+    { label: 'Подписаны', value: s?.contacts?.subscribed ?? 0, icon: UserCheck, softbg: 'var(--success-soft)', color: 'var(--success)' },
+    { label: 'Открыто (30 дн.)', value: (s?.sending as any)?.openedLast30 ?? 0, icon: TrendingUp, softbg: 'var(--success-soft)', color: 'var(--success)' },
+    { label: 'Кликнуто (30 дн.)', value: (s?.sending as any)?.clickedLast30 ?? 0, icon: MousePointerClick, softbg: 'var(--info-soft)', color: 'var(--info)' },
+    { label: 'Ответы / Диалоги', value: conversations, icon: MessageSquare, softbg: 'var(--accent-soft)', color: 'var(--accent)' },
+    { label: 'Не интересно', value: s?.contacts?.unsubscribed ?? 0, icon: ThumbsDown, softbg: 'var(--surface-3)', color: 'var(--text-2)' },
+    { label: 'Всего кампаний', value: s?.campaigns?.total ?? 0, icon: Mail, softbg: 'var(--accent-soft)', color: 'var(--accent)' },
+    { label: 'Отправлено сегодня', value: s?.sending?.sentToday ?? 0, icon: Send, softbg: 'var(--warn-soft)', color: 'var(--warn)' },
   ];
 
   const pieData = [
@@ -49,27 +53,50 @@ export function DashboardPage() {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
+      {/* Greeting */}
+      <div className="flex items-end gap-3 flex-wrap">
+        <div>
+          <h1 className="text-[22px] font-extrabold tracking-[-0.4px]">
+            Здравствуйте{firstName ? `, ${firstName}` : ''} 👋
+          </h1>
+          <p className="text-ink-3 text-[13px] mt-0.5">
+            Сводка по всем ящикам и рассылкам за последние 30 дней
+          </p>
+        </div>
+        <div className="flex-1" />
+        <button
+          onClick={() => navigate('/campaigns/new')}
+          className="flex items-center gap-2 px-4 py-2.5 rounded-[10px] text-white font-semibold text-[13px] transition hover:brightness-105"
+          style={{ background: 'linear-gradient(135deg,var(--accent),var(--accent-2))', boxShadow: '0 6px 16px -6px var(--accent)' }}
+        >
+          <Plus className="w-4 h-4" /> Новая кампания
+        </button>
+      </div>
+
       {/* KPI Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {kpiCards.map(({ label, value, icon: Icon, color }) => (
-          <Card key={label}>
-            <CardContent className="p-4 flex items-center gap-3">
-              <Icon className={cn('h-8 w-8 shrink-0', color)} />
-              <div>
-                <p className="text-2xl font-bold">{formatNumber(value as number)}</p>
-                <p className="text-xs text-muted-foreground">{label}</p>
-              </div>
-            </CardContent>
-          </Card>
+      <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-4 gap-3">
+        {kpiCards.map(({ label, value, icon: Icon, softbg, color }) => (
+          <div key={label} className="bg-surface border border-border rounded-xl p-4 shadow-soft">
+            <div
+              className="w-[34px] h-[34px] rounded-[9px] flex items-center justify-center mb-3"
+              style={{ background: softbg, color }}
+            >
+              <Icon className="w-[17px] h-[17px]" strokeWidth={1.8} />
+            </div>
+            <div className="text-[22px] font-extrabold tracking-[-0.5px] font-mono">
+              {formatNumber(value as number)}
+            </div>
+            <div className="text-[12px] text-ink-2 font-semibold mt-0.5">{label}</div>
+          </div>
         ))}
       </div>
 
       {/* Recommendations alert */}
       {recsData.length > 0 && (
-        <Card className="border-orange-200 bg-orange-50">
+        <Card style={{ borderColor: 'var(--warn)', background: 'var(--warn-soft)' }}>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm flex items-center gap-2 text-orange-700">
+            <CardTitle className="text-sm flex items-center gap-2" style={{ color: 'var(--warn)' }}>
               <AlertTriangle className="h-4 w-4" />
               Рекомендации ({recsData.length})
             </CardTitle>

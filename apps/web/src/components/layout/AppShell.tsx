@@ -3,7 +3,8 @@ import { Sidebar } from './Sidebar';
 import { Header } from './Header';
 
 const PAGE_TITLES: Record<string, string> = {
-  '/dashboard': 'Обзор',
+  '/inbox': 'Инбокс',
+  '/dashboard': 'Дашборд',
   '/contacts': 'Контакты',
   '/lists': 'Списки',
   '/imports': 'Импорт',
@@ -21,17 +22,27 @@ const PAGE_TITLES: Record<string, string> = {
   '/settings': 'Настройки',
 };
 
+// Pages that manage their own full-height scroll/layout (no page padding)
+const BARE_PATHS = new Set(['/inbox']);
+
 export function AppShell() {
   const location = useLocation();
   const path = '/' + location.pathname.split('/')[1];
   const title = PAGE_TITLES[path] ?? 'MailForge';
+  const bare = BARE_PATHS.has(path);
 
   return (
-    <div className="h-screen overflow-hidden bg-background">
+    <div className="h-screen overflow-hidden bg-canvas text-ink">
       <Sidebar />
-      <div className="ml-56">
+      <div className="ml-[234px]">
         <Header title={title} />
-        <main className="mt-14 p-6 h-[calc(100vh-56px)] overflow-y-auto">
+        <main
+          className={
+            bare
+              ? 'mt-[58px] h-[calc(100vh-58px)] overflow-hidden'
+              : 'mt-[58px] p-6 h-[calc(100vh-58px)] overflow-y-auto'
+          }
+        >
           <Outlet />
         </main>
       </div>

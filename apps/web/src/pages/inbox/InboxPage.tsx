@@ -3,8 +3,10 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useMutation } from '@tanstack/react-query';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
-  Search, RefreshCw, Mail, ChevronLeft, Send, Star,
-  ChevronDown, MailOpen, Inbox, CheckCheck, X, EyeOff, Trash2,
+  Search, RefreshCw, Mail, Send, Star, ChevronDown, MailOpen, Inbox,
+  CheckCheck, X, EyeOff, Trash2, Reply, Forward, MoreHorizontal,
+  Archive, FileText, Bold, Italic, Underline, List, Link2, Paperclip,
+  Building2, Phone, Calendar, Filter, ChevronLeft,
 } from 'lucide-react';
 import { inboxApi } from '@/api/index';
 import { cn } from '@/utils/cn';
@@ -83,8 +85,8 @@ function timeAgo(d: string): string {
   if (days < 7) return `${days} дн`;
   return new Date(d).toLocaleDateString('ru', { month: 'short', day: 'numeric' });
 }
-function formatTime(d: string): string {
-  return new Date(d).toLocaleTimeString('ru', { hour: '2-digit', minute: '2-digit' });
+function formatDate(d: string): string {
+  return new Date(d).toLocaleDateString('ru', { month: 'short', day: 'numeric' });
 }
 
 /* ── Avatar with gradient ───────────────────────────────────────────── */
@@ -101,127 +103,92 @@ function avatarGradient(email: string): string {
   for (const c of email) h = (h * 31 + c.charCodeAt(0)) & 0xffffffff;
   return GRADIENTS[Math.abs(h) % GRADIENTS.length];
 }
+const DOT_COLORS = ['bg-brand', 'bg-info', 'bg-success', 'bg-warn', 'bg-danger'];
 
 /* ── Skeleton ───────────────────────────────────────────────────────── */
 function ConvSkeleton() {
   return (
-    <div className="flex items-center gap-3 px-4 py-3.5 border-b border-gray-50/80">
-      <div className="skeleton w-10 h-10 rounded-2xl shrink-0" />
+    <div className="flex items-center gap-3 px-3 py-3 border-b border-border">
+      <div className="skeleton w-9 h-9 rounded-[10px] shrink-0" />
       <div className="flex-1 space-y-2">
-        <div className="skeleton h-3.5 w-28 rounded" />
-        <div className="skeleton h-3 w-40 rounded" />
-        <div className="skeleton h-3 w-24 rounded" />
+        <div className="skeleton h-3 w-28 rounded" />
+        <div className="skeleton h-2.5 w-40 rounded" />
+        <div className="skeleton h-2.5 w-24 rounded" />
       </div>
     </div>
   );
 }
 
-/* ── Read receipt double-check icon ────────────────────────────────── */
-function ReadTicks({ isRead }: { isRead: boolean }) {
-  return (
-    <svg viewBox="0 0 16 11" className={cn('w-3.5 h-3.5 fill-current transition-colors duration-300',
-      isRead ? 'text-sky-300' : 'text-indigo-200 opacity-60')}>
-      <path d="M11.071.653a.75.75 0 0 1 .025 1.06L5.01 8.42a.75.75 0 0 1-1.085 0L1.278 5.631a.75.75 0 1 1 1.085-1.036l2.104 2.202 5.544-6.12a.75.75 0 0 1 1.06-.024Z"/>
-      <path d="M14.571.653a.75.75 0 0 1 .025 1.06L8.51 8.42a.75.75 0 0 1-.574.233V7.3l5.575-6.622a.75.75 0 0 1 1.06-.025Z" opacity=".5"/>
-    </svg>
-  );
-}
-
-/* ── Bubble message ─────────────────────────────────────────────────── */
-function MessageBubble({ msg, isSent, index, onDelete }: {
-  msg: Message; isSent: boolean; index: number; onDelete?: () => void;
+/* ── Email card (single message in the reading thread) ──────────────── */
+function EmailCard({ msg, senderEmail, contactEmail, onDelete }: {
+  msg: Message; senderEmail: string; contactEmail: string; onDelete?: () => void;
 }) {
   const [showQuoted, setShowQuoted] = useState(false);
   const { main, quoted } = splitEmailBody((msg.text || '').trim());
-  const delay = Math.min(index * 0.04, 0.4);
+  const isSent = msg.from.address.toLowerCase() === senderEmail.toLowerCase();
+  const toLabel = isSent ? contactEmail : senderEmail;
 
   return (
-    /*
-     * Layout: flex row (or row-reverse for sent).
-     * Bubble + spacer(flex-1 min-w-[35%]) → bubble always ≤ 65% wide,
-     * pushed to its own side by flex-row-reverse / flex-row.
-     */
-    <div
-      className={cn('flex w-full group px-2', isSent ? 'flex-row-reverse' : 'flex-row')}
-      style={{ animationDelay: `${delay}s` }}
-    >
-      {/* ── Bubble ─────────────────────────────── */}
-      <div className={cn('relative max-w-[65%]', isSent ? 'ml-1' : 'mr-1')}>
-
-        {/* Delete button — received only */}
-        {!isSent && onDelete && (
-          <button
-            onClick={onDelete}
-            title="Удалить"
-            className="absolute -right-7 top-2 opacity-0 group-hover:opacity-100 transition-all w-5 h-5 rounded-full bg-white border border-gray-200 flex items-center justify-center text-gray-400 hover:text-red-500 shadow-sm z-10"
-          >
-            <Trash2 className="h-2.5 w-2.5" />
-          </button>
-        )}
-
+    <div className="group bg-surface border border-border rounded-xl shadow-soft p-[18px]">
+      <div className="flex items-center gap-3 mb-4">
         <div className={cn(
-          'relative px-3.5 py-2 shadow-sm min-w-[60px]',
-          isSent
-            ? 'bg-[#25D366] text-white rounded-2xl rounded-br-[4px]'
-            : 'bg-white text-gray-900 rounded-2xl rounded-bl-[4px]',
+          'w-[42px] h-[42px] flex-none rounded-[11px] bg-gradient-to-br flex items-center justify-center text-white font-bold text-sm',
+          avatarGradient(msg.from.address),
         )}>
-          {/* Tails */}
-          {isSent && <span className="absolute bottom-0 right-[-6px] w-0 h-0 border-l-[7px] border-l-[#25D366] border-t-[7px] border-t-transparent" />}
-          {!isSent && <span className="absolute bottom-0 left-[-6px] w-0 h-0 border-r-[7px] border-r-white border-t-[7px] border-t-transparent" />}
-
-          {/* Main reply text */}
-          {(main || !quoted) && (
-            <p className="text-[13.5px] leading-[1.55] whitespace-pre-wrap break-words">
-              {main || '(пусто)'}
-            </p>
-          )}
-
-          {/* Quoted block — collapsed by default */}
-          {quoted && (
-            <div className={cn('mt-1', main ? 'border-t pt-1' : '', isSent ? 'border-white/30' : 'border-gray-100')}>
-              <button
-                onClick={() => setShowQuoted(v => !v)}
-                className={cn(
-                  'text-[11px] flex items-center gap-1 opacity-60 hover:opacity-90 transition-opacity select-none',
-                  isSent ? 'text-white' : 'text-gray-500',
-                )}
-              >
-                <span className="text-[9px]">{showQuoted ? '▲' : '▼'}</span>
-                {showQuoted ? 'Скрыть цитируемый текст' : 'Показать цитируемый текст'}
-              </button>
-              {showQuoted && (
-                <p className={cn(
-                  'mt-1.5 text-[12px] leading-relaxed whitespace-pre-wrap break-words opacity-70',
-                )}>
-                  {quoted}
-                </p>
-              )}
-            </div>
-          )}
-
-          {/* Timestamp + ticks */}
-          <div className={cn(
-            'flex items-center gap-1 mt-0.5 justify-end',
-            isSent ? 'text-[rgba(255,255,255,0.7)]' : 'text-gray-400',
-          )}>
-            <span className="text-[10.5px]">{formatTime(msg.date)}</span>
-            {isSent && <ReadTicks isRead={msg.isRead} />}
+          {initials(msg.from.name, msg.from.address)}
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="font-bold text-sm truncate">
+            {msg.from.name || msg.from.address}
+            <span className="font-normal text-ink-3 text-[12.5px]"> &lt;{msg.from.address}&gt;</span>
+          </div>
+          <div className="text-xs text-ink-3 truncate">
+            кому: {toLabel} · {timeAgo(msg.date)} назад
           </div>
         </div>
+        {onDelete && (
+          <button
+            type="button"
+            onClick={onDelete}
+            title="Удалить письмо"
+            className="opacity-0 group-hover:opacity-100 transition-opacity w-8 h-8 rounded-lg flex items-center justify-center text-ink-3 hover:text-danger hover:bg-hover"
+          >
+            <Trash2 className="h-4 w-4" strokeWidth={1.7} />
+          </button>
+        )}
       </div>
 
-      {/* ── Spacer: pushes bubble to its side, takes ≥35% ── */}
-      <div className="flex-1 min-w-[35%]" />
+      <div className="text-[13.5px] leading-[1.65] text-ink whitespace-pre-wrap break-words">
+        {main || (quoted ? '' : '(пусто)')}
+      </div>
+
+      {quoted && (
+        <div className="mt-3 border-t border-border pt-2">
+          <button
+            type="button"
+            onClick={() => setShowQuoted(v => !v)}
+            className="text-[11px] flex items-center gap-1 text-ink-3 hover:text-ink-2 transition-colors select-none"
+          >
+            <span className="text-[9px]">{showQuoted ? '▲' : '▼'}</span>
+            {showQuoted ? 'Скрыть цитируемый текст' : 'Показать цитируемый текст'}
+          </button>
+          {showQuoted && (
+            <p className="mt-2 text-[12px] leading-relaxed whitespace-pre-wrap break-words text-ink-3">
+              {quoted}
+            </p>
+          )}
+        </div>
+      )}
     </div>
   );
 }
 
-/* ── Unread badge ───────────────────────────────────────────────────── */
-function UnreadBadge({ count }: { count: number }) {
+/* ── Section label ──────────────────────────────────────────────────── */
+function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <span className="animate-pop-in min-w-[18px] h-[18px] rounded-full bg-indigo-500 text-white text-[10px] font-bold flex items-center justify-center px-1 shadow-sm shadow-indigo-300/50">
-      {count > 99 ? '99+' : count}
-    </span>
+    <div className="px-3 pt-4 pb-2 text-[10.5px] font-bold tracking-[0.6px] text-ink-3 uppercase">
+      {children}
+    </div>
   );
 }
 
@@ -368,7 +335,7 @@ export function InboxPage() {
               description: body,
               action: (
                 <button
-                  className="text-xs text-indigo-600 underline"
+                  className="text-xs text-brand underline"
                   onClick={() => openConversation(conv)}
                 >
                   Открыть
@@ -511,423 +478,523 @@ export function InboxPage() {
     });
   };
 
-  const TABS: { key: Filter; label: string; icon?: React.ReactNode }[] = [
-    { key: 'all',     label: 'Все' },
-    { key: 'unread',  label: 'Непрочитанные' },
-    { key: 'starred', label: 'Избранные' },
+  const focusReply = () => {
+    textareaRef.current?.focus();
+    textareaRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  };
+
+  // Static folder metaphor mapped to the real filter state
+  const FOLDERS: { key: Filter; label: string; icon: typeof Inbox; count: number }[] = [
+    { key: 'all',     label: 'Входящие',      icon: Inbox,   count: counts.all },
+    { key: 'unread',  label: 'Непрочитанные', icon: MailOpen, count: counts.unread },
+    { key: 'starred', label: 'Избранные',     icon: Star,    count: counts.starred },
   ];
 
-  return (
-    <div className="-m-6 h-[calc(100vh-56px)] flex overflow-hidden inbox-bg">
+  const curSubject = active
+    ? ((thread as Message[]).find(m => m.subject)?.subject || active.lastMessage || 'Без темы')
+    : '';
+  const firstMsgDate = (thread as Message[])[0]?.date;
+  const contactDomain = active ? (active.contactEmail.split('@')[1] || '—') : '—';
 
-      {/* ── Sidebar ─────────────────────────────────────────────────── */}
-      <aside className={cn(
-        'flex flex-col bg-white border-r border-gray-100/80 transition-all duration-300 ease-in-out shadow-sm',
-        active ? 'w-0 md:w-[320px] overflow-hidden' : 'w-full md:w-[320px]',
-      )}>
-        {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3.5 border-b border-gray-100">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center shadow-sm shadow-indigo-200/50">
-              <Inbox className="h-4 w-4 text-white" />
-            </div>
-            <div className="flex items-center gap-2">
-              <h2 className="font-semibold text-[15px] text-gray-900">Входящие</h2>
-              {totalUnread > 0 && (
-                <span className="animate-pop-in text-[10px] font-bold bg-indigo-100 text-indigo-600 px-1.5 py-0.5 rounded-full">
-                  {totalUnread}
-                </span>
-              )}
-            </div>
-          </div>
-          <div className="flex items-center gap-1">
-            {/* Mark all as read */}
-            {totalUnread > 0 && (
-              markAllConfirm ? (
-                <div className="flex items-center gap-1 animate-scale-in">
-                  <button
-                    onClick={() => markAllReadMutation.mutate()}
-                    disabled={markAllReadMutation.isPending}
-                    className="flex items-center gap-1 text-[11px] font-medium bg-indigo-500 text-white px-2.5 py-1 rounded-lg hover:bg-indigo-600 transition-all active:scale-95 shadow-sm"
-                  >
-                    {markAllReadMutation.isPending
-                      ? <RefreshCw className="h-3 w-3 animate-spin" />
-                      : <CheckCheck className="h-3 w-3" />
-                    }
-                    Подтвердить
-                  </button>
-                  <button
-                    onClick={() => setMarkAllConfirm(false)}
-                    className="w-6 h-6 rounded-lg hover:bg-gray-100 flex items-center justify-center text-gray-400"
-                  >
-                    <X className="h-3 w-3" />
-                  </button>
-                </div>
-              ) : (
-                <button
-                  onClick={() => setMarkAllConfirm(true)}
-                  title="Отметить все как прочитанные"
-                  className="w-8 h-8 rounded-xl hover:bg-indigo-50 flex items-center justify-center text-gray-400 hover:text-indigo-500 transition-all duration-200 hover:scale-110 active:scale-95"
-                >
-                  <CheckCheck className="h-3.5 w-3.5" />
-                </button>
-              )
+  return (
+    <div className="h-full flex overflow-hidden bg-canvas text-ink">
+
+      {/* ── Column 1 · Mailboxes / Folders / Labels ─────────────────── */}
+      <aside className="hidden lg:flex w-[214px] flex-none flex-col border-r border-border bg-surface overflow-y-auto">
+        <SectionLabel>Ящики</SectionLabel>
+        <div className="px-2 flex flex-col gap-px">
+          <button
+            type="button"
+            onClick={() => setSenderFilter(null)}
+            className={cn(
+              'flex items-center gap-[9px] px-[9px] py-[7px] rounded-lg text-left w-full transition-colors',
+              senderFilter === null ? 'bg-brand-softer' : 'hover:bg-hover',
             )}
+          >
+            <span className="w-2 h-2 rounded-full flex-none bg-ink-3" />
+            <span className={cn('flex-1 min-w-0 truncate text-[13px]', senderFilter === null ? 'font-semibold text-brand' : 'text-ink-2')}>
+              Все ящики
+            </span>
+            <span className="text-[11px] font-bold font-mono text-ink-3">{allConvs.length}</span>
+          </button>
+          {senders.map((s, i) => (
             <button
-              onClick={() => refetch()}
-              className="w-8 h-8 rounded-xl hover:bg-gray-100 flex items-center justify-center text-gray-400 hover:text-gray-600 transition-all duration-200 hover:scale-110 active:scale-95"
+              key={s.id}
+              type="button"
+              onClick={() => setSenderFilter(s.id)}
+              className={cn(
+                'flex items-center gap-[9px] px-[9px] py-[7px] rounded-lg text-left w-full transition-colors',
+                senderFilter === s.id ? 'bg-brand-softer' : 'hover:bg-hover',
+              )}
             >
-              <RefreshCw className={cn('h-3.5 w-3.5 transition-transform duration-500', loadingConvs && 'animate-spin')} />
+              <span className={cn('w-2 h-2 rounded-full flex-none', DOT_COLORS[i % DOT_COLORS.length])} />
+              <span className={cn('flex-1 min-w-0 truncate text-[13px]', senderFilter === s.id ? 'font-semibold text-brand' : 'text-ink-2')}>
+                {s.email}
+              </span>
+              <span className="text-[11px] font-bold font-mono text-ink-3">{s.count}</span>
             </button>
+          ))}
+        </div>
+
+        <SectionLabel>Папки</SectionLabel>
+        <div className="px-2 flex flex-col gap-px">
+          {FOLDERS.map(({ key, label, icon: Icon, count }) => (
+            <button
+              key={key}
+              type="button"
+              onClick={() => setFilter(key)}
+              className={cn(
+                'flex items-center gap-[10px] px-[9px] py-[7px] rounded-lg text-left w-full transition-colors',
+                filter === key ? 'bg-brand-softer text-brand font-semibold' : 'text-ink-2 hover:bg-hover',
+              )}
+            >
+              <Icon className="h-4 w-4 flex-none" strokeWidth={1.7} />
+              <span className="flex-1 truncate text-[13px]">{label}</span>
+              {count > 0 && <span className="text-[11px] font-bold font-mono text-ink-3">{count}</span>}
+            </button>
+          ))}
+          {/* Visual-only folders (no backing API) */}
+          <div className="flex items-center gap-[10px] px-[9px] py-[7px] rounded-lg text-ink-3 text-[13px]">
+            <Send className="h-4 w-4 flex-none" strokeWidth={1.7} /><span className="flex-1">Отправленные</span>
+          </div>
+          <div className="flex items-center gap-[10px] px-[9px] py-[7px] rounded-lg text-ink-3 text-[13px]">
+            <FileText className="h-4 w-4 flex-none" strokeWidth={1.7} /><span className="flex-1">Черновики</span>
+          </div>
+          <div className="flex items-center gap-[10px] px-[9px] py-[7px] rounded-lg text-ink-3 text-[13px]">
+            <Archive className="h-4 w-4 flex-none" strokeWidth={1.7} /><span className="flex-1">Архив</span>
           </div>
         </div>
 
+        <SectionLabel>Метки</SectionLabel>
+        <div className="px-3 flex flex-col gap-1.5 pb-4">
+          <div className="flex items-center gap-2 text-[12.5px] text-ink-2">
+            <span className="w-[9px] h-[9px] rounded-[3px] bg-info" />Лиды
+          </div>
+          <div className="flex items-center gap-2 text-[12.5px] text-ink-2">
+            <span className="w-[9px] h-[9px] rounded-[3px] bg-success" />Клиенты
+          </div>
+          <div className="flex items-center gap-2 text-[12.5px] text-ink-2">
+            <span className="w-[9px] h-[9px] rounded-[3px] bg-warn" />Ответы на кампании
+          </div>
+        </div>
+      </aside>
+
+      {/* ── Column 2 · Message list ─────────────────────────────────── */}
+      <section className={cn(
+        'w-full md:w-[372px] flex-none flex flex-col border-r border-border bg-surface min-h-0',
+        active && 'hidden md:flex',
+      )}>
+        <div className="h-[46px] flex-none flex items-center gap-1.5 px-3 border-b border-border">
+          <span className="font-bold text-[13.5px]">Входящие</span>
+          <span className="text-[11.5px] text-ink-3 font-mono">{filtered.length}</span>
+          <div className="flex-1" />
+          <button
+            type="button"
+            onClick={() => setFilter(f => (f === 'unread' ? 'all' : 'unread'))}
+            className={cn(
+              'flex items-center gap-1.5 px-2.5 py-[5px] border rounded-lg text-xs transition-colors',
+              filter === 'unread'
+                ? 'bg-brand-softer border-brand text-brand'
+                : 'border-border text-ink-2 hover:bg-hover',
+            )}
+          >
+            <Filter className="h-3 w-3" strokeWidth={2} />
+            Непрочитанные
+          </button>
+          {totalUnread > 0 && (
+            markAllConfirm ? (
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={() => markAllReadMutation.mutate()}
+                  disabled={markAllReadMutation.isPending}
+                  className="flex items-center gap-1 text-[11px] font-medium bg-brand text-white px-2 py-1 rounded-lg hover:brightness-105"
+                >
+                  {markAllReadMutation.isPending ? <RefreshCw className="h-3 w-3 animate-spin" /> : <CheckCheck className="h-3 w-3" />}
+                  ОК
+                </button>
+                <button type="button" onClick={() => setMarkAllConfirm(false)} className="w-6 h-6 rounded-lg hover:bg-hover flex items-center justify-center text-ink-3">
+                  <X className="h-3 w-3" />
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setMarkAllConfirm(true)}
+                title="Отметить все как прочитанные"
+                className="w-[30px] h-[30px] rounded-lg flex items-center justify-center text-ink-3 hover:bg-hover"
+              >
+                <CheckCheck className="h-4 w-4" strokeWidth={1.8} />
+              </button>
+            )
+          )}
+          <button
+            type="button"
+            onClick={() => refetch()}
+            title="Обновить"
+            className="w-[30px] h-[30px] rounded-lg flex items-center justify-center text-ink-3 hover:bg-hover"
+          >
+            <RefreshCw className={cn('h-4 w-4', loadingConvs && 'animate-spin')} strokeWidth={1.8} />
+          </button>
+        </div>
+
         {/* Search */}
-        <div className="px-4 py-2.5 border-b border-gray-50">
+        <div className="flex-none px-3 py-2.5 border-b border-border">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400 pointer-events-none" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-ink-3 pointer-events-none" />
             <input
               value={search}
               onChange={e => setSearch(e.target.value)}
               placeholder="Поиск контактов…"
-              className="w-full pl-9 pr-3 py-2 text-sm bg-gray-50 border border-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-300 transition-all placeholder:text-gray-400"
+              className="w-full pl-9 pr-8 py-2 text-sm bg-surface-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand transition-all placeholder:text-ink-3 text-ink"
             />
             {search && (
-              <button
-                onClick={() => setSearch('')}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-300 hover:text-gray-500 transition-colors"
-              >
+              <button type="button" onClick={() => setSearch('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-ink-3 hover:text-ink-2">
                 <X className="h-3.5 w-3.5" />
               </button>
             )}
           </div>
         </div>
 
-        {/* Sender filter */}
-        {senders.length > 1 && (
-          <div className="px-4 py-2 border-b border-gray-50">
-            <div className="relative">
-              <select
-                value={senderFilter ?? ''}
-                onChange={e => setSenderFilter(e.target.value || null)}
-                className="w-full appearance-none text-xs bg-gray-50/80 border border-gray-100 rounded-xl px-3 py-2 pr-7 text-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-200 cursor-pointer transition-all"
-              >
-                <option value="">Все отправители ({allConvs.length})</option>
-                {senders.map(s => (
-                  <option key={s.id} value={s.id}>{s.email} ({s.count})</option>
-                ))}
-              </select>
-              <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3 w-3 text-gray-400 pointer-events-none" />
-            </div>
-          </div>
-        )}
-
-        {/* Filter tabs */}
-        <div className="flex px-3 py-2 gap-1 border-b border-gray-50">
-          {TABS.map(({ key, label }) => (
-            <button
-              key={key}
-              onClick={() => setFilter(key)}
-              className={cn(
-                'flex-1 flex flex-col items-center py-1.5 rounded-xl text-xs font-medium transition-all duration-200',
-                filter === key
-                  ? 'bg-indigo-500 text-white shadow-sm shadow-indigo-200/60 scale-[1.02]'
-                  : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700',
-              )}
-            >
-              <span>{label}</span>
-              <span className={cn(
-                'text-[10px] font-bold mt-0.5 tabular-nums',
-                filter === key ? 'text-indigo-200' : counts[key] > 0 ? 'text-indigo-400' : 'text-gray-300',
-              )}>
-                {counts[key]}
-              </span>
-            </button>
-          ))}
-        </div>
-
-        {/* Conversation list */}
+        {/* List */}
         <div className="flex-1 overflow-y-auto overscroll-contain">
           {loadingConvs && filtered.length === 0 ? (
-            <div className="animate-fade-in">
-              {[...Array(6)].map((_, i) => <ConvSkeleton key={i} />)}
-            </div>
+            <div>{[...Array(6)].map((_, i) => <ConvSkeleton key={i} />)}</div>
           ) : filtered.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-48 gap-3 text-gray-400 animate-fade-in">
+            <div className="flex flex-col items-center justify-center h-48 gap-3 text-ink-3">
               {filter === 'starred'
-                ? <><Star className="h-9 w-9 opacity-15 animate-float" /><span className="text-sm font-medium">Нет избранных переписок</span></>
+                ? <><Star className="h-9 w-9 opacity-20" /><span className="text-sm font-medium">Нет избранных переписок</span></>
                 : filter === 'unread'
-                ? <><MailOpen className="h-9 w-9 opacity-15 animate-float" /><span className="text-sm font-medium text-gray-500">Всё прочитано!</span><p className="text-xs text-gray-400">Нет непрочитанных писем</p></>
-                : <><Mail className="h-9 w-9 opacity-15 animate-float" /><span className="text-sm font-medium">Пока нет переписок</span></>
+                ? <><MailOpen className="h-9 w-9 opacity-20" /><span className="text-sm font-medium">Всё прочитано</span></>
+                : <><Mail className="h-9 w-9 opacity-20" /><span className="text-sm font-medium">Пока нет переписок</span></>
               }
             </div>
           ) : (
-            filtered.map((c, i) => {
+            filtered.map(c => {
               const key = convKey(c);
               const isActive = active?.contactEmail === c.contactEmail && active?.senderId === c.senderId;
               const isStarred = starred.has(key);
               const hasUnread = c.unreadCount > 0;
+              const rowBorder = isActive ? 'border-l-brand' : hasUnread ? 'border-l-brand/60' : 'border-l-transparent';
 
               return (
                 <button
                   key={key}
+                  type="button"
                   onClick={() => openConversation(c)}
                   className={cn(
-                    'w-full flex items-start gap-3 px-4 py-3.5 text-left transition-all duration-200 border-b border-gray-50/80 group relative',
-                    'animate-slide-up',
-                    isActive
-                      ? 'bg-indigo-50/90 border-l-[3px] border-l-indigo-500 shadow-[inset_0_0_0_1px_rgba(99,102,241,0.08)]'
-                      : 'hover:bg-gray-50/80 border-l-[3px] border-l-transparent hover:border-l-gray-200',
+                    'group relative w-full flex gap-[11px] text-left px-[13px] py-[11px] border-b border-border border-l-[2.5px] transition-colors',
+                    rowBorder,
+                    isActive ? 'bg-brand-softer' : 'hover:bg-hover',
                   )}
-                  style={{ animationDelay: `${Math.min(i * 0.025, 0.25)}s` }}
                 >
-                  {/* Unread indicator dot */}
-                  {hasUnread && !isActive && (
-                    <span className="absolute left-1 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse-dot" />
-                  )}
-
-                  {/* Avatar */}
                   <div className={cn(
-                    'w-10 h-10 rounded-2xl bg-gradient-to-br flex items-center justify-center text-white text-[13px] font-bold shrink-0 shadow-sm transition-transform duration-200',
+                    'w-9 h-9 flex-none rounded-[10px] bg-gradient-to-br flex items-center justify-center text-white font-bold text-[12.5px]',
                     avatarGradient(c.contactEmail),
-                    'group-hover:scale-105',
                   )}>
                     {initials(c.contactName, c.contactEmail)}
                   </div>
-
-                  {/* Content */}
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between gap-1 mb-0.5">
-                      <span className={cn(
-                        'text-[13.5px] truncate',
-                        hasUnread ? 'font-semibold text-gray-900' : 'font-medium text-gray-700',
-                      )}>
+                    <div className="flex items-center gap-1.5 mb-0.5">
+                      {hasUnread && <span className="w-[7px] h-[7px] rounded-full bg-brand flex-none" />}
+                      <span className={cn('flex-1 min-w-0 truncate text-[13px]', hasUnread ? 'font-bold text-ink' : 'font-medium text-ink-2')}>
                         {c.contactName || c.contactEmail}
                       </span>
-                      <span className={cn(
-                        'text-[10px] shrink-0 tabular-nums',
-                        hasUnread ? 'text-indigo-500 font-semibold' : 'text-gray-400',
-                      )}>
-                        {timeAgo(c.lastMessageAt)}
-                      </span>
+                      <span className="text-[11px] text-ink-3 flex-none font-mono">{timeAgo(c.lastMessageAt)}</span>
                     </div>
-                    <p className="text-[11px] text-gray-400 truncate mb-0.5">{c.senderEmail}</p>
-                    <p className={cn(
-                      'text-xs truncate',
-                      hasUnread ? 'text-gray-600 font-medium' : 'text-gray-400',
-                    )}>
-                      {c.lastMessage || '…'}
-                    </p>
-                  </div>
-
-                  {/* Right icons */}
-                  <div className="flex flex-col items-end gap-1.5 shrink-0 pt-0.5">
-                    <button
-                      onClick={e => toggleStar(e, key)}
-                      className={cn(
-                        'transition-all duration-200',
-                        isStarred
-                          ? 'text-amber-400 scale-110'
-                          : 'text-gray-200 group-hover:text-gray-300 hover:!text-amber-400 hover:scale-125',
+                    <div className="text-[12px] text-ink-3 truncate mb-1.5">{c.lastMessage || '…'}</div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[10.5px] font-semibold px-[7px] py-0.5 rounded-[5px] bg-surface-3 text-ink-2 truncate max-w-[180px]">
+                        {c.senderEmail}
+                      </span>
+                      {hasUnread && (
+                        <span className="text-[10.5px] font-semibold px-[7px] py-0.5 rounded-[5px] bg-brand-soft text-brand">Новое</span>
                       )}
-                    >
-                      <Star className={cn('h-3.5 w-3.5', isStarred && 'fill-amber-400')} />
-                    </button>
-                    {hasUnread && <UnreadBadge count={c.unreadCount} />}
+                    </div>
                   </div>
+                  <button
+                    type="button"
+                    onClick={e => toggleStar(e, key)}
+                    className={cn(
+                      'absolute right-2.5 top-2.5 transition-colors',
+                      isStarred ? 'text-warn' : 'text-ink-3 opacity-0 group-hover:opacity-100 hover:text-warn',
+                    )}
+                  >
+                    <Star className={cn('h-3.5 w-3.5', isStarred && 'fill-warn')} />
+                  </button>
                 </button>
               );
             })
           )}
         </div>
-      </aside>
+      </section>
 
-      {/* ── Chat panel ──────────────────────────────────────────────── */}
-      <div className={cn(
-        'flex-1 flex flex-col overflow-hidden transition-all duration-300',
-        !active && 'hidden md:flex',
-      )}>
+      {/* ── Column 3 · Reading pane ─────────────────────────────────── */}
+      <div className={cn('flex-1 min-w-0 flex flex-col bg-canvas', !active && 'hidden md:flex')}>
         {!active ? (
-          <div className="flex-1 flex flex-col items-center justify-center gap-5 animate-fade-in">
-            <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-indigo-100 to-violet-100 flex items-center justify-center animate-float shadow-inner">
-              <Mail className="h-8 w-8 text-indigo-400" />
+          <div className="flex-1 flex flex-col items-center justify-center gap-4 text-ink-3">
+            <div className="w-16 h-16 rounded-2xl bg-surface border border-border flex items-center justify-center">
+              <Mail className="h-7 w-7 text-brand" strokeWidth={1.7} />
             </div>
-            <div className="text-center space-y-1.5">
-              <p className="text-sm font-semibold text-gray-700">Выберите переписку</p>
-              <p className="text-xs text-gray-400">Выберите переписку из списка слева, чтобы начать чтение</p>
+            <div className="text-center">
+              <p className="text-sm font-semibold text-ink-2">Выберите переписку</p>
+              <p className="text-xs text-ink-3 mt-1">Выберите письмо из списка, чтобы начать чтение</p>
             </div>
             {totalUnread > 0 && (
-              <div className="animate-scale-in bg-indigo-50 border border-indigo-100 rounded-2xl px-5 py-3 text-center">
-                <p className="text-[13px] font-semibold text-indigo-700">Непрочитанных писем: {totalUnread}</p>
-                <p className="text-[11px] text-indigo-400 mt-0.5">Ожидают вашего ответа</p>
+              <div className="bg-brand-softer border border-brand/30 rounded-xl px-5 py-3 text-center">
+                <p className="text-[13px] font-semibold text-brand">Непрочитанных писем: {totalUnread}</p>
               </div>
             )}
           </div>
         ) : (
           <>
-            {/* Chat header */}
-            <div className="flex items-center gap-3 px-5 py-3.5 bg-white/95 backdrop-blur-sm border-b border-gray-100/80 shadow-sm animate-slide-up">
+            {/* Toolbar */}
+            <div className="h-[46px] flex-none flex items-center gap-1 px-3.5 border-b border-border bg-surface">
               <button
-                className="md:hidden w-8 h-8 rounded-xl hover:bg-gray-100 flex items-center justify-center text-gray-500 transition-colors active:scale-95"
+                type="button"
+                className="md:hidden w-8 h-8 rounded-lg flex items-center justify-center text-ink-3 hover:bg-hover"
                 onClick={() => setActive(null)}
               >
                 <ChevronLeft className="h-5 w-5" />
               </button>
-
-              <div className={cn(
-                'w-9 h-9 rounded-2xl bg-gradient-to-br flex items-center justify-center text-white text-[13px] font-bold shrink-0 shadow-sm',
-                avatarGradient(active.contactEmail),
-              )}>
-                {initials(active.contactName, active.contactEmail)}
-              </div>
-
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-gray-900 truncate">{active.contactName || active.contactEmail}</p>
-                <p className="text-xs text-gray-500 truncate">{active.contactEmail}</p>
-              </div>
-
-              <div className="flex items-center gap-2 shrink-0">
-                <button
-                  onClick={e => toggleStar(e, convKey(active))}
-                  className={cn(
-                    'w-8 h-8 rounded-xl flex items-center justify-center transition-all duration-200',
-                    starred.has(convKey(active))
-                      ? 'bg-amber-50 text-amber-500 scale-110'
-                      : 'hover:bg-gray-100 text-gray-300 hover:text-amber-400 hover:scale-110',
-                  )}
-                >
-                  <Star className={cn('h-4 w-4', starred.has(convKey(active)) && 'fill-amber-400')} />
-                </button>
-                <button
-                  onClick={() => markConvUnreadMutation.mutate(active)}
-                  disabled={markConvUnreadMutation.isPending}
-                  title="Отметить как непрочитанное"
-                  className="w-8 h-8 rounded-xl hover:bg-indigo-50 flex items-center justify-center text-gray-400 hover:text-indigo-500 transition-all duration-200 hover:scale-110 active:scale-95"
-                >
-                  {markConvUnreadMutation.isPending
-                    ? <RefreshCw className="h-3.5 w-3.5 animate-spin" />
-                    : <EyeOff className="h-3.5 w-3.5" />
-                  }
-                </button>
-
-                {/* Delete all conversation messages */}
-                {deleteConvConfirm ? (
-                  <div className="flex items-center gap-1 animate-scale-in">
-                    <button
-                      onClick={() => deleteConversationMutation.mutate({ senderId: active.senderId, contactEmail: active.contactEmail })}
-                      disabled={deleteConversationMutation.isPending}
-                      className="flex items-center gap-1 text-[11px] font-medium bg-red-500 text-white px-2.5 py-1 rounded-lg hover:bg-red-600 transition-all active:scale-95"
-                    >
-                      {deleteConversationMutation.isPending ? <RefreshCw className="h-3 w-3 animate-spin" /> : <Trash2 className="h-3 w-3" />}
-                      Удалить всё
-                    </button>
-                    <button onClick={() => setDeleteConvConfirm(false)} className="w-6 h-6 rounded-lg hover:bg-gray-100 flex items-center justify-center text-gray-400">
-                      <X className="h-3 w-3" />
-                    </button>
-                  </div>
-                ) : (
+              <button
+                type="button"
+                onClick={focusReply}
+                className="flex items-center gap-1.5 px-[11px] py-1.5 rounded-lg text-[12.5px] font-semibold text-ink-2 hover:bg-hover"
+              >
+                <Reply className="h-[15px] w-[15px]" strokeWidth={2} />Ответить
+              </button>
+              <button
+                type="button"
+                onClick={focusReply}
+                className="flex items-center gap-1.5 px-[11px] py-1.5 rounded-lg text-[12.5px] font-semibold text-ink-2 hover:bg-hover"
+              >
+                <Forward className="h-[15px] w-[15px]" strokeWidth={2} />Переслать
+              </button>
+              <div className="flex-1" />
+              <button
+                type="button"
+                onClick={() => markConvUnreadMutation.mutate(active)}
+                disabled={markConvUnreadMutation.isPending}
+                title="Отметить как непрочитанное"
+                className="w-8 h-8 rounded-lg flex items-center justify-center text-ink-3 hover:bg-hover"
+              >
+                {markConvUnreadMutation.isPending
+                  ? <RefreshCw className="h-4 w-4 animate-spin" strokeWidth={1.8} />
+                  : <EyeOff className="h-4 w-4" strokeWidth={1.8} />}
+              </button>
+              {deleteConvConfirm ? (
+                <div className="flex items-center gap-1">
                   <button
-                    onClick={() => setDeleteConvConfirm(true)}
-                    title="Удалить все письма в этой переписке"
-                    className="w-8 h-8 rounded-xl hover:bg-red-50 flex items-center justify-center text-gray-400 hover:text-red-500 transition-all duration-200 hover:scale-110 active:scale-95"
+                    type="button"
+                    onClick={() => deleteConversationMutation.mutate({ senderId: active.senderId, contactEmail: active.contactEmail })}
+                    disabled={deleteConversationMutation.isPending}
+                    className="flex items-center gap-1 text-[11px] font-medium bg-danger text-white px-2.5 py-1 rounded-lg hover:brightness-105"
                   >
-                    <Trash2 className="h-3.5 w-3.5" />
+                    {deleteConversationMutation.isPending ? <RefreshCw className="h-3 w-3 animate-spin" /> : <Trash2 className="h-3 w-3" />}
+                    Удалить
                   </button>
-                )}
-
-                <div className="text-right hidden sm:block">
-                  <p className="text-[10px] text-gray-400">через</p>
-                  <p className="text-xs font-semibold text-indigo-600 truncate max-w-[140px]">{active.senderEmail}</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Messages area — WhatsApp style */}
-            <div
-              className="flex-1 overflow-y-auto overscroll-contain px-4 py-4 space-y-1.5"
-              style={{ background: '#f0f2f5' }}
-            >
-              {loadingThread ? (
-                <div className="flex flex-col gap-3 animate-fade-in pt-4">
-                  {[...Array(5)].map((_, i) => (
-                    <div key={i} className={cn('flex', i % 2 === 0 ? 'justify-start' : 'justify-end')}>
-                      <div className={cn('skeleton rounded-2xl h-12', i % 2 === 0 ? 'w-48 rounded-bl-sm' : 'w-44 rounded-br-sm')} />
-                    </div>
-                  ))}
-                </div>
-              ) : (thread as Message[]).length === 0 ? (
-                <div className="flex flex-col items-center justify-center h-full gap-3 text-gray-400 animate-fade-in">
-                  <Mail className="h-8 w-8 opacity-30 animate-float" />
-                  <span className="text-sm">Пока нет писем</span>
+                  <button type="button" onClick={() => setDeleteConvConfirm(false)} className="w-6 h-6 rounded-lg hover:bg-hover flex items-center justify-center text-ink-3">
+                    <X className="h-3 w-3" />
+                  </button>
                 </div>
               ) : (
-                (thread as Message[]).map((msg, i) => {
-                  const isSent = msg.from.address.toLowerCase() === active.senderEmail.toLowerCase();
-                  const prev = i > 0 ? (thread as Message[])[i - 1] : null;
-                  const next = i < (thread as Message[]).length - 1 ? (thread as Message[])[i + 1] : null;
-                  const showDate = !prev || new Date(msg.date).toDateString() !== new Date(prev.date).toDateString();
-                  const isLastInGroup = !next || next.from.address !== msg.from.address ||
-                    new Date(msg.date).toDateString() !== new Date(next.date).toDateString();
-
-                  return (
-                    <div key={`${msg.uid}-${i}`} className={isLastInGroup ? 'mb-2' : ''}>
-                      {showDate && (
-                        <div className="flex items-center justify-center my-4 animate-fade-in">
-                          <span className="bg-white/90 text-[11px] text-gray-500 font-medium px-3.5 py-1 rounded-full shadow-sm">
-                            {new Date(msg.date).toLocaleDateString('ru', { weekday: 'long', month: 'long', day: 'numeric' })}
-                          </span>
-                        </div>
-                      )}
-                      <MessageBubble
-                        msg={msg}
-                        isSent={isSent}
-                        index={i}
-                        onDelete={!isSent ? () => deleteMessageMutation.mutate({ senderId: active.senderId, uid: msg.uid }) : undefined}
-                      />
-                    </div>
-                  );
-                })
+                <button
+                  type="button"
+                  onClick={() => setDeleteConvConfirm(true)}
+                  title="Удалить переписку"
+                  className="w-8 h-8 rounded-lg flex items-center justify-center text-ink-3 hover:bg-hover hover:text-danger"
+                >
+                  <Trash2 className="h-4 w-4" strokeWidth={1.8} />
+                </button>
               )}
-              <div ref={bottomRef} />
+              <button type="button" title="Ещё" className="w-8 h-8 rounded-lg flex items-center justify-center text-ink-3 hover:bg-hover">
+                <MoreHorizontal className="h-4 w-4" strokeWidth={1.8} />
+              </button>
             </div>
 
-            {/* Reply compose — WhatsApp style */}
-            <div className="bg-[#f0f2f5] border-t border-gray-200/60 px-3 py-3">
-              <div className="flex items-end gap-2">
-                <div className="flex-1 bg-white rounded-3xl border border-gray-200/80 shadow-sm flex items-end px-4 py-2.5 gap-2">
+            <div className="flex-1 min-h-0 flex">
+              {/* Reading + compose */}
+              <div className="flex-1 min-w-0 overflow-y-auto px-6 py-5">
+                <div className="flex items-start gap-2.5 mb-4">
+                  <h1 className="flex-1 text-[19px] font-bold tracking-[-0.3px] leading-tight">{curSubject}</h1>
+                  <button
+                    type="button"
+                    onClick={e => toggleStar(e, convKey(active))}
+                    className={cn('w-[30px] h-[30px] flex-none flex items-center justify-center', starred.has(convKey(active)) ? 'text-warn' : 'text-ink-3 hover:text-warn')}
+                  >
+                    <Star className={cn('h-[18px] w-[18px]', starred.has(convKey(active)) && 'fill-warn')} strokeWidth={1.6} />
+                  </button>
+                </div>
+                <div className="flex items-center gap-1.5 mb-4 flex-wrap">
+                  <span className="text-[11px] font-semibold px-[9px] py-[3px] rounded-md bg-surface-3 text-ink-2">{active.senderEmail}</span>
+                  {active.unreadCount > 0 && (
+                    <span className="text-[11px] font-semibold px-[9px] py-[3px] rounded-md bg-brand-soft text-brand">Новое</span>
+                  )}
+                </div>
+
+                {/* Thread */}
+                {loadingThread ? (
+                  <div className="space-y-4">
+                    {[...Array(2)].map((_, i) => (
+                      <div key={i} className="skeleton h-32 rounded-xl" />
+                    ))}
+                  </div>
+                ) : (thread as Message[]).length === 0 ? (
+                  <div className="flex flex-col items-center justify-center h-40 gap-3 text-ink-3">
+                    <Mail className="h-8 w-8 opacity-20" /><span className="text-sm">Пока нет писем</span>
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-4">
+                    {(thread as Message[]).map((msg, i) => {
+                      const isSent = msg.from.address.toLowerCase() === active.senderEmail.toLowerCase();
+                      return (
+                        <EmailCard
+                          key={`${msg.uid}-${i}`}
+                          msg={msg}
+                          senderEmail={active.senderEmail}
+                          contactEmail={active.contactEmail}
+                          onDelete={!isSent ? () => deleteMessageMutation.mutate({ senderId: active.senderId, uid: msg.uid }) : undefined}
+                        />
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* Compose */}
+                <div className="mt-4 bg-surface border border-border rounded-xl shadow-soft">
+                  <div className="px-4 py-3 border-b border-border flex items-center gap-2.5 flex-wrap">
+                    <span className="text-xs text-ink-3">Ответить с</span>
+                    <div className="flex items-center gap-1.5 px-2.5 py-[5px] border border-border rounded-lg bg-surface-2 font-semibold text-[12.5px]">
+                      <span className={cn('w-2 h-2 rounded-full bg-gradient-to-br', avatarGradient(active.contactEmail))} />
+                      {active.senderEmail}
+                    </div>
+                    <div className="flex-1" />
+                    <span className="text-xs text-ink-3 truncate">кому {active.contactName || active.contactEmail}</span>
+                  </div>
+                  <div className="flex items-center gap-0.5 px-3 py-[7px] border-b border-border text-ink-3">
+                    {[Bold, Italic, Underline].map((Ic, i) => (
+                      <button key={i} type="button" className="w-7 h-7 rounded-md flex items-center justify-center hover:bg-hover">
+                        <Ic className="h-[15px] w-[15px]" strokeWidth={1.8} />
+                      </button>
+                    ))}
+                    <span className="w-px h-4 bg-border mx-1" />
+                    {[List, Link2, Paperclip].map((Ic, i) => (
+                      <button key={i} type="button" className="w-7 h-7 rounded-md flex items-center justify-center hover:bg-hover">
+                        <Ic className="h-[15px] w-[15px]" strokeWidth={1.8} />
+                      </button>
+                    ))}
+                  </div>
                   <textarea
                     ref={textareaRef}
                     value={replyText}
-                    onChange={e => {
-                      setReplyText(e.target.value);
-                      e.target.style.height = 'auto';
-                      e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
-                    }}
-                    onKeyDown={e => {
-                      if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) handleReply();
-                    }}
-                    placeholder="Введите сообщение…"
-                    rows={1}
-                    style={{ minHeight: '24px', maxHeight: '120px' }}
-                    className="flex-1 resize-none text-[14px] text-gray-800 focus:outline-none placeholder:text-gray-400 bg-transparent overflow-hidden leading-relaxed"
+                    onChange={e => setReplyText(e.target.value)}
+                    onKeyDown={e => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) handleReply(); }}
+                    placeholder="Напишите ответ…"
+                    className="w-full min-h-[96px] resize-y border-none outline-none px-4 py-3.5 bg-transparent text-[13.5px] leading-relaxed text-ink placeholder:text-ink-3"
                   />
+                  <div className="flex items-center gap-2 px-3.5 py-2.5 border-t border-border">
+                    <button
+                      type="button"
+                      onClick={handleReply}
+                      disabled={reply.isPending || !replyText.trim()}
+                      className="flex items-center gap-1.5 px-4 py-2 rounded-[9px] text-white font-semibold text-[13px] hover:brightness-105 disabled:opacity-50 disabled:cursor-not-allowed"
+                      style={{ background: 'linear-gradient(135deg,var(--accent),var(--accent-2))', boxShadow: '0 6px 14px -6px var(--accent)' }}
+                    >
+                      {reply.isPending ? <RefreshCw className="h-[15px] w-[15px] animate-spin" /> : <>Отправить<Send className="h-[15px] w-[15px]" strokeWidth={2} /></>}
+                    </button>
+                    <div className="flex-1" />
+                    <span className="text-[11.5px] text-ink-3">Ctrl+Enter — отправить</span>
+                  </div>
                 </div>
-                <button
-                  onClick={handleReply}
-                  disabled={reply.isPending}
-                  className={cn(
-                    'shrink-0 w-11 h-11 rounded-full flex items-center justify-center transition-all duration-200 active:scale-95',
-                    replyText.trim() && !reply.isPending
-                      ? 'bg-[#25D366] text-white shadow-md hover:bg-[#1fbe59]'
-                      : 'bg-[#25D366]/40 text-white cursor-not-allowed',
-                  )}
-                >
-                  {reply.isPending
-                    ? <RefreshCw className="h-4 w-4 animate-spin" />
-                    : <Send className="h-4 w-4 translate-x-px" />
-                  }
-                </button>
+                <div ref={bottomRef} />
               </div>
+
+              {/* Contact profile column */}
+              <aside className="hidden xl:block w-[288px] flex-none border-l border-border bg-surface overflow-y-auto px-4 py-[18px]">
+                <div className="flex flex-col items-center text-center pb-4 border-b border-border">
+                  <div className={cn(
+                    'w-[60px] h-[60px] rounded-2xl bg-gradient-to-br flex items-center justify-center text-white font-bold text-xl mb-2.5',
+                    avatarGradient(active.contactEmail),
+                  )}>
+                    {initials(active.contactName, active.contactEmail)}
+                  </div>
+                  <div className="font-bold text-[15px]">{active.contactName || active.contactEmail}</div>
+                  <div className="text-xs text-ink-3 mb-2 truncate max-w-full">{active.contactEmail}</div>
+                  <span className={cn(
+                    'text-[11px] font-semibold px-2.5 py-[3px] rounded-full',
+                    active.unreadCount > 0 ? 'bg-brand-soft text-brand' : 'bg-success-soft text-success',
+                  )}>
+                    {active.unreadCount > 0 ? 'Новое сообщение' : 'Активный контакт'}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 py-4 border-b border-border">
+                  <div className="bg-surface-2 rounded-[10px] px-[11px] py-2.5">
+                    <div className="text-[10.5px] text-ink-3 mb-0.5">Писем</div>
+                    <div className="text-lg font-bold font-mono text-success">{(thread as Message[]).length}</div>
+                  </div>
+                  <div className="bg-surface-2 rounded-[10px] px-[11px] py-2.5">
+                    <div className="text-[10.5px] text-ink-3 mb-0.5">Непрочитано</div>
+                    <div className="text-lg font-bold font-mono text-ink-2">{active.unreadCount}</div>
+                  </div>
+                </div>
+
+                <div className="py-4 border-b border-border flex flex-col gap-[11px]">
+                  <div className="flex items-center gap-2.5">
+                    <Building2 className="h-[15px] w-[15px] flex-none text-ink-3" strokeWidth={1.8} />
+                    <div className="min-w-0">
+                      <div className="text-[10.5px] text-ink-3">Компания</div>
+                      <div className="font-semibold text-[12.5px] truncate">{contactDomain}</div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2.5">
+                    <Phone className="h-[15px] w-[15px] flex-none text-ink-3" strokeWidth={1.8} />
+                    <div className="min-w-0">
+                      <div className="text-[10.5px] text-ink-3">Ящик</div>
+                      <div className="font-semibold text-[12.5px] truncate">{active.senderEmail}</div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2.5">
+                    <Calendar className="h-[15px] w-[15px] flex-none text-ink-3" strokeWidth={1.8} />
+                    <div className="min-w-0">
+                      <div className="text-[10.5px] text-ink-3">Первое письмо</div>
+                      <div className="font-semibold text-[12.5px]">{firstMsgDate ? formatDate(firstMsgDate) : '—'}</div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="py-4">
+                  <div className="text-[10.5px] font-bold tracking-[0.5px] text-ink-3 uppercase mb-2.5">История</div>
+                  <div className="flex flex-col gap-[11px]">
+                    {(thread as Message[]).slice(-4).reverse().map((m, i) => {
+                      const isSent = m.from.address.toLowerCase() === active.senderEmail.toLowerCase();
+                      return (
+                        <div key={`${m.uid}-h${i}`} className="flex gap-2.5">
+                          <span className={cn('w-2 h-2 rounded-full mt-1 flex-none', isSent ? 'bg-info' : 'bg-success')} />
+                          <div className="min-w-0">
+                            <div className="text-[12.5px] font-semibold truncate">
+                              {isSent ? 'Вы ответили' : 'Получено письмо'}
+                            </div>
+                            <div className="text-[11px] text-ink-3">{timeAgo(m.date)} назад</div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                    {(thread as Message[]).length === 0 && (
+                      <div className="text-[12px] text-ink-3">Нет активности</div>
+                    )}
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => navigate('/contacts')}
+                  className="w-full mt-2 py-2.5 rounded-[9px] border border-border font-semibold text-[12.5px] text-brand hover:bg-brand-softer transition-colors"
+                >
+                  Открыть профиль контакта
+                </button>
+              </aside>
             </div>
           </>
         )}

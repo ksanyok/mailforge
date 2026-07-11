@@ -149,11 +149,12 @@ export function TemplatesPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center gap-3">
         <div>
-          <h1 className="text-2xl font-bold">Шаблоны писем</h1>
-          <p className="text-sm text-muted-foreground mt-1">Готовые шаблоны для быстрого создания кампаний</p>
+          <h1 className="text-[20px] font-extrabold tracking-[-0.3px]">Шаблоны писем</h1>
+          <p className="text-ink-3 text-[12.5px] mt-0.5">Переиспользуемые HTML-шаблоны с переменными</p>
         </div>
+        <div className="flex-1" />
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
             <Button className="gap-2"><Plus className="h-4 w-4" />Новый шаблон</Button>
@@ -244,14 +245,16 @@ export function TemplatesPage() {
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
-        <div className="flex gap-1">
+        <div className="flex gap-2 flex-wrap">
           {CATEGORIES.map((c) => (
             <button
               key={c}
               onClick={() => setCategory(c)}
               className={cn(
-                'px-3 py-1.5 rounded-full text-xs font-medium transition-colors',
-                category === c ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:bg-muted/80',
+                'px-3.5 py-1.5 rounded-full text-[12.5px] font-semibold transition-colors',
+                category === c
+                  ? 'bg-brand text-white'
+                  : 'border border-border text-ink-2 hover:bg-hover',
               )}
             >
               {CATEGORY_LABELS[c] ?? c}
@@ -263,9 +266,12 @@ export function TemplatesPage() {
       {/* Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {filtered.map((t) => (
-          <Card key={t.id} className="overflow-hidden flex flex-col hover:shadow-md transition-shadow">
+          <div
+            key={t.id}
+            className="bg-surface border border-border rounded-xl overflow-hidden shadow-soft hover:shadow-soft-lg transition-shadow flex flex-col"
+          >
             {/* Mini preview */}
-            <div className="relative bg-muted/30 border-b overflow-hidden" style={{ height: 160 }}>
+            <div className="relative bg-surface-2 border-b border-border overflow-hidden" style={{ height: 160 }}>
               {t.htmlContent ? (
                 <iframe
                   srcDoc={t.htmlContent}
@@ -275,70 +281,68 @@ export function TemplatesPage() {
                   sandbox="allow-same-origin"
                 />
               ) : (
-                <div className="flex items-center justify-center h-full text-muted-foreground text-xs">Нет предпросмотра</div>
+                <div className="flex items-center justify-center h-full text-ink-3 text-xs">Нет предпросмотра</div>
               )}
               {t.isSystem && (
-                <div className="absolute top-2 left-2 bg-primary/90 text-primary-foreground text-xs px-2 py-0.5 rounded-full">
+                <div className="absolute top-2.5 left-2.5 bg-brand text-white text-[10.5px] font-semibold px-2 py-0.5 rounded shadow-soft">
                   Демо
                 </div>
               )}
             </div>
 
-            <CardContent className="flex-1 p-4">
-              <h3 className="font-semibold text-sm">{t.name}</h3>
-              {t.category && (
-                <div className="flex items-center gap-1 mt-1">
-                  <Tag className="h-3 w-3 text-muted-foreground" />
-                  <span className="text-xs text-muted-foreground">{CATEGORY_LABELS[t.category ?? ''] ?? t.category}</span>
-                </div>
-              )}
+            <div className="flex-1 p-4">
+              <div className="flex items-center gap-2">
+                <h3 className="font-bold text-[13.5px] flex-1 truncate">{t.name}</h3>
+                {t.category && (
+                  <span className="flex items-center gap-1 text-[10.5px] font-semibold px-2 py-0.5 rounded bg-surface-3 text-ink-2 whitespace-nowrap">
+                    <Tag className="h-3 w-3" strokeWidth={1.7} />
+                    {CATEGORY_LABELS[t.category ?? ''] ?? t.category}
+                  </span>
+                )}
+              </div>
               {vars(t).length > 0 && (
-                <p className="text-xs text-muted-foreground mt-1.5">
+                <p className="text-[11.5px] text-ink-3 mt-1.5">
                   Переменные: {vars(t).join(', ')}
                 </p>
               )}
               {t.createdAt && (
-                <p className="text-xs text-muted-foreground mt-1">{formatDate(t.createdAt)}</p>
+                <p className="text-[11.5px] text-ink-3 mt-1">{formatDate(t.createdAt)}</p>
               )}
-            </CardContent>
+            </div>
 
-            <CardFooter className="p-3 pt-0 gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                className="flex-1 gap-1"
+            <div className="p-3 pt-0 flex gap-2">
+              <button
+                className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg border border-border text-[12px] font-semibold text-ink-2 hover:bg-hover transition-colors"
                 onClick={() => setPreviewTpl({ name: t.name, html: t.htmlContent ?? '' })}
               >
-                <Eye className="h-3.5 w-3.5" />Предпросмотр
-              </Button>
+                <Eye className="h-3.5 w-3.5" strokeWidth={1.7} />Просмотр
+              </button>
               {!t.isSystem && (
                 <>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="gap-1"
+                  <button
+                    className="flex items-center justify-center px-3 py-2 rounded-lg bg-brand-softer text-brand text-[12px] font-semibold hover:bg-brand-soft transition-colors"
                     onClick={() => openEdit(t)}
+                    title="Изменить"
                   >
-                    <Edit className="h-3.5 w-3.5" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="text-destructive hover:bg-destructive/10"
+                    <Edit className="h-3.5 w-3.5" strokeWidth={1.7} />
+                  </button>
+                  <button
+                    className="flex items-center justify-center px-3 py-2 rounded-lg text-danger hover:bg-danger-soft transition-colors"
                     onClick={() => remove.mutate(t.id)}
+                    title="Удалить"
                   >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </Button>
+                    <Trash2 className="h-3.5 w-3.5" strokeWidth={1.7} />
+                  </button>
                 </>
               )}
-            </CardFooter>
-          </Card>
+            </div>
+          </div>
         ))}
 
         {filtered.length === 0 && (
-          <div className="col-span-3 text-center py-16 text-muted-foreground">
+          <div className="col-span-full text-center py-16 text-ink-3">
             <Code2 className="h-10 w-10 mx-auto mb-3 opacity-30" />
-            <p className="font-medium">Шаблоны не найдены</p>
+            <p className="font-semibold text-ink-2">Шаблоны не найдены</p>
             <p className="text-sm mt-1">Измените фильтры или создайте новый шаблон</p>
           </div>
         )}

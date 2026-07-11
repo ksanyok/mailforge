@@ -2,18 +2,45 @@ import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
-import { ArrowLeft, Mail, Phone, Building, Edit, Trash2 } from 'lucide-react';
+import { ArrowLeft, Mail, Phone, Building, Edit, Trash2, Send, MailOpen, MousePointerClick } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { contactsApi } from '@/api/contacts';
-import { cn } from '@/utils/cn';
-import { formatDate, STATUS_COLORS } from '@/utils/format';
+import { formatDate } from '@/utils/format';
 import { toast } from '@/hooks/use-toast';
 
 const STATUSES = ['SUBSCRIBED', 'UNSUBSCRIBED', 'BOUNCED', 'COMPLAINED', 'SUPPRESSED'];
+
+const STATUS_LABELS: Record<string, string> = {
+  SUBSCRIBED: 'Подписан',
+  UNSUBSCRIBED: 'Отписан (не интересно)',
+  BOUNCED: 'Отказ',
+  COMPLAINED: 'Жалоба',
+  SUPPRESSED: 'В стоп-листе',
+};
+const STATUS_STYLE: Record<string, { bg: string; fg: string }> = {
+  SUBSCRIBED: { bg: 'var(--success-soft)', fg: 'var(--success)' },
+  UNSUBSCRIBED: { bg: 'var(--surface-3)', fg: 'var(--text-2)' },
+  BOUNCED: { bg: 'var(--danger-soft)', fg: 'var(--danger)' },
+  COMPLAINED: { bg: 'var(--warn-soft)', fg: 'var(--warn)' },
+  SUPPRESSED: { bg: 'var(--accent-soft)', fg: 'var(--accent)' },
+};
+function StatusPill({ status }: { status: string }) {
+  const st = STATUS_STYLE[status] ?? { bg: 'var(--surface-3)', fg: 'var(--text-2)' };
+  return (
+    <span className="inline-block text-[11px] font-semibold px-2.5 py-0.5 rounded-full" style={{ background: st.bg, color: st.fg }}>
+      {STATUS_LABELS[status] ?? status}
+    </span>
+  );
+}
+const AVATAR_COLORS = ['#6366f1', '#0ea5e9', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6', '#ef4444', '#14b8a6'];
+function avatarColor(key: string): string {
+  let h = 0;
+  for (let i = 0; i < key.length; i++) h = (h * 31 + key.charCodeAt(i)) >>> 0;
+  return AVATAR_COLORS[h % AVATAR_COLORS.length];
+}
 
 interface ContactForm {
   email: string; firstName: string; lastName: string;
@@ -86,7 +113,7 @@ export function ContactDetailPage() {
               <Select defaultValue={c.status as string} onValueChange={(v) => setValue('status', v)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  {STATUSES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                  {STATUSES.map(s => <SelectItem key={s} value={s}>{STATUS_LABELS[s] ?? s}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
@@ -116,6 +143,11 @@ export function ContactDetailPage() {
     );
   }
 
+  const engagement = (c.engagementScore as number) ?? 0;
+  const engColor = engagement >= 70 ? 'var(--success)' : engagement >= 40 ? 'var(--warn)' : 'var(--danger)';
+  const risk = (c.riskScore as number) ?? 0;
+  const riskColor = risk >= 70 ? 'var(--danger)' : risk >= 40 ? 'var(--warn)' : 'var(--success)';
+
   return (
     <div className="space-y-4 max-w-3xl">
       <div className="flex items-center justify-between">
@@ -136,42 +168,87 @@ export function ContactDetailPage() {
         </div>
       </div>
 
-      <div className="flex items-center gap-4">
-        <div className="h-14 w-14 rounded-full bg-primary/10 flex items-center justify-center text-xl font-bold text-primary">
-          {(c.firstName as string)?.[0] ?? (c.email as string)?.[0]?.toUpperCase()}
+      {/* Шапка контакта */}
+      <div className="bg-surface border border-border rounded-xl shadow-soft p-[18px] flex items-center gap-4">
+        <div
+          className="h-14 w-14 flex-none rounded-[14px] flex items-center justify-center text-xl font-bold text-white"
+          style={{ background: avatarColor((c.email as string) ?? '') }}
+        >
+          {((c.firstName as string)?.[0] ?? (c.email as string)?.[0])?.toUpperCase()}
         </div>
-        <div>
-          <h2 className="text-xl font-semibold">
+        <div className="min-w-0">
+          <h2 className="text-[19px] font-extrabold tracking-[-0.3px] truncate">
             {[c.firstName, c.lastName].filter(Boolean).join(' ') || c.email as string}
           </h2>
-          <span className={cn('px-2 py-0.5 rounded-full text-xs font-medium', STATUS_COLORS[c.status as string] ?? 'bg-gray-100')}>
-            {c.status as string}
-          </span>
+          <div className="mt-1"><StatusPill status={c.status as string} /></div>
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        <Card>
-          <CardHeader><CardTitle className="text-sm">Контактные данные</CardTitle></CardHeader>
-          <CardContent className="space-y-2 text-sm">
-            <div className="flex items-center gap-2"><Mail className="h-4 w-4 text-muted-foreground" />{c.email as string}</div>
-            {c.phone && <div className="flex items-center gap-2"><Phone className="h-4 w-4 text-muted-foreground" />{c.phone as string}</div>}
-            {c.company && <div className="flex items-center gap-2"><Building className="h-4 w-4 text-muted-foreground" />{c.company as string}</div>}
-            <div className="text-muted-foreground">Добавлен {formatDate(c.createdAt as string)}</div>
-          </CardContent>
-        </Card>
+      <div className="grid grid-cols-2 gap-3">
+        {/* Контактные данные */}
+        <div className="bg-surface border border-border rounded-xl shadow-soft p-[18px]">
+          <div className="text-[10.5px] font-bold uppercase tracking-[0.5px] text-ink-3 mb-3">Контактные данные</div>
+          <div className="space-y-2.5 text-[13px]">
+            <div className="flex items-center gap-2.5 text-ink"><Mail className="h-4 w-4 text-ink-3" strokeWidth={1.7} />{c.email as string}</div>
+            {c.phone && <div className="flex items-center gap-2.5 text-ink"><Phone className="h-4 w-4 text-ink-3" strokeWidth={1.7} />{c.phone as string}</div>}
+            {c.company && <div className="flex items-center gap-2.5 text-ink"><Building className="h-4 w-4 text-ink-3" strokeWidth={1.7} />{c.company as string}</div>}
+            <div className="text-ink-3 text-[12px] pt-1">Добавлен {formatDate(c.createdAt as string)}</div>
+          </div>
+        </div>
 
-        <Card>
-          <CardHeader><CardTitle className="text-sm">Вовлечённость</CardTitle></CardHeader>
-          <CardContent className="space-y-2 text-sm">
-            <div className="flex justify-between"><span className="text-muted-foreground">Индекс</span><span className="font-medium">{c.engagementScore as number}</span></div>
-            <div className="flex justify-between"><span className="text-muted-foreground">Риск</span><span className="font-medium">{c.riskScore as number}</span></div>
-            <div className="flex justify-between"><span className="text-muted-foreground">Всего отправлено</span><span>{c.totalSent as number}</span></div>
-            <div className="flex justify-between"><span className="text-muted-foreground">Всего открытий</span><span>{c.totalOpened as number}</span></div>
-            <div className="flex justify-between"><span className="text-muted-foreground">Всего кликов</span><span>{c.totalClicked as number}</span></div>
-            {c.lastOpenedAt && <div className="flex justify-between"><span className="text-muted-foreground">Последнее открытие</span><span>{formatDate(c.lastOpenedAt as string)}</span></div>}
-          </CardContent>
-        </Card>
+        {/* Вовлечённость */}
+        <div className="bg-surface border border-border rounded-xl shadow-soft p-[18px]">
+          <div className="text-[10.5px] font-bold uppercase tracking-[0.5px] text-ink-3 mb-3">Вовлечённость</div>
+          <div className="space-y-3">
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-[12px] text-ink-2">Индекс вовлечённости</span>
+                <span className="text-[13px] font-bold font-mono" style={{ color: engColor }}>{c.engagementScore as number}</span>
+              </div>
+              <div className="h-1.5 rounded-full bg-surface-3 overflow-hidden">
+                <div className="h-full rounded-full" style={{ width: `${Math.max(0, Math.min(100, engagement))}%`, background: engColor }} />
+              </div>
+            </div>
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-[12px] text-ink-2">Индекс риска</span>
+                <span className="text-[13px] font-bold font-mono" style={{ color: riskColor }}>{c.riskScore as number}</span>
+              </div>
+              <div className="h-1.5 rounded-full bg-surface-3 overflow-hidden">
+                <div className="h-full rounded-full" style={{ width: `${Math.max(0, Math.min(100, risk))}%`, background: riskColor }} />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* История отправок */}
+      <div className="bg-surface border border-border rounded-xl shadow-soft p-[18px]">
+        <div className="text-[10.5px] font-bold uppercase tracking-[0.5px] text-ink-3 mb-3">История отправок</div>
+        <div className="grid grid-cols-3 gap-3">
+          <div className="rounded-[10px] bg-surface-2 p-3">
+            <div className="w-[30px] h-[30px] rounded-[8px] flex items-center justify-center mb-2" style={{ background: 'var(--info-soft)', color: 'var(--info)' }}>
+              <Send className="w-4 h-4" strokeWidth={1.8} />
+            </div>
+            <div className="text-[20px] font-extrabold font-mono tracking-[-0.5px]">{c.totalSent as number}</div>
+            <div className="text-[11.5px] text-ink-3 font-semibold">Отправлено</div>
+          </div>
+          <div className="rounded-[10px] bg-surface-2 p-3">
+            <div className="w-[30px] h-[30px] rounded-[8px] flex items-center justify-center mb-2" style={{ background: 'var(--success-soft)', color: 'var(--success)' }}>
+              <MailOpen className="w-4 h-4" strokeWidth={1.8} />
+            </div>
+            <div className="text-[20px] font-extrabold font-mono tracking-[-0.5px]">{c.totalOpened as number}</div>
+            <div className="text-[11.5px] text-ink-3 font-semibold">Открытий</div>
+          </div>
+          <div className="rounded-[10px] bg-surface-2 p-3">
+            <div className="w-[30px] h-[30px] rounded-[8px] flex items-center justify-center mb-2" style={{ background: 'var(--accent-soft)', color: 'var(--accent)' }}>
+              <MousePointerClick className="w-4 h-4" strokeWidth={1.8} />
+            </div>
+            <div className="text-[20px] font-extrabold font-mono tracking-[-0.5px]">{c.totalClicked as number}</div>
+            <div className="text-[11.5px] text-ink-3 font-semibold">Кликов</div>
+          </div>
+        </div>
+        {c.lastOpenedAt && <div className="text-[12px] text-ink-3 mt-3 pt-3 border-t border-border">Последнее открытие: <span className="font-mono text-ink-2">{formatDate(c.lastOpenedAt as string)}</span></div>}
       </div>
     </div>
   );

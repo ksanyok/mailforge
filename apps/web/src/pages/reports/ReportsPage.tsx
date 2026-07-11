@@ -16,20 +16,25 @@ export function ReportsPage() {
 
   return (
     <div className="space-y-6">
+      <div>
+        <h1 className="text-[22px] font-extrabold tracking-[-0.4px]">Отчёты</h1>
+        <p className="text-[13px] text-ink-3 mt-1">Динамика отправки и сравнение отправителей за последние 90 дней</p>
+      </div>
+
       <Card>
         <CardHeader><CardTitle className="text-sm">Объём писем — последние 90 дней</CardTitle></CardHeader>
         <CardContent>
           <ResponsiveContainer width="100%" height={280}>
             <BarChart data={dailyData}>
-              <CartesianGrid strokeDasharray="3 3" />
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
               <XAxis dataKey="date" tick={{ fontSize: 10 }} tickFormatter={(v) => v.slice(5)} />
               <YAxis tick={{ fontSize: 11 }} />
               <Tooltip />
               <Legend />
-              <Bar dataKey="sent" fill="#6366f1" name="Отправлено" />
-              <Bar dataKey="opened" fill="#22c55e" name="Открыто" />
-              <Bar dataKey="clicked" fill="#3b82f6" name="Кликнуто" />
-              <Bar dataKey="bounced" fill="#ef4444" name="Отказы" />
+              <Bar dataKey="sent" fill="var(--accent)" name="Отправлено" />
+              <Bar dataKey="opened" fill="var(--success)" name="Открыто" />
+              <Bar dataKey="clicked" fill="var(--info)" name="Кликнуто" />
+              <Bar dataKey="bounced" fill="var(--danger)" name="Отказы" />
             </BarChart>
           </ResponsiveContainer>
         </CardContent>
@@ -40,11 +45,11 @@ export function ReportsPage() {
         <CardContent>
           <ResponsiveContainer width="100%" height={220}>
             <LineChart data={dailyData}>
-              <CartesianGrid strokeDasharray="3 3" />
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
               <XAxis dataKey="date" tick={{ fontSize: 10 }} tickFormatter={(v) => v.slice(5)} />
               <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `${v}%`} />
               <Tooltip formatter={(v) => `${(v as number).toFixed(1)}%`} />
-              <Line type="monotone" dataKey="openRate" stroke="#22c55e" name="Процент открытий" dot={false} />
+              <Line type="monotone" dataKey="openRate" stroke="var(--success)" name="Процент открытий" dot={false} />
             </LineChart>
           </ResponsiveContainer>
         </CardContent>
@@ -56,14 +61,14 @@ export function ReportsPage() {
           <CardContent>
             <ResponsiveContainer width="100%" height={220}>
               <BarChart data={senderData}>
-                <CartesianGrid strokeDasharray="3 3" />
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
                 <XAxis dataKey="name" tick={{ fontSize: 11 }} />
                 <YAxis tick={{ fontSize: 11 }} />
                 <Tooltip />
                 <Legend />
-                <Bar dataKey="sent" fill="#6366f1" name="Отправлено" />
-                <Bar dataKey="openRate" fill="#22c55e" name="Процент открытий %" />
-                <Bar dataKey="bounceRate" fill="#ef4444" name="Процент отказов %" />
+                <Bar dataKey="sent" fill="var(--accent)" name="Отправлено" />
+                <Bar dataKey="openRate" fill="var(--success)" name="Процент открытий %" />
+                <Bar dataKey="bounceRate" fill="var(--danger)" name="Процент отказов %" />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>

@@ -5,8 +5,7 @@ import { ArrowLeft, Play, Pause, RotateCcw, Edit2, XCircle, Trash2, X, SendHoriz
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { campaignsApi, analyticsApi } from '@/api/index';
-import { formatDate, formatPercent, STATUS_COLORS } from '@/utils/format';
-import { cn } from '@/utils/cn';
+import { formatDate, formatPercent } from '@/utils/format';
 import { toast } from '@/hooks/use-toast';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 
@@ -20,6 +19,19 @@ const STATUS_LABELS: Record<string, string> = {
   CANCELLED: 'Отменена',
   FAILED: 'Ошибка',
   QUEUED: 'В очереди',
+};
+
+// Soft-цветные бейджи статусов под смысл
+const STATUS_STYLE: Record<string, { bg: string; fg: string }> = {
+  DRAFT:     { bg: 'var(--surface-3)',   fg: 'var(--text-2)' },
+  QUEUED:    { bg: 'var(--surface-3)',   fg: 'var(--text-2)' },
+  SCHEDULED: { bg: 'var(--info-soft)',    fg: 'var(--info)' },
+  SENDING:   { bg: 'var(--info-soft)',    fg: 'var(--info)' },
+  SENT:      { bg: 'var(--success-soft)', fg: 'var(--success)' },
+  COMPLETED: { bg: 'var(--success-soft)', fg: 'var(--success)' },
+  PAUSED:    { bg: 'var(--warn-soft)',    fg: 'var(--warn)' },
+  CANCELLED: { bg: 'var(--danger-soft)',  fg: 'var(--danger)' },
+  FAILED:    { bg: 'var(--danger-soft)',  fg: 'var(--danger)' },
 };
 
 export function CampaignDetailPage() {
@@ -104,12 +116,12 @@ export function CampaignDetailPage() {
   const status = c.status as string;
 
   const stats = [
-    { label: 'Получатели', value: c.totalRecipients as number },
-    { label: 'Отправлено', value: c.sentCount as number },
-    { label: 'Открыли', value: c.uniqueOpenCount as number },
-    { label: 'Кликнули', value: c.uniqueClickCount as number },
-    { label: 'Отказы', value: c.bounceCount as number },
-    { label: 'Отписались', value: c.unsubscribeCount as number },
+    { label: 'Получатели', value: c.totalRecipients as number, color: 'var(--text)' },
+    { label: 'Отправлено', value: c.sentCount as number, color: 'var(--text)' },
+    { label: 'Открыли', value: c.uniqueOpenCount as number, color: 'var(--success)' },
+    { label: 'Кликнули', value: c.uniqueClickCount as number, color: 'var(--info)' },
+    { label: 'Отказы', value: c.bounceCount as number, color: 'var(--danger)' },
+    { label: 'Отписались', value: c.unsubscribeCount as number, color: 'var(--text-2)' },
   ];
 
   return (
@@ -124,7 +136,7 @@ export function CampaignDetailPage() {
         </Button>
 
         {status === 'DRAFT' && (
-          <Button size="sm" className="gap-2 bg-green-600 hover:bg-green-700 text-white" onClick={() => dispatch.mutate()} disabled={dispatch.isPending}>
+          <Button size="sm" className="gap-2" onClick={() => dispatch.mutate()} disabled={dispatch.isPending}>
             <Play className="h-4 w-4" />
             {dispatch.isPending ? 'Запуск…' : 'Запустить кампанию'}
           </Button>
@@ -150,7 +162,7 @@ export function CampaignDetailPage() {
               <Button size="sm" variant="ghost" onClick={() => setCancelConfirm(false)}><X className="h-4 w-4" /></Button>
             </div>
           ) : (
-            <Button size="sm" variant="outline" className="gap-2 text-orange-600 border-orange-300 hover:bg-orange-50" onClick={() => setCancelConfirm(true)}>
+            <Button size="sm" variant="outline" className="gap-2 text-warn border-warn/40 hover:bg-warn-soft" onClick={() => setCancelConfirm(true)}>
               <XCircle className="h-4 w-4" />Отменить кампанию
             </Button>
           )
@@ -166,7 +178,7 @@ export function CampaignDetailPage() {
               <Button size="sm" variant="ghost" onClick={() => setDeleteConfirm(false)}><X className="h-4 w-4" /></Button>
             </div>
           ) : (
-            <Button size="sm" variant="outline" className="gap-2 text-red-600 border-red-300 hover:bg-red-50" onClick={() => setDeleteConfirm(true)}>
+            <Button size="sm" variant="outline" className="gap-2 text-danger border-danger/40 hover:bg-danger-soft" onClick={() => setDeleteConfirm(true)}>
               <Trash2 className="h-4 w-4" />Удалить
             </Button>
           )
@@ -174,61 +186,67 @@ export function CampaignDetailPage() {
       </div>
 
       {/* Campaign header */}
-      <div className="flex items-start justify-between">
-        <div>
-          <h2 className="text-xl font-semibold">{c.name as string}</h2>
-          <p className="text-sm text-muted-foreground">{c.subject as string}</p>
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h2 className="text-[20px] font-extrabold tracking-[-0.3px] truncate">{c.name as string}</h2>
+          <p className="text-[12.5px] text-ink-3 truncate">{c.subject as string}</p>
         </div>
-        <span className={cn('text-xs px-2.5 py-1 rounded-full font-semibold', STATUS_COLORS[status] ?? 'bg-gray-100')}>
+        <span
+          className="shrink-0 text-[10.5px] font-semibold px-2 py-0.5 rounded"
+          style={STATUS_STYLE[status] ? { background: STATUS_STYLE[status].bg, color: STATUS_STYLE[status].fg } : { background: 'var(--surface-3)', color: 'var(--text-2)' }}
+        >
           {STATUS_LABELS[status] ?? status}
         </span>
       </div>
 
       {/* Draft hint */}
       {status === 'DRAFT' && (
-        <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 flex items-center gap-2">
+        <div
+          className="rounded-xl border px-4 py-3 text-[13px] flex items-center gap-2"
+          style={{ borderColor: 'var(--warn)', background: 'var(--warn-soft)', color: 'var(--warn)' }}
+        >
           <Play className="h-4 w-4 shrink-0" />
           Кампания готова. Нажмите <strong>Запустить кампанию</strong>, чтобы начать отправку.
         </div>
       )}
 
       {/* Stats */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-3 gap-3">
         {stats.map((s) => (
-          <Card key={s.label}>
-            <CardContent className="p-4 text-center">
-              <p className="text-2xl font-bold">{s.value}</p>
-              <p className="text-xs text-muted-foreground">{s.label}</p>
-            </CardContent>
-          </Card>
+          <div key={s.label} className="bg-surface border border-border rounded-xl p-4 shadow-soft text-center">
+            <p className="text-[22px] font-extrabold font-mono tracking-[-0.5px]" style={{ color: s.color }}>{s.value}</p>
+            <p className="text-[12px] text-ink-3 mt-0.5">{s.label}</p>
+          </div>
         ))}
       </div>
 
       {/* Response summary + Follow-up */}
       {nr && (c.sentCount as number) > 0 && (
-        <Card className={cn(
-          'border-2',
-          nr.notResponded === 0 ? 'border-green-200 bg-green-50/40' : 'border-blue-200 bg-blue-50/30',
-        )}>
+        <Card
+          className="border-2"
+          style={nr.notResponded === 0
+            ? { borderColor: 'var(--success)', background: 'var(--success-soft)' }
+            : { borderColor: 'var(--info)', background: 'var(--info-soft)' }}
+        >
           <CardContent className="p-4">
             <div className="flex items-center justify-between gap-4 flex-wrap">
               <div className="flex items-center gap-6">
                 <div className="flex items-center gap-2">
-                  <CheckCircle2 className="h-5 w-5 text-green-600" />
+                  <CheckCircle2 className="h-5 w-5" style={{ color: 'var(--success)' }} />
                   <div>
-                    <p className="text-xl font-bold text-green-700">{nr.responded}</p>
-                    <p className="text-xs text-muted-foreground">Открыли / Кликнули</p>
+                    <p className="text-xl font-extrabold font-mono" style={{ color: 'var(--success)' }}>{nr.responded}</p>
+                    <p className="text-[11px] text-ink-3">Открыли / Кликнули</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <UserX className="h-5 w-5 text-gray-400" />
+                  <UserX className="h-5 w-5 text-ink-3" />
                   <div>
-                    <p className="text-xl font-bold text-gray-700">{nr.notResponded}</p>
-                    <p className="text-xs text-muted-foreground">Не открыли</p>
+                    <p className="text-xl font-extrabold font-mono text-ink">{nr.notResponded}</p>
+                    <p className="text-[11px] text-ink-3">Не открыли</p>
                   </div>
                 </div>
-                <div className="text-xs text-muted-foreground">
-                  из {nr.total} отправленных
+                <div className="text-[11px] text-ink-3">
+                  из <span className="font-mono">{nr.total}</span> отправленных
                 </div>
               </div>
 
@@ -240,11 +258,11 @@ export function CampaignDetailPage() {
                         value={followUpSubject}
                         onChange={(e) => setFollowUpSubject(e.target.value)}
                         placeholder={`Re: ${c.subject as string}`}
-                        className="text-sm border rounded-lg px-3 py-1.5 w-64 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                        className="text-sm bg-surface-2 border border-border rounded-[10px] px-3 py-1.5 w-64 outline-none focus:ring-2 focus:ring-brand/40"
                       />
                       <Button
                         size="sm"
-                        className="bg-blue-600 hover:bg-blue-700 text-white gap-1.5"
+                        className="gap-1.5"
                         onClick={() => createFollowUp.mutate()}
                         disabled={createFollowUp.isPending}
                       >
@@ -259,7 +277,7 @@ export function CampaignDetailPage() {
                     <Button
                       size="sm"
                       variant="outline"
-                      className="gap-2 border-blue-300 text-blue-700 hover:bg-blue-50"
+                      className="gap-2"
                       onClick={() => setShowFollowUp(true)}
                     >
                       <SendHorizonal className="h-3.5 w-3.5" />
@@ -275,19 +293,19 @@ export function CampaignDetailPage() {
 
       {/* Rates */}
       {(c.sentCount as number) > 0 && (
-        <div className="grid grid-cols-3 gap-4 text-sm">
-          <Card><CardContent className="p-4 text-center">
-            <p className="text-lg font-bold text-green-600">{formatPercent(c.uniqueOpenCount as number, c.sentCount as number)}</p>
-            <p className="text-xs text-muted-foreground">Процент открытий</p>
-          </CardContent></Card>
-          <Card><CardContent className="p-4 text-center">
-            <p className="text-lg font-bold text-blue-600">{formatPercent(c.uniqueClickCount as number, c.sentCount as number)}</p>
-            <p className="text-xs text-muted-foreground">Процент кликов</p>
-          </CardContent></Card>
-          <Card><CardContent className="p-4 text-center">
-            <p className="text-lg font-bold text-red-600">{formatPercent(c.bounceCount as number, c.sentCount as number)}</p>
-            <p className="text-xs text-muted-foreground">Процент отказов</p>
-          </CardContent></Card>
+        <div className="grid grid-cols-3 gap-3 text-sm">
+          <div className="bg-surface border border-border rounded-xl p-4 shadow-soft text-center">
+            <p className="text-lg font-extrabold font-mono" style={{ color: 'var(--success)' }}>{formatPercent(c.uniqueOpenCount as number, c.sentCount as number)}</p>
+            <p className="text-[12px] text-ink-3 mt-0.5">Процент открытий</p>
+          </div>
+          <div className="bg-surface border border-border rounded-xl p-4 shadow-soft text-center">
+            <p className="text-lg font-extrabold font-mono" style={{ color: 'var(--info)' }}>{formatPercent(c.uniqueClickCount as number, c.sentCount as number)}</p>
+            <p className="text-[12px] text-ink-3 mt-0.5">Процент кликов</p>
+          </div>
+          <div className="bg-surface border border-border rounded-xl p-4 shadow-soft text-center">
+            <p className="text-lg font-extrabold font-mono" style={{ color: 'var(--danger)' }}>{formatPercent(c.bounceCount as number, c.sentCount as number)}</p>
+            <p className="text-[12px] text-ink-3 mt-0.5">Процент отказов</p>
+          </div>
         </div>
       )}
 

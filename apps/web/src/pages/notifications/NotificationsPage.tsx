@@ -43,38 +43,41 @@ export function NotificationsPage() {
   return (
     <div className="space-y-3 max-w-3xl">
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold">Уведомления</h2>
+        <div>
+          <h1 className="text-[22px] font-extrabold tracking-[-0.4px]">Уведомления</h1>
+          <p className="text-[13px] text-ink-3 mt-1">События по вашим ящикам и рассылкам</p>
+        </div>
         {unread > 0 && (
           <Button variant="outline" size="sm" onClick={() => markAllRead.mutate()} disabled={markAllRead.isPending}>
             <Check className="h-4 w-4 mr-2" />Отметить все прочитанными ({unread})
           </Button>
         )}
       </div>
-      {notifs.length === 0 && <div className="text-center py-16 text-muted-foreground">Уведомлений нет</div>}
+      {notifs.length === 0 && <div className="text-center py-16 text-ink-3">Уведомлений нет</div>}
       {notifs.map((n) => (
         <Card
           key={n.id}
           className={cn(
-            'transition-colors cursor-pointer hover:border-primary/30',
-            !n.isRead && 'bg-primary/5 border-primary/20',
+            'transition-colors cursor-pointer hover:border-brand/30',
+            !n.isRead && 'bg-brand-softer border-brand/20',
           )}
           onClick={() => handleNotifClick(n)}
         >
           <CardContent className="p-4 flex items-start gap-3">
-            <div className={cn('mt-1 w-2 h-2 rounded-full shrink-0', n.isRead ? 'bg-muted' : 'bg-primary animate-pulse')} />
+            <div className={cn('mt-1 w-2 h-2 rounded-full shrink-0', n.isRead ? 'bg-surface-3' : 'bg-brand animate-pulse')} />
             <div className="flex-1">
               <div className="flex items-center justify-between gap-2">
-                <p className="font-medium text-sm">{n.title}</p>
-                <span className="text-xs text-muted-foreground whitespace-nowrap">{formatRelative(n.createdAt)}</span>
+                <p className="font-semibold text-sm">{n.title}</p>
+                <span className="text-xs text-ink-3 whitespace-nowrap">{formatRelative(n.createdAt)}</span>
               </div>
-              <p className="text-sm text-muted-foreground mt-0.5">{n.message}</p>
+              <p className="text-sm text-ink-2 mt-0.5">{n.message}</p>
               {n.type === 'INBOX_REPLY' && (
-                <p className="text-xs text-primary mt-1">Нажмите, чтобы открыть диалог →</p>
+                <p className="text-xs text-brand mt-1">Нажмите, чтобы открыть диалог →</p>
               )}
             </div>
             {!n.isRead && (
               <button
-                className="shrink-0 w-6 h-6 rounded-full hover:bg-muted flex items-center justify-center text-muted-foreground hover:text-primary transition-colors"
+                className="shrink-0 w-6 h-6 rounded-full hover:bg-hover flex items-center justify-center text-ink-3 hover:text-brand transition-colors"
                 title="Отметить прочитанным"
                 onClick={(e) => { e.stopPropagation(); markRead.mutate(n.id); }}
               >

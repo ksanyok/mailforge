@@ -125,34 +125,64 @@ export function CampaignBuilderPage() {
     <div className="max-w-4xl space-y-5">
       {/* Header */}
       <div className="flex items-center gap-3">
-        <Button variant="ghost" size="sm" onClick={() => navigate(-1)}>
-          <ArrowLeft className="h-4 w-4 mr-1" />Назад
-        </Button>
+        <button
+          type="button"
+          onClick={() => navigate(-1)}
+          title="Назад"
+          className="w-[34px] h-[34px] rounded-[9px] border border-border flex items-center justify-center text-ink-2 hover:bg-hover transition-colors"
+        >
+          <ArrowLeft className="h-[17px] w-[17px]" strokeWidth={1.8} />
+        </button>
         <div className="flex-1">
-          <h1 className="text-xl font-bold">{id ? 'Изменить кампанию' : 'Новая кампания'}</h1>
+          <h1 className="text-[20px] font-extrabold tracking-[-0.3px]">{id ? 'Изменить кампанию' : 'Новая кампания'}</h1>
+          <p className="text-ink-3 text-[12.5px] mt-0.5">Шаг {step + 1} из {STEPS.length} · {STEPS[step].label}</p>
         </div>
       </div>
 
-      {/* Step tabs */}
-      <div className="flex items-center gap-0.5 overflow-x-auto pb-1">
-        {STEPS.map(({ label, icon: Icon, hint }, i) => (
-          <button
-            key={i}
-            type="button"
-            onClick={() => i < step && setStep(i)}
-            title={hint}
-            className={cn(
-              'flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium whitespace-nowrap transition-all',
-              i === step   ? 'bg-primary text-primary-foreground shadow-sm'   : '',
-              i < step     ? 'bg-green-100 text-green-700 hover:bg-green-200 cursor-pointer' : '',
-              i > step     ? 'text-muted-foreground cursor-default'            : '',
-            )}
-          >
-            {i < step ? <CheckCircle className="h-3.5 w-3.5" /> : <Icon className="h-3.5 w-3.5" />}
-            <span className="hidden sm:inline">{label}</span>
-            {i < STEPS.length - 1 && <ArrowRight className="h-3 w-3 text-muted-foreground/40 ml-1" />}
-          </button>
-        ))}
+      {/* Step progress */}
+      <div className="flex items-center overflow-x-auto pb-1">
+        {STEPS.map(({ label, hint }, i) => {
+          const done = i < step;
+          const active = i === step;
+          return (
+            <div key={i} className="flex items-center flex-1 min-w-fit">
+              <button
+                type="button"
+                onClick={() => i < step && setStep(i)}
+                disabled={i > step}
+                title={hint}
+                className={cn('flex items-center gap-2.5 flex-none', done ? 'cursor-pointer' : 'cursor-default')}
+              >
+                <span
+                  className="w-[30px] h-[30px] rounded-full border-2 flex items-center justify-center font-bold text-[13px] font-mono transition-colors shrink-0"
+                  style={
+                    active
+                      ? { border: '2px solid transparent', background: 'linear-gradient(135deg,var(--accent),var(--accent-2))', color: '#fff' }
+                      : done
+                      ? { borderColor: 'var(--success)', background: 'var(--success-soft)', color: 'var(--success)' }
+                      : { borderColor: 'var(--border)', background: 'var(--surface-2)', color: 'var(--text-3)' }
+                  }
+                >
+                  {done ? <CheckCircle className="h-4 w-4" strokeWidth={2.2} /> : i + 1}
+                </span>
+                <span
+                  className={cn(
+                    'text-[12.5px] whitespace-nowrap hidden sm:inline',
+                    active ? 'font-semibold text-ink' : done ? 'font-medium text-ink-2' : 'text-ink-3',
+                  )}
+                >
+                  {label}
+                </span>
+              </button>
+              {i < STEPS.length - 1 && (
+                <span
+                  className="flex-1 h-0.5 mx-2.5 rounded min-w-[16px]"
+                  style={{ background: done ? 'var(--success)' : 'var(--border)' }}
+                />
+              )}
+            </div>
+          );
+        })}
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
@@ -581,7 +611,7 @@ export function CampaignBuilderPage() {
           </Button>
           {step < STEPS.length - 1 ? (
             <Button type="button" onClick={goNext} className="gap-2">
-              Далее<ArrowRight className="h-4 w-4" />
+              Далее: {STEPS[step + 1].label}<ArrowRight className="h-4 w-4" />
             </Button>
           ) : (
             <Button type="submit" disabled={save.isPending || criticalFails > 0} className="gap-2">

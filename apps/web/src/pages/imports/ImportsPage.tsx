@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { importsApi, listsApi } from '@/api/index';
-import { formatDate, STATUS_COLORS } from '@/utils/format';
+import { formatDate } from '@/utils/format';
 import { cn } from '@/utils/cn';
 import { toast } from '@/hooks/use-toast';
 import { Progress } from '@/components/ui/progress';
@@ -20,6 +20,13 @@ interface Import {
   createdAt: string;
   list?: { id: string; name: string };
 }
+
+const STATUS_BADGE: Record<string, string> = {
+  COMPLETED: 'bg-success-soft text-success',
+  FAILED: 'bg-danger-soft text-danger',
+  PROCESSING: 'bg-info-soft text-info',
+  PENDING: 'bg-surface-3 text-ink-2',
+};
 
 const COLUMN_HINTS = [
   { field: 'email',     aliases: 'email, e-mail, mail',         required: true  },
@@ -92,8 +99,8 @@ export function ImportsPage() {
       accessorKey: 'filename',
       header: 'Файл',
       cell: ({ row }) => (
-        <button onClick={() => navigate(`/imports/${row.original.id}`)} className="flex items-center gap-2 text-primary hover:underline text-left">
-          <FileText className="h-4 w-4 shrink-0" />
+        <button onClick={() => navigate(`/imports/${row.original.id}`)} className="flex items-center gap-2 text-brand hover:underline text-left">
+          <FileText className="h-4 w-4 shrink-0" strokeWidth={1.7} />
           <span className="truncate max-w-48">{row.original.filename}</span>
         </button>
       ),
@@ -102,7 +109,7 @@ export function ImportsPage() {
       accessorKey: 'status',
       header: 'Статус',
       cell: ({ getValue }) => (
-        <span className={cn('px-2 py-0.5 rounded-full text-xs font-medium', STATUS_COLORS[getValue() as string] ?? 'bg-gray-100')}>
+        <span className={cn('px-2 py-0.5 rounded text-[10.5px] font-semibold', STATUS_BADGE[getValue() as string] ?? 'bg-surface-3 text-ink-2')}>
           {getValue() as string}
         </span>
       ),
@@ -111,8 +118,8 @@ export function ImportsPage() {
       id: 'list',
       header: 'Список',
       cell: ({ row }) => row.original.list?.name
-        ? <span className="text-xs bg-muted px-2 py-0.5 rounded">{row.original.list.name}</span>
-        : <span className="text-xs text-muted-foreground">—</span>,
+        ? <span className="text-xs bg-surface-3 text-ink-2 px-2 py-0.5 rounded">{row.original.list.name}</span>
+        : <span className="text-xs text-ink-3">—</span>,
     },
     {
       id: 'progress',
@@ -123,10 +130,10 @@ export function ImportsPage() {
         return (
           <div className="space-y-1 min-w-36">
             <Progress value={pct} className="h-1.5" />
-            <p className="text-xs text-muted-foreground">
-              <span className="text-green-600">{successRows} успешно</span>
-              {errorRows > 0 && <span className="text-red-600"> / {errorRows} ошибок</span>}
-              {' '}из {totalRows}
+            <p className="text-xs text-ink-3">
+              <span className="text-success font-mono">{successRows}</span> успешно
+              {errorRows > 0 && <> / <span className="text-danger font-mono">{errorRows}</span> ошибок</>}
+              {' '}из <span className="font-mono">{totalRows}</span>
             </p>
           </div>
         );
@@ -138,18 +145,18 @@ export function ImportsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Импорт контактов</h1>
-        <p className="text-sm text-muted-foreground mt-1">Загрузите файл CSV, XLSX, JSON или TXT, чтобы добавить контакты массово</p>
+        <h1 className="text-[22px] font-extrabold tracking-[-0.4px]">Импорт контактов</h1>
+        <p className="text-[13px] text-ink-3 mt-1">Загрузите файл CSV, XLSX, JSON или TXT, чтобы добавить контакты массово</p>
       </div>
 
       {/* Upload card */}
-      <div className="rounded-xl border bg-card p-6 space-y-4">
+      <div className="rounded-xl border border-border bg-surface p-6 space-y-4 shadow-soft">
         {/* Drop zone */}
         <div
           className={cn(
             'border-2 border-dashed rounded-lg p-8 text-center transition-colors cursor-pointer',
-            isDragging ? 'border-primary bg-primary/5' : 'border-muted-foreground/25 hover:border-primary/50',
-            selectedFile && 'border-green-400 bg-green-50',
+            isDragging ? 'border-brand bg-brand-softer' : 'border-border-2 hover:border-brand/50',
+            selectedFile && 'border-success bg-success-soft',
           )}
           onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
           onDragLeave={() => setIsDragging(false)}
@@ -162,24 +169,24 @@ export function ImportsPage() {
         >
           {selectedFile ? (
             <div className="flex items-center justify-center gap-3">
-              <FileText className="h-8 w-8 text-green-600" />
+              <FileText className="h-8 w-8 text-success" strokeWidth={1.7} />
               <div className="text-left">
                 <p className="font-medium text-sm">{selectedFile.name}</p>
-                <p className="text-xs text-muted-foreground">{(selectedFile.size / 1024).toFixed(1)} KB</p>
+                <p className="text-xs text-ink-3 font-mono">{(selectedFile.size / 1024).toFixed(1)} KB</p>
               </div>
               <button
                 type="button"
                 onClick={(e) => { e.stopPropagation(); setSelectedFile(null); }}
-                className="ml-2 text-muted-foreground hover:text-foreground"
+                className="ml-2 text-ink-3 hover:text-ink"
               >
                 <X className="h-4 w-4" />
               </button>
             </div>
           ) : (
             <>
-              <Upload className="h-10 w-10 mx-auto mb-3 text-muted-foreground" />
+              <Upload className="h-10 w-10 mx-auto mb-3 text-ink-3" strokeWidth={1.7} />
               <p className="text-sm font-medium mb-1">Перетащите файл сюда или нажмите для выбора</p>
-              <p className="text-xs text-muted-foreground">CSV, XLSX, JSON, TXT — до 50 МБ</p>
+              <p className="text-xs text-ink-3">CSV, XLSX, JSON, TXT — до 50 МБ</p>
             </>
           )}
           <input ref={fileRef} type="file" accept=".csv,.xlsx,.json,.txt" className="hidden"
@@ -233,7 +240,7 @@ export function ImportsPage() {
                 </Button>
               </div>
             )}
-            <p className="text-xs text-muted-foreground">Выберите существующий список или создайте новый, чтобы сгруппировать импортированные контакты</p>
+            <p className="text-xs text-ink-3">Выберите существующий список или создайте новый, чтобы сгруппировать импортированные контакты</p>
           </div>
 
           <div className="space-y-1.5">
@@ -247,7 +254,7 @@ export function ImportsPage() {
                 <SelectItem value="UPDATE">Обновлять дубликаты — перезаписать новыми данными</SelectItem>
               </SelectContent>
             </Select>
-            <p className="text-xs text-muted-foreground">Что делать, если email уже есть в базе данных</p>
+            <p className="text-xs text-ink-3">Что делать, если email уже есть в базе данных</p>
           </div>
         </div>
 
@@ -258,23 +265,23 @@ export function ImportsPage() {
       </div>
 
       {/* Column hints */}
-      <div className="rounded-lg border bg-muted/30">
+      <div className="rounded-xl border border-border bg-surface-2">
         <button
           type="button"
           className="flex w-full items-center justify-between px-4 py-3 text-sm font-medium"
           onClick={() => setShowHints((v) => !v)}
         >
           <span className="flex items-center gap-2">
-            <Info className="h-4 w-4 text-primary" />
+            <Info className="h-4 w-4 text-brand" strokeWidth={1.7} />
             Ожидаемые названия столбцов в файле
           </span>
-          {showHints ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+          {showHints ? <ChevronUp className="h-4 w-4 text-ink-3" /> : <ChevronDown className="h-4 w-4 text-ink-3" />}
         </button>
         {showHints && (
           <div className="px-4 pb-4">
             <table className="w-full text-xs">
               <thead>
-                <tr className="text-muted-foreground">
+                <tr className="text-ink-3">
                   <th className="text-left py-1 font-medium">Поле</th>
                   <th className="text-left py-1 font-medium">Допустимые названия столбцов</th>
                   <th className="text-left py-1 font-medium">Обязательно</th>
@@ -282,15 +289,15 @@ export function ImportsPage() {
               </thead>
               <tbody>
                 {COLUMN_HINTS.map((h) => (
-                  <tr key={h.field} className="border-t">
-                    <td className="py-1.5 font-mono font-medium">{h.field}</td>
-                    <td className="py-1.5 text-muted-foreground">{h.aliases}</td>
-                    <td className="py-1.5">{h.required ? <span className="text-red-600 font-medium">Да</span> : 'Нет'}</td>
+                  <tr key={h.field} className="border-t border-border">
+                    <td className="py-1.5 font-mono font-medium text-brand">{h.field}</td>
+                    <td className="py-1.5 text-ink-3">{h.aliases}</td>
+                    <td className="py-1.5">{h.required ? <span className="text-danger font-medium">Да</span> : 'Нет'}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
-            <p className="text-xs text-muted-foreground mt-2">
+            <p className="text-xs text-ink-3 mt-2">
               Названия столбцов не чувствительны к регистру. Все лишние столбцы сохраняются в пользовательских полях.
             </p>
           </div>
@@ -299,7 +306,7 @@ export function ImportsPage() {
 
       {/* History */}
       <div>
-        <h2 className="text-base font-semibold mb-3">История импорта</h2>
+        <h2 className="text-[15px] font-bold mb-3">История импорта</h2>
         <DataTable
           data={result?.data ?? []}
           columns={columns}

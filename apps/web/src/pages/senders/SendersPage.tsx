@@ -101,9 +101,26 @@ export function SendersPage() {
     setDeleteConfirm(false);
   };
 
+  const statusTone = (status: string): string =>
+    ({
+      ACTIVE: 'bg-success-soft text-success',
+      PAUSED: 'bg-warn-soft text-warn',
+      ERROR: 'bg-danger-soft text-danger',
+    } as Record<string, string>)[status] ?? 'bg-surface-3 text-ink-2';
+
+  const healthTone = (n: number): string =>
+    n >= 80 ? 'var(--success)' : n >= 50 ? 'var(--warn)' : 'var(--danger)';
+  const healthToneSoft = (n: number): string =>
+    n >= 80 ? 'var(--success-soft)' : n >= 50 ? 'var(--warn-soft)' : 'var(--danger-soft)';
+
   return (
     <div className="space-y-4">
-      <div className="flex justify-end">
+      <div className="flex items-center gap-3">
+        <div>
+          <h1 className="text-[20px] font-extrabold tracking-[-0.3px]">Отправители и прогрев</h1>
+          <p className="text-ink-3 text-[12.5px] mt-0.5">SMTP-аккаунты, лимиты, здоровье и статус прогрева</p>
+        </div>
+        <div className="flex-1" />
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
             <Button><Plus className="h-4 w-4 mr-2" />Добавить отправителя</Button>
@@ -144,66 +161,105 @@ export function SendersPage() {
         </Dialog>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {senders.map((s) => (
-          <Card key={s.id} className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => navigate(`/senders/${s.id}`)}>
-            <CardHeader className="pb-2">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-base">{s.name}</CardTitle>
-                <span className={cn('px-2 py-0.5 rounded-full text-xs font-medium', STATUS_COLORS[s.status] ?? 'bg-gray-100')}>{s.status}</span>
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+        {senders.map((s) => {
+          const cap = s.warmupEnabled ? s.warmupCurrentDailyLimit : s.dailyLimit;
+          const capPct = Math.min(100, Math.round(((cap || 0) / (s.dailyLimit || 1)) * 100));
+          return (
+            <div
+              key={s.id}
+              className="bg-surface border border-border rounded-xl p-[18px] shadow-soft hover:shadow-soft-lg transition-shadow cursor-pointer"
+              onClick={() => navigate(`/senders/${s.id}`)}
+            >
+              {/* Header: health ring + identity */}
+              <div className="flex items-center gap-3.5 mb-4">
+                <div
+                  className="w-[52px] h-[52px] flex-none rounded-full flex items-center justify-center"
+                  style={{ background: healthToneSoft(s.healthScore) }}
+                >
+                  <div
+                    className="w-10 h-10 rounded-full bg-surface flex items-center justify-center font-mono font-extrabold text-[14px]"
+                    style={{ color: healthTone(s.healthScore) }}
+                  >
+                    {s.healthScore}
+                  </div>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-[14px] truncate">{s.name}</span>
+                    <span className={cn('flex-none text-[10.5px] font-semibold px-2 py-0.5 rounded-full', statusTone(s.status))}>{s.status}</span>
+                  </div>
+                  <div className="text-[12px] text-ink-2 mt-0.5 truncate">{s.fromEmail}</div>
+                  <div className="text-[11px] text-ink-3 font-mono mt-px truncate">{s.smtpHost}</div>
+                </div>
               </div>
-              <p className="text-xs text-muted-foreground">{s.fromEmail}</p>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Здоровье</span>
-                <span className={cn('text-sm font-bold px-2 py-0.5 rounded', healthBg(s.healthScore))}>{s.healthScore}</span>
+
+              {/* Metrics */}
+              <div className="flex flex-col gap-3">
+                <div>
+                  <div className="flex justify-between mb-1.5">
+                    <span className="text-[11.5px] text-ink-2">Дневной лимит</span>
+                    <span className="text-[11.5px] font-bold font-mono">{cap} / {s.dailyLimit}</span>
+                  </div>
+                  <div className="h-[7px] rounded-full bg-surface-3 overflow-hidden">
+                    <div className="h-full rounded-full bg-brand" style={{ width: `${capPct}%` }} />
+                  </div>
+                </div>
+                {s.warmupEnabled ? (
+                  <div>
+                    <div className="flex justify-between mb-1.5">
+                      <span className="text-[11.5px] text-ink-2">Прогрев · Этап {s.warmupStage}</span>
+                      <span className="text-[11.5px] font-bold font-mono" style={{ color: healthTone(s.healthScore) }}>{capPct}%</span>
+                    </div>
+                    <div className="h-[7px] rounded-full bg-surface-3 overflow-hidden">
+                      <div className="h-full rounded-full" style={{ width: `${capPct}%`, background: healthTone(s.healthScore) }} />
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-[11.5px] text-ink-3">Прогрев выключен</div>
+                )}
               </div>
-              {s.warmupEnabled && (
-                <p className="text-xs text-muted-foreground">Этап прогрева {s.warmupStage} — {s.warmupCurrentDailyLimit}/{s.dailyLimit}/день</p>
-              )}
-              <div className="flex gap-2 flex-wrap">
-                <Button
-                  size="sm" variant="outline" className="flex-1"
+
+              {/* Actions */}
+              <div className="flex gap-2 mt-4 pt-3.5 border-t border-border">
+                <button
+                  className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg border border-border text-[12px] font-semibold text-ink-2 hover:bg-hover transition-colors disabled:opacity-50"
                   onClick={(e) => { e.stopPropagation(); test.mutate(s.id); }}
                   disabled={test.isPending}
                   title="Проверить SMTP-соединение"
                 >
-                  <Wifi className="h-3.5 w-3.5 mr-1" />Проверить
-                </Button>
-                <Button
-                  size="sm" variant="outline"
-                  className="text-indigo-700 border-indigo-300 hover:bg-indigo-50"
+                  <Wifi className="h-3.5 w-3.5" strokeWidth={1.7} />Проверить
+                </button>
+                <button
+                  className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg border border-border text-[12px] font-semibold text-brand hover:bg-brand-softer transition-colors"
                   onClick={(e) => { e.stopPropagation(); setMailboxSender(s); setDeleteConfirm(false); }}
                   title="Управление почтовым ящиком на сервере"
                 >
-                  <Server className="h-3.5 w-3.5" />
-                </Button>
+                  <Server className="h-3.5 w-3.5" strokeWidth={1.7} />Ящик
+                </button>
                 {s.status === 'ERROR' && (
-                  <Button
-                    size="sm" variant="outline"
-                    className="text-yellow-700 border-yellow-300 hover:bg-yellow-50"
+                  <button
+                    className="flex items-center justify-center px-2.5 py-2 rounded-lg border border-border text-warn hover:bg-warn-soft transition-colors disabled:opacity-50"
                     onClick={(e) => { e.stopPropagation(); resetStatus.mutate(s.id); }}
                     disabled={resetStatus.isPending}
                     title="Сбросить статус на «Активен»"
                   >
-                    <RotateCcw className="h-3.5 w-3.5" />
-                  </Button>
+                    <RotateCcw className="h-3.5 w-3.5" strokeWidth={1.7} />
+                  </button>
                 )}
-                <Button
-                  size="sm" variant="ghost"
-                  className="text-destructive hover:bg-destructive/10"
+                <button
+                  className="flex items-center justify-center px-2.5 py-2 rounded-lg text-danger hover:bg-danger-soft transition-colors disabled:opacity-50"
                   onClick={(e) => { e.stopPropagation(); if (confirm(`Удалить отправителя «${s.name}»?`)) remove.mutate(s.id); }}
                   disabled={remove.isPending}
                   title="Удалить отправителя"
                 >
-                  <Trash2 className="h-3.5 w-3.5" />
-                </Button>
+                  <Trash2 className="h-3.5 w-3.5" strokeWidth={1.7} />
+                </button>
               </div>
-            </CardContent>
-          </Card>
-        ))}
-        {senders.length === 0 && <div className="col-span-3 text-center py-12 text-muted-foreground">Отправители ещё не настроены.</div>}
+            </div>
+          );
+        })}
+        {senders.length === 0 && <div className="col-span-full text-center py-12 text-ink-3">Отправители ещё не настроены.</div>}
       </div>
 
       {/* Mailbox management dialog */}
@@ -211,7 +267,7 @@ export function SendersPage() {
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Server className="h-4 w-4 text-indigo-600" />
+              <Server className="h-4 w-4 text-brand" />
               Почтовый ящик на сервере — {mailboxSender?.fromEmail}
             </DialogTitle>
           </DialogHeader>
@@ -234,7 +290,7 @@ export function SendersPage() {
                 />
               </div>
               <Button
-                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white"
+                className="w-full bg-brand text-white hover:brightness-105"
                 disabled={!mailboxPassword || provisionMailbox.isPending}
                 onClick={() => {
                   if (mailboxSender) {
@@ -247,12 +303,12 @@ export function SendersPage() {
             </div>
 
             {/* Delete section */}
-            <div className="rounded-lg border border-red-200 bg-red-50/40 p-4 space-y-3">
+            <div className="rounded-lg border border-danger bg-danger-soft p-4 space-y-3">
               <div className="flex items-start gap-2">
-                <AlertTriangle className="h-4 w-4 text-red-500 mt-0.5 shrink-0" />
+                <AlertTriangle className="h-4 w-4 text-danger mt-0.5 shrink-0" />
                 <div>
-                  <p className="text-sm font-medium text-red-700">Удалить почтовый ящик</p>
-                  <p className="text-xs text-red-600 mt-0.5">
+                  <p className="text-sm font-medium text-danger">Удалить почтовый ящик</p>
+                  <p className="text-xs text-danger mt-0.5">
                     Удаляет почтовый ящик из конфигурации Dovecot и Postfix. Уже полученные письма можно опционально удалить.
                   </p>
                 </div>
@@ -262,14 +318,14 @@ export function SendersPage() {
                   type="checkbox"
                   checked={deleteFiles}
                   onChange={(e) => setDeleteFiles(e.target.checked)}
-                  className="accent-red-600"
+                  className="accent-danger"
                 />
-                <span className="text-red-700">Также удалить все файлы писем (безвозвратно)</span>
+                <span className="text-danger">Также удалить все файлы писем (безвозвратно)</span>
               </label>
               {!deleteConfirm ? (
                 <Button
                   variant="outline"
-                  className="w-full text-red-600 border-red-300 hover:bg-red-50"
+                  className="w-full text-danger border-danger hover:bg-danger-soft"
                   onClick={() => setDeleteConfirm(true)}
                 >
                   <Trash2 className="h-3.5 w-3.5 mr-1.5" />Удалить почтовый ящик

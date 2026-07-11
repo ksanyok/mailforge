@@ -11,8 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { DataTable } from '@/components/data-table/DataTable';
 import { contactsApi } from '@/api/contacts';
-import { cn } from '@/utils/cn';
-import { formatDate, STATUS_COLORS } from '@/utils/format';
+import { formatDate } from '@/utils/format';
 import { toast } from '@/hooks/use-toast';
 
 interface Contact {
@@ -29,6 +28,41 @@ const STATUS_LABELS: Record<string, string> = {
   COMPLAINED: 'Жалоба',
   SUPPRESSED: 'В стоп-листе',
 };
+
+// soft-цвета статусов по смыслу (токены темы)
+const STATUS_STYLE: Record<string, { bg: string; fg: string }> = {
+  SUBSCRIBED: { bg: 'var(--success-soft)', fg: 'var(--success)' },
+  UNSUBSCRIBED: { bg: 'var(--surface-3)', fg: 'var(--text-2)' },
+  BOUNCED: { bg: 'var(--danger-soft)', fg: 'var(--danger)' },
+  COMPLAINED: { bg: 'var(--warn-soft)', fg: 'var(--warn)' },
+  SUPPRESSED: { bg: 'var(--accent-soft)', fg: 'var(--accent)' },
+};
+
+function StatusPill({ status }: { status: string }) {
+  const st = STATUS_STYLE[status] ?? { bg: 'var(--surface-3)', fg: 'var(--text-2)' };
+  return (
+    <span
+      className="inline-block text-[10.5px] font-semibold px-2 py-0.5 rounded-full whitespace-nowrap"
+      style={{ background: st.bg, color: st.fg }}
+    >
+      {STATUS_LABELS[status] ?? status}
+    </span>
+  );
+}
+
+// палитра аватаров (декоративная, как PIE_COLORS дашборда)
+const AVATAR_COLORS = ['#6366f1', '#0ea5e9', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6', '#ef4444', '#14b8a6'];
+function avatarColor(key: string): string {
+  let h = 0;
+  for (let i = 0; i < key.length; i++) h = (h * 31 + key.charCodeAt(i)) >>> 0;
+  return AVATAR_COLORS[h % AVATAR_COLORS.length];
+}
+function contactInitials(first?: string, last?: string, email?: string): string {
+  const a = (first ?? '').trim();
+  const b = (last ?? '').trim();
+  if (a || b) return ((a[0] ?? '') + (b[0] ?? '')).toUpperCase() || (email?.[0] ?? '?').toUpperCase();
+  return (email?.[0] ?? '?').toUpperCase();
+}
 
 export function ContactsPage() {
   const navigate = useNavigate();
@@ -76,17 +110,30 @@ export function ContactsPage() {
   const columns: ColumnDef<Contact>[] = [
     {
       accessorKey: 'email',
-      header: 'Email',
-      cell: ({ row }) => (
-        <button onClick={() => navigate(`/contacts/${row.original.id}`)} className="text-primary hover:underline text-left font-medium">
-          {row.original.email}
-        </button>
-      ),
-    },
-    {
-      id: 'name',
-      header: 'Имя',
-      cell: ({ row }) => [row.original.firstName, row.original.lastName].filter(Boolean).join(' ') || '—',
+      header: 'Контакт',
+      cell: ({ row }) => {
+        const c = row.original;
+        const name = [c.firstName, c.lastName].filter(Boolean).join(' ');
+        return (
+          <button
+            onClick={() => navigate(`/contacts/${c.id}`)}
+            className="flex items-center gap-3 text-left min-w-0 group"
+          >
+            <span
+              className="w-8 h-8 flex-none rounded-[9px] flex items-center justify-center text-white font-bold text-[11.5px]"
+              style={{ background: avatarColor(c.email) }}
+            >
+              {contactInitials(c.firstName, c.lastName, c.email)}
+            </span>
+            <span className="min-w-0">
+              <span className="block font-semibold text-[12.5px] text-ink truncate group-hover:text-brand transition-colors">
+                {name || c.email}
+              </span>
+              <span className="block text-[11.5px] text-ink-3 truncate">{c.email}</span>
+            </span>
+          </button>
+        );
+      },
     },
     {
       accessorKey: 'status',
@@ -96,17 +143,15 @@ export function ContactsPage() {
           value={row.original.status}
           onValueChange={(val) => changeStatus.mutate({ id: row.original.id, status: val })}
         >
-          <SelectTrigger className="h-7 w-36 text-xs border-0 p-0 focus:ring-0 shadow-none">
+          <SelectTrigger className="h-7 w-auto gap-1 text-xs border-0 p-0 focus:ring-0 shadow-none">
             <SelectValue>
-              <span className={cn('px-2 py-0.5 rounded-full text-xs font-medium', STATUS_COLORS[row.original.status] ?? 'bg-gray-100')}>
-                {row.original.status}
-              </span>
+              <StatusPill status={row.original.status} />
             </SelectValue>
           </SelectTrigger>
           <SelectContent>
             {STATUSES.map(s => (
               <SelectItem key={s} value={s}>
-                <span className={cn('px-2 py-0.5 rounded-full text-xs font-medium', STATUS_COLORS[s] ?? 'bg-gray-100')}>{s}</span>
+                <StatusPill status={s} />
               </SelectItem>
             ))}
           </SelectContent>
@@ -118,13 +163,21 @@ export function ContactsPage() {
       header: 'Вовлечённость',
       cell: ({ getValue }) => {
         const v = getValue() as number;
-        return <span className={cn('font-medium', v >= 70 ? 'text-green-600' : v >= 40 ? 'text-yellow-600' : 'text-red-600')}>{v}</span>;
+        const color = v >= 70 ? 'var(--success)' : v >= 40 ? 'var(--warn)' : 'var(--danger)';
+        return (
+          <div className="flex items-center gap-2 w-32">
+            <div className="flex-1 h-1.5 rounded-full bg-surface-3 overflow-hidden">
+              <div className="h-full rounded-full" style={{ width: `${Math.max(0, Math.min(100, v))}%`, background: color }} />
+            </div>
+            <span className="text-[11.5px] font-bold font-mono" style={{ color }}>{v}</span>
+          </div>
+        );
       },
     },
     {
       accessorKey: 'createdAt',
       header: 'Создан',
-      cell: ({ getValue }) => formatDate(getValue() as string),
+      cell: ({ getValue }) => <span className="text-[11.5px] text-ink-3 font-mono">{formatDate(getValue() as string)}</span>,
     },
     {
       id: 'actions',
@@ -145,42 +198,45 @@ export function ContactsPage() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between gap-3 flex-wrap">
-        <div className="flex items-center gap-2 flex-1 min-w-0">
-          <div className="relative w-64 shrink-0">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Поиск контактов..."
-              className="pl-9"
-              value={search}
-              onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-            />
-          </div>
-          <Select value={statusFilter || '__all__'} onValueChange={(v) => { setStatusFilter(v === '__all__' ? '' : v); setPage(1); }}>
-            <SelectTrigger className="w-52 shrink-0">
-              <Filter className="h-3.5 w-3.5 mr-2 text-muted-foreground" />
-              <SelectValue placeholder="Все статусы" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="__all__">Все статусы</SelectItem>
-              {STATUSES.map(s => (
-                <SelectItem key={s} value={s}>
-                  <span className={cn('px-2 py-0.5 rounded-full text-xs font-medium', STATUS_COLORS[s] ?? 'bg-gray-100')}>
-                    {STATUS_LABELS[s] ?? s}
-                  </span>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          {(data as any)?.total !== undefined && (
-            <span className="text-sm text-muted-foreground whitespace-nowrap">
-              {(data as any).total} контакт(ов)
-            </span>
-          )}
+      <div className="flex items-end gap-3 flex-wrap">
+        <div>
+          <h1 className="text-[22px] font-extrabold tracking-[-0.4px]">Контакты</h1>
+          <p className="text-ink-3 text-[13px] mt-0.5">
+            {(data as any)?.total !== undefined ? (
+              <><span className="font-mono">{(data as any).total}</span> {'контакт(ов)'} в базе</>
+            ) : 'База контактов'}
+          </p>
         </div>
+        <div className="flex-1" />
         <Button onClick={() => setAddOpen(true)}>
           <Plus className="h-4 w-4 mr-2" />Добавить контакт
         </Button>
+      </div>
+
+      <div className="flex items-center gap-2 flex-wrap">
+        <div className="relative w-64 shrink-0">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-ink-3" strokeWidth={1.7} />
+          <Input
+            placeholder="Поиск контактов..."
+            className="pl-9 bg-surface"
+            value={search}
+            onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+          />
+        </div>
+        <Select value={statusFilter || '__all__'} onValueChange={(v) => { setStatusFilter(v === '__all__' ? '' : v); setPage(1); }}>
+          <SelectTrigger className="w-52 shrink-0 bg-surface">
+            <Filter className="h-3.5 w-3.5 mr-2 text-ink-3" strokeWidth={1.7} />
+            <SelectValue placeholder="Все статусы" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="__all__">Все статусы</SelectItem>
+            {STATUSES.map(s => (
+              <SelectItem key={s} value={s}>
+                <StatusPill status={s} />
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       <DataTable
@@ -226,7 +282,7 @@ export function ContactsPage() {
               <Select defaultValue="SUBSCRIBED" onValueChange={(v) => setValue('status', v)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  {STATUSES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                  {STATUSES.map(s => <SelectItem key={s} value={s}>{STATUS_LABELS[s] ?? s}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>

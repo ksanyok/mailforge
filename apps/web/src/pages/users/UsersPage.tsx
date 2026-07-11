@@ -53,7 +53,7 @@ export function UsersPage() {
       cell: ({ row }) => (
         <div>
           <p className="font-medium text-sm">{row.original.name}</p>
-          <p className="text-xs text-muted-foreground">{row.original.email}</p>
+          <p className="text-xs text-ink-3">{row.original.email}</p>
         </div>
       ),
     },
@@ -61,8 +61,8 @@ export function UsersPage() {
       accessorKey: 'role',
       header: 'Роль',
       cell: ({ getValue }) => (
-        <span className={cn('px-2 py-0.5 rounded-full text-xs font-medium',
-          getValue() === 'ADMIN' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800',
+        <span className={cn('px-2 py-0.5 rounded text-[10.5px] font-semibold',
+          getValue() === 'ADMIN' ? 'bg-brand-soft text-brand' : 'bg-info-soft text-info',
         )}>
           {ROLE_LABELS[getValue() as string] ?? (getValue() as string)}
         </span>
@@ -72,13 +72,13 @@ export function UsersPage() {
       accessorKey: 'isActive',
       header: 'Статус',
       cell: ({ getValue }) => (
-        <span className={cn('px-2 py-0.5 rounded-full text-xs font-medium', getValue() ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800')}>
+        <span className={cn('px-2 py-0.5 rounded text-[10.5px] font-semibold', getValue() ? 'bg-success-soft text-success' : 'bg-surface-3 text-ink-2')}>
           {getValue() ? 'Активен' : 'Неактивен'}
         </span>
       ),
     },
-    { accessorKey: 'lastLoginAt', header: 'Последний вход', cell: ({ getValue }) => getValue() ? formatDate(getValue() as string) : 'Никогда' },
-    { accessorKey: 'createdAt', header: 'Зарегистрирован', cell: ({ getValue }) => formatDate(getValue() as string) },
+    { accessorKey: 'lastLoginAt', header: 'Последний вход', cell: ({ getValue }) => <span className="text-ink-3">{getValue() ? formatDate(getValue() as string) : 'Никогда'}</span> },
+    { accessorKey: 'createdAt', header: 'Зарегистрирован', cell: ({ getValue }) => <span className="text-ink-3">{formatDate(getValue() as string)}</span> },
     {
       id: 'actions',
       header: '',
@@ -87,7 +87,7 @@ export function UsersPage() {
           variant="outline" size="sm"
           disabled={toggle.isPending}
           onClick={() => toggle.mutate(row.original.id)}
-          className={row.original.isActive ? 'text-red-600 hover:bg-red-50' : 'text-green-600 hover:bg-green-50'}
+          className={row.original.isActive ? 'text-danger hover:bg-danger-soft' : 'text-success hover:bg-success-soft'}
         >
           {row.original.isActive ? 'Деактивировать' : 'Активировать'}
         </Button>
@@ -99,8 +99,8 @@ export function UsersPage() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Управление пользователями</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">Управляйте участниками команды и их уровнями доступа</p>
+          <h1 className="text-[22px] font-extrabold tracking-[-0.4px]">Управление пользователями</h1>
+          <p className="text-[13px] text-ink-3 mt-1">Управляйте участниками команды и их уровнями доступа</p>
         </div>
         <Button onClick={() => setInviteOpen(true)}>
           <UserPlus className="h-4 w-4 mr-2" />Пригласить пользователя
@@ -124,7 +124,7 @@ export function UsersPage() {
             <div className="space-y-1.5">
               <Label>Временный пароль *</Label>
               <Input type="password" {...register('password', { required: true, minLength: 6 })} placeholder="Не менее 6 символов" />
-              <p className="text-xs text-muted-foreground">Пользователь сможет изменить его после первого входа</p>
+              <p className="text-xs text-ink-3">Пользователь сможет изменить его после первого входа</p>
             </div>
             <div className="space-y-1.5">
               <Label>Роль</Label>

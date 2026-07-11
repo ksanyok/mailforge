@@ -18,18 +18,43 @@ export function SenderDetailPage() {
   const logsRaw = Array.isArray(healthLogs) ? healthLogs : ((healthLogs as any)?.data ?? []);
   const logs = (Array.isArray(logsRaw) ? logsRaw : []) as { createdAt: string; healthScore: number; sentToday: number; bouncesToday: number }[];
 
-  if (!s) return <div className="text-muted-foreground">Загрузка…</div>;
+  const statusTone = (status: string): string =>
+    ({
+      ACTIVE: 'bg-success-soft text-success',
+      PAUSED: 'bg-warn-soft text-warn',
+      ERROR: 'bg-danger-soft text-danger',
+    } as Record<string, string>)[status] ?? 'bg-surface-3 text-ink-2';
+  const healthTone = (n: number): string =>
+    n >= 80 ? 'var(--success)' : n >= 50 ? 'var(--warn)' : 'var(--danger)';
+  const healthToneSoft = (n: number): string =>
+    n >= 80 ? 'var(--success-soft)' : n >= 50 ? 'var(--warn-soft)' : 'var(--danger-soft)';
+
+  if (!s) return <div className="text-ink-3">Загрузка…</div>;
 
   return (
     <div className="space-y-4 max-w-4xl">
       <Button variant="ghost" size="sm" onClick={() => navigate(-1)}><ArrowLeft className="h-4 w-4 mr-2" />Назад</Button>
-      <div className="flex items-center gap-4">
-        <div>
-          <h2 className="text-xl font-semibold">{s.name as string}</h2>
-          <p className="text-sm text-muted-foreground">{s.fromEmail as string} • {s.smtpHost as string}</p>
+      <div className="flex items-center gap-3 flex-wrap">
+        <div
+          className="w-[52px] h-[52px] flex-none rounded-full flex items-center justify-center"
+          style={{ background: healthToneSoft(s.healthScore as number) }}
+        >
+          <div
+            className="w-10 h-10 rounded-full bg-surface flex items-center justify-center font-mono font-extrabold text-[14px]"
+            style={{ color: healthTone(s.healthScore as number) }}
+          >
+            {s.healthScore as number}
+          </div>
         </div>
-        <span className={cn('px-2 py-0.5 rounded-full text-xs font-medium', STATUS_COLORS[s.status as string] ?? 'bg-gray-100')}>{s.status as string}</span>
-        <span className={cn('px-2 py-0.5 rounded text-sm font-bold', healthBg(s.healthScore as number))}>{s.healthScore as number}</span>
+        <div>
+          <h2 className="text-[20px] font-extrabold tracking-[-0.3px]">{s.name as string}</h2>
+          <p className="text-[12.5px] text-ink-3 mt-0.5">
+            <span>{s.fromEmail as string}</span>
+            <span className="text-ink-3"> · </span>
+            <span className="font-mono">{s.smtpHost as string}</span>
+          </p>
+        </div>
+        <span className={cn('px-2 py-0.5 rounded-full text-[10.5px] font-semibold', statusTone(s.status as string))}>{s.status as string}</span>
       </div>
 
       <div className="grid grid-cols-2 gap-4">

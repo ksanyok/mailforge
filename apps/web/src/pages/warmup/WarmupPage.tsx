@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { Flame } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -39,20 +40,32 @@ export function WarmupPage() {
 
   return (
     <div className="space-y-4">
+      <div>
+        <h1 className="text-[22px] font-extrabold tracking-[-0.4px]">Прогрев отправителей</h1>
+        <p className="text-[13px] text-ink-3 mt-1">Постепенно наращивайте объём отправки, чтобы сохранить репутацию домена</p>
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {entries.map((e) => (
-          <Card key={e.senderId} className={`cursor-pointer hover:shadow-md transition-shadow ${selectedSender === e.senderId ? 'ring-2 ring-primary' : ''}`} onClick={() => setSelectedSender(e.senderId)}>
+          <Card key={e.senderId} className={`cursor-pointer hover:shadow-soft-lg transition-shadow ${selectedSender === e.senderId ? 'ring-2 ring-brand' : ''}`} onClick={() => setSelectedSender(e.senderId)}>
             <CardHeader className="pb-2">
-              <CardTitle className="text-base">{e.sender.name}</CardTitle>
-              <p className="text-xs text-muted-foreground">{e.sender.fromEmail}</p>
+              <div className="flex items-center gap-3">
+                <div className="w-[34px] h-[34px] rounded-[9px] flex items-center justify-center shrink-0" style={{ background: 'var(--warn-soft)', color: 'var(--warn)' }}>
+                  <Flame className="h-[18px] w-[18px]" strokeWidth={1.7} />
+                </div>
+                <div className="min-w-0">
+                  <CardTitle className="text-base truncate">{e.sender.name}</CardTitle>
+                  <p className="text-xs text-ink-3 truncate">{e.sender.fromEmail}</p>
+                </div>
+              </div>
             </CardHeader>
             <CardContent className="text-sm space-y-1">
-              <div className="flex justify-between"><span className="text-muted-foreground">Этап</span><span className="font-medium">{e.warmupStage}</span></div>
-              <div className="flex justify-between"><span className="text-muted-foreground">Текущий лимит</span><span className="font-medium">{e.warmupCurrentDailyLimit}/день</span></div>
+              <div className="flex justify-between"><span className="text-ink-3">Этап</span><span className="font-semibold font-mono">{e.warmupStage}</span></div>
+              <div className="flex justify-between"><span className="text-ink-3">Текущий лимит</span><span className="font-semibold"><span className="font-mono">{e.warmupCurrentDailyLimit}</span>/день</span></div>
             </CardContent>
           </Card>
         ))}
-        {entries.length === 0 && <div className="col-span-3 text-center py-12 text-muted-foreground">Нет отправителей с включённым прогревом.</div>}
+        {entries.length === 0 && <div className="col-span-3 text-center py-12 text-ink-3">Нет отправителей с включённым прогревом.</div>}
       </div>
 
       {selectedSender && (
@@ -63,12 +76,12 @@ export function WarmupPage() {
               <CardContent>
                 <ResponsiveContainer width="100%" height={200}>
                   <AreaChart data={logsData}>
-                    <CartesianGrid strokeDasharray="3 3" />
+                    <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
                     <XAxis dataKey="date" tick={{ fontSize: 11 }} tickFormatter={(v) => v.slice(5)} />
                     <YAxis tick={{ fontSize: 11 }} />
                     <Tooltip />
-                    <Area type="monotone" dataKey="targetVolume" stroke="#94a3b8" fill="#94a3b820" name="Целевой" />
-                    <Area type="monotone" dataKey="actualVolume" stroke="#6366f1" fill="#6366f120" name="Фактический" />
+                    <Area type="monotone" dataKey="targetVolume" stroke="var(--text-3)" fill="var(--surface-3)" name="Целевой" />
+                    <Area type="monotone" dataKey="actualVolume" stroke="var(--accent)" fill="var(--accent-soft)" name="Фактический" />
                   </AreaChart>
                 </ResponsiveContainer>
               </CardContent>

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Search, Trash2, Filter } from 'lucide-react';
+import { Plus, Search, Trash2, Filter, SlidersHorizontal } from 'lucide-react';
 import type { ColumnDef } from '@tanstack/react-table';
 import { useForm } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
@@ -9,6 +9,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuTrigger,
+  DropdownMenuCheckboxItem, DropdownMenuLabel, DropdownMenuSeparator,
+} from '@/components/ui/dropdown-menu';
 import { DataTable } from '@/components/data-table/DataTable';
 import { contactsApi } from '@/api/contacts';
 import { formatDate } from '@/utils/format';
@@ -18,6 +22,48 @@ interface Contact {
   id: string; email: string; firstName?: string; lastName?: string;
   status: string; engagementScore: number; riskScore: number; createdAt: string;
   emailType?: string | null; website?: string | null;
+  phone?: string | null; company?: string | null; emailDomain?: string | null;
+  lastOpenedAt?: string | null; totalSent?: number; totalOpened?: number; totalClicked?: number;
+  customFields?: Record<string, unknown> | null;
+}
+
+// Toggleable columns for the contacts table (persisted per-browser)
+const OPTIONAL_COLUMNS = [
+  { key: 'status', label: 'Статус', defaultOn: true },
+  { key: 'phone', label: 'Телефон', defaultOn: true },
+  { key: 'company', label: 'Компания', defaultOn: false },
+  { key: 'website', label: 'Сайт', defaultOn: true },
+  { key: 'emailDomain', label: 'Домен', defaultOn: false },
+  { key: 'region', label: 'Регион', defaultOn: false },
+  { key: 'category', label: 'Категория', defaultOn: false },
+  { key: 'engagementScore', label: 'Вовлечённость', defaultOn: true },
+  { key: 'totalSent', label: 'Отправлено', defaultOn: false },
+  { key: 'totalOpened', label: 'Открытий', defaultOn: false },
+  { key: 'lastOpenedAt', label: 'Последнее открытие', defaultOn: false },
+  { key: 'createdAt', label: 'Создан', defaultOn: true },
+] as const;
+
+type ColKey = (typeof OPTIONAL_COLUMNS)[number]['key'];
+const COLS_STORAGE_KEY = 'mf-contact-columns';
+
+function loadVisibleCols(): ColKey[] {
+  try {
+    const raw = localStorage.getItem(COLS_STORAGE_KEY);
+    if (raw) {
+      const arr = JSON.parse(raw) as string[];
+      const valid = OPTIONAL_COLUMNS.map((c) => c.key) as string[];
+      const filtered = arr.filter((k) => valid.includes(k)) as ColKey[];
+      if (filtered.length) return filtered;
+    }
+  } catch {
+    /* ignore */
+  }
+  return OPTIONAL_COLUMNS.filter((c) => c.defaultOn).map((c) => c.key);
+}
+
+function cellText(v: unknown): JSX.Element {
+  const s = v == null || v === '' ? '—' : String(v);
+  return <span className="text-[12px] text-ink-2 truncate block max-w-[180px]" title={s}>{s}</span>;
 }
 
 function EmailTypeChip({ type }: { type?: string | null }) {
@@ -124,96 +170,134 @@ export function ContactsPage() {
     onError: () => toast({ title: 'Не удалось обновить статус', variant: 'destructive' }),
   });
 
-  const columns: ColumnDef<Contact>[] = [
-    {
-      accessorKey: 'email',
-      header: 'Контакт',
-      cell: ({ row }) => {
-        const c = row.original;
-        const name = [c.firstName, c.lastName].filter(Boolean).join(' ');
-        return (
-          <button
-            onClick={() => navigate(`/contacts/${c.id}`)}
-            className="flex items-center gap-3 text-left min-w-0 group"
+  const [visibleCols, setVisibleCols] = useState<ColKey[]>(loadVisibleCols);
+  const toggleCol = (k: ColKey) => setVisibleCols((prev) => {
+    const next = prev.includes(k) ? prev.filter((x) => x !== k) : [...prev, k];
+    try { localStorage.setItem(COLS_STORAGE_KEY, JSON.stringify(next)); } catch { /* ignore */ }
+    return next;
+  });
+
+  const contactCol: ColumnDef<Contact> = {
+    accessorKey: 'email',
+    header: 'Контакт',
+    cell: ({ row }) => {
+      const c = row.original;
+      const name = [c.firstName, c.lastName].filter(Boolean).join(' ');
+      return (
+        <button
+          onClick={() => navigate(`/contacts/${c.id}`)}
+          className="flex items-center gap-3 text-left min-w-0 group"
+        >
+          <span
+            className="w-8 h-8 flex-none rounded-[9px] flex items-center justify-center text-white font-bold text-[11.5px]"
+            style={{ background: avatarColor(c.email) }}
           >
-            <span
-              className="w-8 h-8 flex-none rounded-[9px] flex items-center justify-center text-white font-bold text-[11.5px]"
-              style={{ background: avatarColor(c.email) }}
-            >
-              {contactInitials(c.firstName, c.lastName, c.email)}
-            </span>
-            <span className="min-w-0">
-              <span className="flex items-center gap-1.5">
-                <span className="font-semibold text-[12.5px] text-ink truncate group-hover:text-brand transition-colors">
-                  {name || c.email}
-                </span>
-                <EmailTypeChip type={c.emailType} />
+            {contactInitials(c.firstName, c.lastName, c.email)}
+          </span>
+          <span className="min-w-0">
+            <span className="flex items-center gap-1.5">
+              <span className="font-semibold text-[12.5px] text-ink truncate group-hover:text-brand transition-colors">
+                {name || c.email}
               </span>
-              <span className="block text-[11.5px] text-ink-3 truncate">{c.email}</span>
+              <EmailTypeChip type={c.emailType} />
             </span>
-          </button>
-        );
-      },
+            <span className="block text-[11.5px] text-ink-3 truncate">{c.email}</span>
+          </span>
+        </button>
+      );
     },
-    {
-      accessorKey: 'status',
-      header: 'Статус',
-      cell: ({ row }) => (
-        <Select
-          value={row.original.status}
-          onValueChange={(val) => changeStatus.mutate({ id: row.original.id, status: val })}
-        >
-          <SelectTrigger className="h-7 w-auto gap-1 text-xs border-0 p-0 focus:ring-0 shadow-none">
-            <SelectValue>
-              <StatusPill status={row.original.status} />
-            </SelectValue>
-          </SelectTrigger>
-          <SelectContent>
-            {STATUSES.map(s => (
-              <SelectItem key={s} value={s}>
-                <StatusPill status={s} />
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      ),
-    },
-    {
-      accessorKey: 'engagementScore',
-      header: 'Вовлечённость',
-      cell: ({ getValue }) => {
-        const v = getValue() as number;
-        const color = v >= 70 ? 'var(--success)' : v >= 40 ? 'var(--warn)' : 'var(--danger)';
-        return (
-          <div className="flex items-center gap-2 w-32">
-            <div className="flex-1 h-1.5 rounded-full bg-surface-3 overflow-hidden">
-              <div className="h-full rounded-full" style={{ width: `${Math.max(0, Math.min(100, v))}%`, background: color }} />
-            </div>
-            <span className="text-[11.5px] font-bold font-mono" style={{ color }}>{v}</span>
-          </div>
-        );
-      },
-    },
-    {
-      accessorKey: 'createdAt',
-      header: 'Создан',
-      cell: ({ getValue }) => <span className="text-[11.5px] text-ink-3 font-mono">{formatDate(getValue() as string)}</span>,
-    },
-    {
-      id: 'actions',
-      header: '',
-      cell: ({ row }) => (
-        <Button
-          size="sm" variant="ghost"
-          className="text-destructive hover:bg-destructive/10 h-7 w-7 p-0"
-          onClick={() => {
-            if (confirm(`Удалить ${row.original.email}?`)) remove.mutate(row.original.id);
-          }}
-        >
-          <Trash2 className="h-3.5 w-3.5" />
-        </Button>
-      ),
-    },
+  };
+
+  const actionsCol: ColumnDef<Contact> = {
+    id: 'actions',
+    header: '',
+    cell: ({ row }) => (
+      <Button
+        size="sm" variant="ghost"
+        className="text-destructive hover:bg-destructive/10 h-7 w-7 p-0"
+        onClick={() => {
+          if (confirm(`Удалить ${row.original.email}?`)) remove.mutate(row.original.id);
+        }}
+      >
+        <Trash2 className="h-3.5 w-3.5" />
+      </Button>
+    ),
+  };
+
+  const buildCol = (key: ColKey): ColumnDef<Contact> => {
+    switch (key) {
+      case 'status':
+        return {
+          id: 'status', header: 'Статус',
+          cell: ({ row }) => (
+            <Select value={row.original.status} onValueChange={(val) => changeStatus.mutate({ id: row.original.id, status: val })}>
+              <SelectTrigger className="h-7 w-auto gap-1 text-xs border-0 p-0 focus:ring-0 shadow-none">
+                <SelectValue><StatusPill status={row.original.status} /></SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                {STATUSES.map((s) => (<SelectItem key={s} value={s}><StatusPill status={s} /></SelectItem>))}
+              </SelectContent>
+            </Select>
+          ),
+        };
+      case 'engagementScore':
+        return {
+          id: 'engagementScore', header: 'Вовлечённость',
+          cell: ({ row }) => {
+            const v = row.original.engagementScore ?? 0;
+            const color = v >= 70 ? 'var(--success)' : v >= 40 ? 'var(--warn)' : 'var(--danger)';
+            return (
+              <div className="flex items-center gap-2 w-32">
+                <div className="flex-1 h-1.5 rounded-full bg-surface-3 overflow-hidden">
+                  <div className="h-full rounded-full" style={{ width: `${Math.max(0, Math.min(100, v))}%`, background: color }} />
+                </div>
+                <span className="text-[11.5px] font-bold font-mono" style={{ color }}>{v}</span>
+              </div>
+            );
+          },
+        };
+      case 'phone':
+        return { id: 'phone', header: 'Телефон', cell: ({ row }) => cellText(row.original.phone) };
+      case 'company':
+        return { id: 'company', header: 'Компания', cell: ({ row }) => cellText(row.original.company) };
+      case 'website':
+        return {
+          id: 'website', header: 'Сайт',
+          cell: ({ row }) => {
+            const w = row.original.website;
+            if (!w) return cellText(null);
+            const href = w.startsWith('http') ? w : `https://${w}`;
+            return (
+              <a href={href} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}
+                className="text-[12px] text-brand hover:underline truncate block max-w-[180px]" title={w}>
+                {w.replace(/^https?:\/\//, '')}
+              </a>
+            );
+          },
+        };
+      case 'emailDomain':
+        return { id: 'emailDomain', header: 'Домен', cell: ({ row }) => <span className="text-[12px] font-mono text-ink-2">{row.original.emailDomain ?? '—'}</span> };
+      case 'region':
+        return { id: 'region', header: 'Регион', cell: ({ row }) => cellText(row.original.customFields?.region) };
+      case 'category':
+        return { id: 'category', header: 'Категория', cell: ({ row }) => cellText(row.original.customFields?.category) };
+      case 'totalSent':
+        return { id: 'totalSent', header: 'Отправлено', cell: ({ row }) => <span className="text-[12px] font-mono text-ink-2">{row.original.totalSent ?? 0}</span> };
+      case 'totalOpened':
+        return { id: 'totalOpened', header: 'Открытий', cell: ({ row }) => <span className="text-[12px] font-mono text-ink-2">{row.original.totalOpened ?? 0}</span> };
+      case 'lastOpenedAt':
+        return { id: 'lastOpenedAt', header: 'Последнее открытие', cell: ({ row }) => <span className="text-[11.5px] text-ink-3 font-mono">{row.original.lastOpenedAt ? formatDate(row.original.lastOpenedAt) : '—'}</span> };
+      case 'createdAt':
+        return { id: 'createdAt', header: 'Создан', cell: ({ row }) => <span className="text-[11.5px] text-ink-3 font-mono">{formatDate(row.original.createdAt)}</span> };
+      default:
+        return { id: key, header: key, cell: () => cellText(null) };
+    }
+  };
+
+  const columns: ColumnDef<Contact>[] = [
+    contactCol,
+    ...OPTIONAL_COLUMNS.filter((c) => visibleCols.includes(c.key)).map((c) => buildCol(c.key)),
+    actionsCol,
   ];
 
   return (
@@ -257,6 +341,31 @@ export function ContactsPage() {
             ))}
           </SelectContent>
         </Select>
+
+        <div className="flex-1" />
+
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" className="shrink-0">
+              <SlidersHorizontal className="h-3.5 w-3.5 mr-2" strokeWidth={1.8} />
+              Колонки
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-56">
+            <DropdownMenuLabel>Показывать колонки</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            {OPTIONAL_COLUMNS.map((c) => (
+              <DropdownMenuCheckboxItem
+                key={c.key}
+                checked={visibleCols.includes(c.key)}
+                onCheckedChange={() => toggleCol(c.key)}
+                onSelect={(e) => e.preventDefault()}
+              >
+                {c.label}
+              </DropdownMenuCheckboxItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       <DataTable

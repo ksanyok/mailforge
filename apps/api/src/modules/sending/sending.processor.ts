@@ -129,20 +129,16 @@ export class SendingProcessor {
         text: plainText,
         messageId: msgId,
         headers: {
-          // Unsubscribe — required by Gmail/Yahoo bulk sender policy
+          // One-click unsubscribe — Gmail/Yahoo requirement, also renders a
+          // native "unsubscribe" button. Kept because it HELPS placement.
           'List-Unsubscribe': `<${variables.unsubscribeUrl}>, <mailto:${sender.fromEmail}?subject=unsubscribe>`,
           'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
-          // Bulk mail markers — help inbox providers classify correctly
-          'Precedence': 'bulk',
-          'X-Mailer': 'MailForge',
-          // List identity — helps spam filters trust the sender
-          'List-ID': `${campaign.name} <campaign-${campaignId}.${sender.fromEmail.split('@')[1]}>`,
-          // Feedback-ID — enables Gmail Postmaster Tools engagement tracking
+          // Feedback-ID — enables Gmail Postmaster Tools engagement tracking (invisible)
           'Feedback-ID': `${campaignId}:${senderId}:mailforge`,
-          // Prevent duplicate detection across resends
-          'X-Entity-Ref-ID': msgId,
-          // Internal tracking
-          'X-Campaign-Id': campaignId,
+          // NOTE: intentionally NO "Precedence: bulk", "List-ID", "X-Mailer"
+          // or "X-Campaign-Id". For cold 1:1-style outreach those "mass-mail"
+          // markers push messages into Spam/Promotions. Keep the mail looking
+          // like a personal message.
         },
       });
 

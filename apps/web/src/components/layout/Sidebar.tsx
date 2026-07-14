@@ -6,13 +6,15 @@ import {
   UserCircle, Ban, Inbox, Pencil,
 } from 'lucide-react';
 import { cn } from '@/utils/cn';
-import { inboxApi } from '@/api/index';
+import { inboxApi, campaignsApi } from '@/api/index';
 
 interface NavItem {
   to: string;
   label: string;
   icon: typeof Inbox;
   badge?: number;
+  /** show a pulsing "running" dot instead of a count */
+  running?: boolean;
 }
 
 interface NavGroup {
@@ -33,6 +35,16 @@ export function Sidebar() {
     (sum: number, c: any) => sum + (c.unreadCount ?? 0), 0,
   );
 
+  // Active (running) campaigns — show a live indicator in the menu
+  const { data: campRaw } = useQuery({
+    queryKey: ['campaigns-active'],
+    queryFn: () => campaignsApi.findAll({ limit: 100 }),
+    refetchInterval: 15_000,
+    staleTime: 10_000,
+  });
+  const activeCampaigns = (((campRaw as any)?.data ?? []) as any[])
+    .filter((c) => c.status === 'SENDING').length;
+
   const groups: NavGroup[] = [
     {
       title: 'Почта',
@@ -44,7 +56,11 @@ export function Sidebar() {
     {
       title: 'Рассылки',
       items: [
-        { to: '/campaigns', label: 'Кампании', icon: Send },
+        {
+          to: '/campaigns', label: 'Кампании', icon: Send,
+          badge: activeCampaigns || undefined,
+          running: activeCampaigns > 0,
+        },
         { to: '/templates', label: 'Шаблоны', icon: FileText },
         { to: '/contacts', label: 'Контакты', icon: Users },
         { to: '/lists', label: 'Списки', icon: List },
@@ -123,11 +139,23 @@ export function Sidebar() {
           <span className="text-[10.5px] font-bold tracking-[0.6px] text-ink-3 px-2 pt-2 pb-1 uppercase">
             {group.title}
           </span>
-          {group.items.map(({ to, label, icon: Icon, badge }) => (
+          {group.items.map(({ to, label, icon: Icon, badge, running }) => (
             <NavLink key={to} to={to} className={linkClass}>
               <Icon className="w-[18px] h-[18px] shrink-0" strokeWidth={1.7} />
               <span className="flex-1">{label}</span>
-              {badge ? (
+              {running ? (
+                <span
+                  title="Идёт активная рассылка"
+                  className="inline-flex items-center gap-1.5 h-[19px] px-1.5 rounded-full text-[11px] font-bold font-mono"
+                  style={{ background: 'var(--info-soft)', color: 'var(--info)' }}
+                >
+                  <span className="relative flex h-1.5 w-1.5">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75" style={{ background: 'var(--info)' }} />
+                    <span className="relative inline-flex rounded-full h-1.5 w-1.5" style={{ background: 'var(--info)' }} />
+                  </span>
+                  {badge}
+                </span>
+              ) : badge ? (
                 <span className="min-w-[20px] h-[19px] px-1.5 rounded-full bg-brand text-white text-[11px] font-bold font-mono flex items-center justify-center">
                   {badge > 99 ? '99+' : badge}
                 </span>

@@ -91,6 +91,8 @@ export const campaignsApi = {
   cancel: (id: string) => api.post(`/campaigns/${id}/cancel`).then(extractData),
   events: (id: string, params?: Record<string, unknown>) =>
     api.get(`/campaigns/${id}/events`, { params }).then(extractData),
+  recipients: (id: string, params?: Record<string, unknown>) =>
+    api.get(`/campaigns/${id}/recipients`, { params }).then(extractData),
   nonResponders: (id: string) => api.get(`/campaigns/${id}/non-responders`).then(extractData),
   createFollowUp: (id: string, data?: { subject?: string }) =>
     api.post(`/campaigns/${id}/create-followup`, data ?? {}).then(extractData),

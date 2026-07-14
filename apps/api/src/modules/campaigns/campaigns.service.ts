@@ -220,12 +220,44 @@ export class CampaignsService {
     const [data, total] = await Promise.all([
       this.prisma.campaignRecipient.findMany({
         where, skip, take,
-        include: { contact: { select: { id: true, email: true, firstName: true, lastName: true } } },
-        orderBy: { queuedAt: 'desc' },
+        include: { contact: { select: { id: true, email: true, firstName: true, lastName: true, company: true } } },
+        orderBy: [{ sentAt: 'desc' }, { queuedAt: 'desc' }],
       }),
       this.prisma.campaignRecipient.count({ where }),
     ]);
-    return buildPaginatedResponse(data, total, page, limit);
+
+    // Enrich each recipient with opened / clicked / responded flags
+    const contactIds = data.map((r) => r.contactId);
+    const [openEvents, clickEvents, leadTag] = await Promise.all([
+      this.prisma.campaignEvent.findMany({
+        where: { campaignId, contactId: { in: contactIds }, eventType: 'OPENED' },
+        select: { contactId: true, createdAt: true },
+      }),
+      this.prisma.campaignEvent.findMany({
+        where: { campaignId, contactId: { in: contactIds }, eventType: 'CLICKED' },
+        select: { contactId: true },
+      }),
+      this.prisma.tag.findUnique({ where: { name: 'Лид' }, select: { id: true } }),
+    ]);
+    const openedMap = new Map(openEvents.map((e) => [e.contactId, e.createdAt]));
+    const clickedSet = new Set(clickEvents.map((e) => e.contactId));
+    let respondedSet = new Set<string>();
+    if (leadTag) {
+      const leadLinks = await this.prisma.contactTag.findMany({
+        where: { tagId: leadTag.id, contactId: { in: contactIds } },
+        select: { contactId: true },
+      });
+      respondedSet = new Set(leadLinks.map((l) => l.contactId));
+    }
+
+    const enriched = data.map((r) => ({
+      ...r,
+      opened: openedMap.has(r.contactId),
+      openedAt: openedMap.get(r.contactId) ?? null,
+      clicked: clickedSet.has(r.contactId),
+      responded: respondedSet.has(r.contactId),
+    }));
+    return buildPaginatedResponse(enriched, total, page, limit);
   }
 
   async getEvents(campaignId: string, query: { page?: number; limit?: number; eventType?: string }) {

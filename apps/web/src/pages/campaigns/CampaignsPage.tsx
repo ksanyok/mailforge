@@ -42,11 +42,18 @@ const STATUS_STYLE: Record<string, { bg: string; fg: string }> = {
 
 function StatusBadge({ status }: { status: string }) {
   const st = STATUS_STYLE[status] ?? { bg: 'var(--surface-3)', fg: 'var(--text-2)' };
+  const running = status === 'SENDING';
   return (
     <span
-      className="inline-block text-[10.5px] font-semibold px-2 py-0.5 rounded"
+      className="inline-flex items-center gap-1.5 text-[10.5px] font-semibold px-2 py-0.5 rounded"
       style={{ background: st.bg, color: st.fg }}
     >
+      {running && (
+        <span className="relative flex h-2 w-2">
+          <span className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75" style={{ background: st.fg }} />
+          <span className="relative inline-flex rounded-full h-2 w-2" style={{ background: st.fg }} />
+        </span>
+      )}
       {STATUS_LABELS[status] ?? status}
     </span>
   );

@@ -42,6 +42,8 @@ export function CampaignDetailPage() {
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [followUpSubject, setFollowUpSubject] = useState('');
   const [showFollowUp, setShowFollowUp] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
+  const [recipPage, setRecipPage] = useState(1);
 
   const { data: campaign, refetch } = useQuery({
     queryKey: ['campaign', id],
@@ -60,6 +62,16 @@ export function CampaignDetailPage() {
     enabled: !!id && ['SENT', 'SENDING', 'PAUSED', 'CANCELLED'].includes((campaign as any)?.status ?? ''),
   });
   const nr = nonRespondersData as { total: number; responded: number; notResponded: number } | undefined;
+
+  const { data: recipRaw } = useQuery({
+    queryKey: ['recipients', id, recipPage],
+    queryFn: () => campaignsApi.recipients(id!, { page: recipPage, limit: 25 }),
+    enabled: !!id,
+    refetchInterval: 8000,
+  });
+  const recipients = ((recipRaw as any)?.data ?? []) as any[];
+  const recipTotal = ((recipRaw as any)?.total ?? 0) as number;
+  const recipPages = ((recipRaw as any)?.totalPages ?? 1) as number;
 
   const dispatch = useMutation({
     mutationFn: () => campaignsApi.dispatch(id!),
@@ -338,6 +350,109 @@ export function CampaignDetailPage() {
             {c.followUpSentAt && <span> Последняя отправка: {formatDate(c.followUpSentAt as string)}</span>}
           </CardContent>
         </Card>
+      )}
+
+      {/* Recipients */}
+      <Card>
+        <CardHeader className="flex-row items-center justify-between space-y-0">
+          <CardTitle className="text-sm">
+            Получатели <span className="font-mono text-ink-3 font-normal">{recipTotal}</span>
+          </CardTitle>
+          <Button variant="outline" size="sm" onClick={() => setShowPreview(true)}>
+            Просмотреть письмо
+          </Button>
+        </CardHeader>
+        <CardContent className="p-0">
+          <div className="overflow-x-auto">
+            <table className="w-full text-[12.5px]">
+              <thead>
+                <tr className="border-b border-border text-left text-ink-3">
+                  <th className="font-medium px-4 py-2">Контакт</th>
+                  <th className="font-medium px-3 py-2">Статус</th>
+                  <th className="font-medium px-3 py-2">Отправлено</th>
+                  <th className="font-medium px-3 py-2 text-center">Открыл</th>
+                  <th className="font-medium px-3 py-2 text-center">Ответил</th>
+                  <th className="font-medium px-3 py-2"></th>
+                </tr>
+              </thead>
+              <tbody>
+                {recipients.map((r) => {
+                  const st = (r.status as string) ?? 'PENDING';
+                  const nm = [r.contact?.firstName, r.contact?.lastName].filter(Boolean).join(' ');
+                  return (
+                    <tr key={r.id} className="border-b border-border hover:bg-hover">
+                      <td className="px-4 py-2.5">
+                        <button onClick={() => navigate(`/contacts/${r.contactId}`)} className="text-left group">
+                          <div className="font-semibold text-ink group-hover:text-brand transition-colors">{nm || r.contact?.email}</div>
+                          <div className="text-[11px] text-ink-3">{r.contact?.email}</div>
+                        </button>
+                      </td>
+                      <td className="px-3 py-2.5">
+                        <span className="text-[10.5px] font-semibold px-2 py-0.5 rounded"
+                          style={{ background: (STATUS_STYLE[st] ?? STATUS_STYLE.QUEUED).bg, color: (STATUS_STYLE[st] ?? STATUS_STYLE.QUEUED).fg }}>
+                          {STATUS_LABELS[st] ?? st}
+                        </span>
+                      </td>
+                      <td className="px-3 py-2.5 font-mono text-[11.5px] text-ink-2">
+                        {r.sentAt ? new Date(r.sentAt).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '—'}
+                      </td>
+                      <td className="px-3 py-2.5 text-center">
+                        {r.opened ? <CheckCircle2 className="h-4 w-4 inline" style={{ color: 'var(--success)' }} /> : <span className="text-ink-3">—</span>}
+                      </td>
+                      <td className="px-3 py-2.5 text-center">
+                        {r.responded ? <CheckCircle2 className="h-4 w-4 inline" style={{ color: 'var(--info)' }} /> : <span className="text-ink-3">—</span>}
+                      </td>
+                      <td className="px-3 py-2.5 text-right">
+                        <button onClick={() => navigate('/inbox')} className="text-[11.5px] text-brand hover:underline">Инбокс →</button>
+                      </td>
+                    </tr>
+                  );
+                })}
+                {recipients.length === 0 && (
+                  <tr><td colSpan={6} className="text-center py-8 text-ink-3">Получателей пока нет</td></tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+          {recipPages > 1 && (
+            <div className="flex items-center justify-between px-4 py-2 border-t border-border text-[12px]">
+              <button disabled={recipPage <= 1} onClick={() => setRecipPage((p) => p - 1)} className="text-ink-2 disabled:text-ink-3 disabled:cursor-not-allowed">← Назад</button>
+              <span className="text-ink-3 font-mono">{recipPage} / {recipPages}</span>
+              <button disabled={recipPage >= recipPages} onClick={() => setRecipPage((p) => p + 1)} className="text-ink-2 disabled:text-ink-3 disabled:cursor-not-allowed">Далее →</button>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Email preview modal */}
+      {showPreview && c && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={() => setShowPreview(false)}>
+          <div className="bg-surface rounded-xl shadow-soft-lg w-full max-w-2xl max-h-[85vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-5 py-3 border-b border-border">
+              <div className="min-w-0">
+                <div className="text-[11px] text-ink-3">Тема</div>
+                <div className="font-semibold text-[13.5px] truncate">
+                  {String(c.subject ?? '')
+                    .replace(/\{\{\s*firstName\s*\}\}/g, "Ім'я")
+                    .replace(/\{\{\s*company\s*\}\}/g, 'Компанія')}
+                </div>
+              </div>
+              <button onClick={() => setShowPreview(false)} className="text-ink-3 hover:text-ink"><X className="h-5 w-5" /></button>
+            </div>
+            <iframe
+              title="preview"
+              className="flex-1 w-full rounded-b-xl bg-white"
+              style={{ minHeight: 360 }}
+              srcDoc={String(c.htmlContent ?? '')
+                .replace(/\{\{\s*firstName\s*\}\}/g, "Ім'я")
+                .replace(/\{\{\s*lastName\s*\}\}/g, 'Прізвище')
+                .replace(/\{\{\s*company\s*\}\}/g, 'Компанія')
+                .replace(/\{\{\s*website\s*\}\}/g, 'example.com')
+                .replace(/\{\{\s*senderName\s*\}\}/g, 'Олександр Коваль')
+                .replace(/\{\{\s*unsubscribeUrl\s*\}\}/g, '#')}
+            />
+          </div>
+        </div>
       )}
 
       {/* Details */}

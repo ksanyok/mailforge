@@ -25,11 +25,13 @@ interface Contact {
   phone?: string | null; company?: string | null; emailDomain?: string | null;
   lastOpenedAt?: string | null; totalSent?: number; totalOpened?: number; totalClicked?: number;
   customFields?: Record<string, unknown> | null;
+  tags?: { id: string; name: string; color: string }[];
 }
 
 // Toggleable columns for the contacts table (persisted per-browser)
 const OPTIONAL_COLUMNS = [
   { key: 'status', label: 'Статус', defaultOn: true },
+  { key: 'tags', label: 'Метки', defaultOn: true },
   { key: 'phone', label: 'Телефон', defaultOn: true },
   { key: 'company', label: 'Компания', defaultOn: false },
   { key: 'website', label: 'Сайт', defaultOn: true },
@@ -252,6 +254,24 @@ export function ContactsPage() {
                   <div className="h-full rounded-full" style={{ width: `${Math.max(0, Math.min(100, v))}%`, background: color }} />
                 </div>
                 <span className="text-[11.5px] font-bold font-mono" style={{ color }}>{v}</span>
+              </div>
+            );
+          },
+        };
+      case 'tags':
+        return {
+          id: 'tags', header: 'Метки',
+          cell: ({ row }) => {
+            const tags = row.original.tags ?? [];
+            if (!tags.length) return <span className="text-ink-3 text-[12px]">—</span>;
+            return (
+              <div className="flex flex-wrap gap-1">
+                {tags.map((t) => (
+                  <span key={t.id} className="text-[10.5px] font-semibold px-1.5 py-px rounded"
+                    style={{ background: `${t.color}22`, color: t.color }}>
+                    {t.name}
+                  </span>
+                ))}
               </div>
             );
           },

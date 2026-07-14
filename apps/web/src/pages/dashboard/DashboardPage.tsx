@@ -1,12 +1,14 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import {
-  Users, UserCheck, Mail, Send, TrendingUp, AlertTriangle, MessageSquare, MousePointerClick, ThumbsDown, Plus,
+  Users, UserCheck, Mail, Send, TrendingUp, AlertTriangle, MessageSquare, MousePointerClick, ThumbsDown, Plus, Eye,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { analyticsApi, recommendationsApi, inboxApi } from '@/api/index';
+import { Switch } from '@/components/ui/switch';
+import { analyticsApi, recommendationsApi, inboxApi, settingsApi } from '@/api/index';
 import { formatNumber, STATUS_COLORS } from '@/utils/format';
 import { cn } from '@/utils/cn';
+import { toast } from '@/hooks/use-toast';
 import { useAuthStore } from '@/stores/auth.store';
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -18,7 +20,22 @@ const PIE_COLORS = ['#0f9d58', '#8b93a1', '#e0483d', '#c77700', '#5b54ec'];
 
 export function DashboardPage() {
   const navigate = useNavigate();
+  const qc = useQueryClient();
   const firstName = (useAuthStore((st) => st.user?.name) ?? '').split(' ')[0];
+
+  const { data: pixelSetting } = useQuery({
+    queryKey: ['setting', 'trackingOpenPixel'],
+    queryFn: () => settingsApi.get('trackingOpenPixel').catch(() => ({ value: 'false' })),
+  });
+  const openTrackingOn = (pixelSetting as any)?.value === 'true';
+  const toggleTracking = useMutation({
+    mutationFn: (on: boolean) => settingsApi.set('trackingOpenPixel', on ? 'true' : 'false'),
+    onSuccess: (_r, on) => {
+      qc.invalidateQueries({ queryKey: ['setting', 'trackingOpenPixel'] });
+      toast({ title: on ? 'Отслеживание открытий включено' : 'Отслеживание открытий выключено' });
+    },
+    onError: () => toast({ title: 'Не удалось изменить настройку', variant: 'destructive' }),
+  });
   const { data: stats } = useQuery({ queryKey: ['dashboard'], queryFn: analyticsApi.dashboard });
   const { data: daily } = useQuery({ queryKey: ['daily-metrics'], queryFn: () => analyticsApi.dailyMetrics(30) });
   const { data: recs } = useQuery({ queryKey: ['recommendations'], queryFn: () => recommendationsApi.findAll({ limit: 5 }) });
@@ -55,6 +72,40 @@ export function DashboardPage() {
 
   return (
     <div className="space-y-4">
+      {/* Open-tracking master switch */}
+      <div
+        className="flex items-center gap-3 rounded-xl border px-4 py-3"
+        style={{
+          background: openTrackingOn ? 'var(--info-soft)' : 'var(--warn-soft)',
+          borderColor: openTrackingOn ? 'var(--info)' : 'var(--warn)',
+        }}
+      >
+        <div
+          className="w-9 h-9 rounded-[10px] flex items-center justify-center shrink-0"
+          style={{
+            background: 'var(--surface)',
+            color: openTrackingOn ? 'var(--info)' : 'var(--warn)',
+          }}
+        >
+          <Eye className="w-[18px] h-[18px]" strokeWidth={1.8} />
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="font-semibold text-[13.5px] text-ink">
+            Отслеживание открытий {openTrackingOn ? 'включено' : 'выключено'}
+          </div>
+          <div className="text-[12px] text-ink-2">
+            {openTrackingOn
+              ? 'В письма добавляется пиксель — вы видите «Открыто». Может слегка снижать доставляемость и неточно у Gmail.'
+              : 'Пиксель не добавляется — лучше для доставляемости на прогреве. Метрика «Открыто» будет 0; ориентируйтесь на ответы.'}
+          </div>
+        </div>
+        <Switch
+          checked={openTrackingOn}
+          onCheckedChange={(v) => toggleTracking.mutate(v)}
+          disabled={toggleTracking.isPending}
+        />
+      </div>
+
       {/* Greeting */}
       <div className="flex items-end gap-3 flex-wrap">
         <div>

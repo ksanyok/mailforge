@@ -73,7 +73,14 @@ export class SendingProcessor {
       // Build personalized HTML
       const appUrl = this.config.get('APP_URL', 'http://localhost:3001');
       const unsubscribeToken = await this.getToken(campaignId, contactId, 'UNSUBSCRIBE');
-      const openToken = campaign.trackOpens ? await this.getToken(campaignId, contactId, 'OPEN') : null;
+      // Global master switch — when open tracking is off, never inject the pixel
+      // (an invisible image to a fresh domain hurts deliverability).
+      const globalOpenTracking =
+        (await this.prisma.setting.findUnique({ where: { key: 'trackingOpenPixel' } }))?.value === 'true';
+      const openToken =
+        campaign.trackOpens && globalOpenTracking
+          ? await this.getToken(campaignId, contactId, 'OPEN')
+          : null;
 
       const cf = (contact.customFields ?? {}) as Record<string, unknown>;
       const senderName = sender.fromName || sender.fromEmail;

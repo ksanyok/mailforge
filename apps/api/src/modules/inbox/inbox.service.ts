@@ -110,7 +110,30 @@ export class InboxService {
       }),
     );
 
+    // Anyone who wrote to us (a reply) is a warm lead → auto-tag them.
+    this.markRepliersAsLeads(results.map((r) => r.contactEmail)).catch(() => null);
+
     return results.sort((a, b) => b.lastMessageAt.getTime() - a.lastMessageAt.getTime());
+  }
+
+  /** Tag contacts who replied with "Лид" (idempotent, fire-and-forget). */
+  private async markRepliersAsLeads(contactEmails: string[]): Promise<void> {
+    const emails = [...new Set(contactEmails.map((e) => e.toLowerCase()).filter(Boolean))];
+    if (emails.length === 0) return;
+    const tag = await this.prisma.tag.upsert({
+      where: { name: 'Лид' },
+      create: { name: 'Лид', color: '#2f6feb' },
+      update: {},
+    });
+    const contacts = await this.prisma.contact.findMany({
+      where: { email: { in: emails } },
+      select: { id: true },
+    });
+    if (contacts.length === 0) return;
+    await this.prisma.contactTag.createMany({
+      data: contacts.map((c) => ({ contactId: c.id, tagId: tag.id })),
+      skipDuplicates: true,
+    });
   }
 
   async getThread(senderId: string, contactEmail: string): Promise<InboxMessage[]> {
@@ -681,7 +704,8 @@ export class InboxService {
         const hdr = part.slice(0, hdrEnd);
         const body = part.slice(hdrEnd).replace(/^\r?\n/, '');
         const enc = (hdr.match(/content-transfer-encoding:\s*(\S+)/i) || [])[1] ?? '';
-        const decoded = enc.toLowerCase() === 'quoted-printable' ? this.decodeQP(body) : body;
+        const charset = (hdr.match(/charset="?([^"\s;]+)"?/i) || [])[1] ?? 'utf-8';
+        const decoded = this.decodeTransfer(body, enc, charset);
 
         if (/content-type:\s*text\/plain/i.test(hdr)) {
           return decoded.trim();
@@ -705,7 +729,8 @@ export class InboxService {
       const hdr = raw.slice(0, bodyStart);
       const body = raw.slice(bodyStart).replace(/^\r?\n/, '');
       const enc = (hdr.match(/content-transfer-encoding:\s*(\S+)/i) || [])[1] ?? '';
-      const decoded = enc.toLowerCase() === 'quoted-printable' ? this.decodeQP(body) : body;
+      const charset = (hdr.match(/charset="?([^"\s;]+)"?/i) || [])[1] ?? 'utf-8';
+      const decoded = this.decodeTransfer(body, enc, charset);
       return /^<[a-z]/i.test(decoded.trim()) ? this.stripHtml(decoded).trim() : decoded.trim();
     }
 
@@ -714,10 +739,42 @@ export class InboxService {
     return /^<[a-z]/i.test(decoded.trim()) ? this.stripHtml(decoded).trim() : decoded.trim();
   }
 
-  private decodeQP(text: string): string {
-    return text
-      .replace(/=\r?\n/g, '')
-      .replace(/=([0-9A-Fa-f]{2})/g, (_, h) => String.fromCharCode(parseInt(h, 16)));
+  /** Decode a MIME part body by its Content-Transfer-Encoding. */
+  private decodeTransfer(body: string, enc: string, charset = 'utf-8'): string {
+    const e = (enc || '').trim().toLowerCase();
+    const cs = this.normalizeCharset(charset);
+    if (e === 'base64') {
+      try {
+        return Buffer.from(body.replace(/[^A-Za-z0-9+/=]/g, ''), 'base64').toString(cs);
+      } catch {
+        return body;
+      }
+    }
+    if (e === 'quoted-printable') return this.decodeQP(body, cs);
+    return body;
+  }
+
+  private normalizeCharset(charset: string): BufferEncoding {
+    const c = (charset || '').trim().toLowerCase();
+    if (c === 'utf-8' || c === 'utf8') return 'utf-8';
+    if (c === 'us-ascii' || c === 'ascii') return 'ascii';
+    if (c === 'iso-8859-1' || c === 'latin1' || c === 'windows-1252') return 'latin1';
+    return 'utf-8';
+  }
+
+  private decodeQP(text: string, charset = 'utf-8'): string {
+    const s = text.replace(/=\r?\n/g, '');
+    const bytes: number[] = [];
+    for (let i = 0; i < s.length; i++) {
+      const m = s[i] === '=' && /^[0-9A-Fa-f]{2}$/.test(s.substr(i + 1, 2));
+      if (m) {
+        bytes.push(parseInt(s.substr(i + 1, 2), 16));
+        i += 2;
+      } else {
+        bytes.push(s.charCodeAt(i) & 0xff);
+      }
+    }
+    return Buffer.from(bytes).toString(this.normalizeCharset(charset));
   }
 
   private stripHtml(html: string): string {

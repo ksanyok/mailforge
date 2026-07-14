@@ -45,6 +45,7 @@ const VARIABLES = [
   { v: '{{website}}',      label: 'Сайт клиента' },
   { v: '{{region}}',       label: 'Регион' },
   { v: '{{email}}',        label: 'Email' },
+  { v: '{{senderName}}',   label: 'Имя отправителя (подпись)' },
   { v: '{{unsubscribeUrl}}', label: 'Отписка ⚠️', required: true },
 ];
 

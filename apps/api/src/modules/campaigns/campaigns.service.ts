@@ -137,6 +137,18 @@ export class CampaignsService {
       throw new BadRequestException('Sender account is not active');
     }
 
+    // Sender pool — rotate across all ACTIVE senders when rotation is on,
+    // so per-sender daily warmup caps sum up (e.g. 6×20 = 120/day).
+    let senderPool = [activeSenderId];
+    if (campaign.rotationMode && campaign.rotationMode !== 'SINGLE') {
+      const active = await this.prisma.senderAccount.findMany({
+        where: { status: 'ACTIVE' },
+        select: { id: true },
+        orderBy: { createdAt: 'asc' },
+      });
+      if (active.length > 0) senderPool = active.map((s) => s.id);
+    }
+
     // Resolve all contacts from lists
     const listIds = campaign.lists.map((l: any) => l.listId);
     if (listIds.length === 0) {
@@ -160,13 +172,13 @@ export class CampaignsService {
       },
     });
 
-    // Create recipient records in batches
-    await this.createRecipients(id, contactIds, activeSenderId);
+    // Create recipient records (round-robin across the sender pool)
+    await this.createRecipients(id, contactIds, senderPool);
 
     // Pre-generate tracking tokens for all recipients
     await this.createTrackingTokens(id, contactIds, campaign.htmlContent, campaign.trackOpens, campaign.trackClicks);
 
-    // Enqueue sending jobs
+    // Enqueue sending jobs (each recipient uses its assigned sender)
     await this.enqueueSendingJobs(campaign, contactIds, activeSenderId);
 
     return { dispatched: contactIds.length };
@@ -335,15 +347,16 @@ export class CampaignsService {
       .map((c) => c.id);
   }
 
-  private async createRecipients(campaignId: string, contactIds: string[], senderId: string) {
+  private async createRecipients(campaignId: string, contactIds: string[], senderPool: string[] | string) {
+    const pool = Array.isArray(senderPool) ? senderPool : [senderPool];
     const CHUNK = 1000;
     for (let i = 0; i < contactIds.length; i += CHUNK) {
       const chunk = contactIds.slice(i, i + CHUNK);
       await this.prisma.campaignRecipient.createMany({
-        data: chunk.map((contactId) => ({
+        data: chunk.map((contactId, j) => ({
           campaignId,
           contactId,
-          senderId,
+          senderId: pool[(i + j) % pool.length],
           status: 'PENDING',
         })),
         skipDuplicates: true,
@@ -413,7 +426,7 @@ export class CampaignsService {
             campaignId: campaign.id,
             recipientId: r.id,
             contactId: r.contactId,
-            senderId,
+            senderId: r.senderId ?? senderId,
             to: r.contact.email,
           },
           opts: {
